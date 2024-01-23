@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:rommier/login_page.dart';
 import 'preferences.dart';
 
-
 class RegisterPage extends StatelessWidget {
   final AuthService authService = AuthService();
 
@@ -10,11 +9,13 @@ class RegisterPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Crear Cuenta'),
+        title: const Text('Crear Cuenta'),
       ),
       body: Center(
         child: SingleChildScrollView(
-          child: RegisterForm(authService: authService,),
+          child: RegisterForm(
+            authService: authService,
+          ),
         ),
       ),
     );
@@ -38,15 +39,20 @@ class _RegisterFormState extends State<RegisterForm> {
   TextEditingController emailController = TextEditingController();
   bool obscurePassword = true;
 
+  String? usernameError;
+  String? passwordError;
+  String? emailError;
+
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
         SizedBox(
           width: 300,
-          child:TextField(
+          child: TextField(
             controller: usernameController,
-            decoration: const InputDecoration(labelText: 'Username'),
+            decoration: InputDecoration(
+                labelText: 'Username', errorText: usernameError),
           ),
         ),
         SizedBox(
@@ -56,6 +62,7 @@ class _RegisterFormState extends State<RegisterForm> {
             obscureText: obscurePassword,
             decoration: InputDecoration(
               labelText: 'Password',
+              errorText: passwordError,
               suffixIcon: IconButton(
                 icon: Icon(
                   obscurePassword ? Icons.visibility : Icons.visibility_off,
@@ -73,49 +80,73 @@ class _RegisterFormState extends State<RegisterForm> {
           width: 300,
           child: TextField(
             controller: emailController,
-            decoration: const InputDecoration(labelText: 'Email'),
+            decoration:
+                InputDecoration(labelText: 'Email', errorText: emailError),
           ),
         ),
-        SizedBox(height: 20),
+        const SizedBox(height: 20),
         ElevatedButton(
           onPressed: () {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => PreferenciasPage()),
-            );
+            if (_validateFields())
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => PreferenciasPage()),
+              );
           },
-          child: Text('Continuar'),
+          child: const Text('Continuar'),
         ),
       ],
     );
   }
 
-  void _register() async {
-    // Obtener los valores de los controladores
+  bool _validateFields() {
+    setState(() {
+      usernameError = null;
+      passwordError = null;
+      emailError = null;
+    });
+
     String username = usernameController.text;
     String password = passwordController.text;
     String email = emailController.text;
 
-    // Validar que los campos no estén vacíos (puedes agregar más validaciones según tus necesidades)
-    if (username.isEmpty || password.isEmpty || email.isEmpty) {
-      // Muestra un mensaje de error o realiza alguna acción si los campos están vacíos
-      print('Por favor, complete todos los campos.');
-      return;
+    bool isValid = true;
+
+    if (username.isEmpty) {
+      setState(() {
+        usernameError = 'Campo obligatorio';
+      });
+      isValid = false;
     }
 
-    // Llamar a la función de registro en el AuthService
+    if (password.isEmpty) {
+      setState(() {
+        passwordError = 'Campo obligatorio';
+      });
+      isValid = false;
+    }
+
+    if (email.isEmpty) {
+      setState(() {
+        emailError = 'Campo obligatorio';
+      });
+      isValid = false;
+    }
+
+    return isValid;
+  }
+
+  void _register() async {
+    String username = usernameController.text;
+    String password = passwordController.text;
+    String email = emailController.text;
+
     try {
       await widget.authService.register(username, password, email, context);
-
-      // Registro exitoso
       print('Registro exitoso');
-
-      // Puedes realizar otras acciones aquí después del registro exitoso, como navegar a otra página.
       Navigator.pop(context); // Cierra la página de registro
     } catch (error) {
-      // Manejar errores durante el registro
       print('Error durante el registro: $error');
-      // Puedes mostrar un mensaje de error al usuario o realizar alguna otra acción según tus necesidades.
     }
   }
 }

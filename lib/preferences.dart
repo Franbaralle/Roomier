@@ -6,27 +6,28 @@ class PreferenciasPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Preferencias'),
+        title: const Text('Preferencias'),
       ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
+            const Text(
               'Esta es la página de preferencias',
               style: TextStyle(fontSize: 20),
             ),
-        SizedBox(height: 20),
-        ElevatedButton(
-          onPressed: () {
-            // Navegar a la página de Datos Personales
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => DatosPersonalesPage()),
-            );
-          },
-          child: Text('Continuar'),
-        ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                // Navegar a la página de Datos Personales
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => DatosPersonalesPage()),
+                );
+              },
+              child: const Text('Continuar'),
+            ),
           ],
         ),
       ),

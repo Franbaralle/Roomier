@@ -7,8 +7,8 @@ import 'dart:convert';
 class AuthService {
   static const String apiUrl = 'http://localhost:3000/api/auth';
 
-  Future<void> login(String username, String password,
-      BuildContext context) async {
+  Future<void> login(
+      String username, String password, BuildContext context) async {
     final String loginUrl = '$apiUrl/login';
 
     try {
@@ -39,7 +39,8 @@ class AuthService {
     }
   }
 
-  Future<void> register(String username, String password, String email, BuildContext context) async {
+  Future<void> register(String username, String password, String email,
+      BuildContext context) async {
     final String registerUrl = '$apiUrl/register';
 
     try {
@@ -67,7 +68,8 @@ class AuthService {
     }
   }
 
-  Future<void> resetPassword(String username, String newPassword, TextEditingController usernameController) async {
+  Future<void> resetPassword(String username, String newPassword,
+      TextEditingController usernameController) async {
     print('Username:$username');
     final String resetPasswordUrl = '$apiUrl/update-password/$username';
 
@@ -78,7 +80,8 @@ class AuthService {
       final response = await http.put(
         Uri.parse(resetPasswordUrl),
         headers: {'Content-Type': 'application/json'},
-        body: json.encode({'newPassword': newPassword,
+        body: json.encode({
+          'newPassword': newPassword,
         }),
       );
 
@@ -149,7 +152,9 @@ class _LoginPageState extends State<LoginPage> {
                 decoration: InputDecoration(
                   labelText: 'Password',
                   suffixIcon: IconButton(
-                    icon: Icon(obscurePassword ? Icons.visibility_off : Icons.visibility),
+                    icon: Icon(obscurePassword
+                        ? Icons.visibility_off
+                        : Icons.visibility),
                     onPressed: () {
                       setState(() {
                         obscurePassword = !obscurePassword;
@@ -212,29 +217,28 @@ class _LoginPageState extends State<LoginPage> {
           content: Column(
             children: [
               TextField(
-                onChanged: (value){
+                onChanged: (value) {
                   usernameController.text = value;
                 },
                 controller: profileNameController,
-                decoration: const InputDecoration(labelText: 'Nombre de Perfil'),
+                decoration:
+                    const InputDecoration(labelText: 'Nombre de Perfil'),
               ),
               TextField(
                 controller: newPasswordController,
                 obscureText: true,
-                decoration: const InputDecoration(labelText: 'Nueva Contraseña'),
+                decoration:
+                    const InputDecoration(labelText: 'Nueva Contraseña'),
               ),
             ],
           ),
           actions: [
             ElevatedButton(
               onPressed: () {
-                if(usernameController.text.isNotEmpty){
-                  authService.resetPassword(
-                      profileNameController.text,
-                      newPasswordController.text,
-                      usernameController
-                  );
-                }else {
+                if (usernameController.text.isNotEmpty) {
+                  authService.resetPassword(profileNameController.text,
+                      newPasswordController.text, usernameController);
+                } else {
                   print("El nombre de usuario no puede venir vacio");
                 }
                 Navigator.of(context).pop();

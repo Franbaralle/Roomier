@@ -1,21 +1,32 @@
 import 'package:flutter/material.dart';
+import 'profile_photo.dart';
 
 class DatosPersonalesPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Datos Personales'),
+        title: const Text('Datos Personales'),
       ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
+            const Text(
               'Esta es la página de Datos Personales',
               style: TextStyle(fontSize: 20),
             ),
-            // Puedes agregar más contenido según tus necesidades
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                // Navegar a la página para subir fotos
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => ProfilePhotoPage()),
+                );
+              },
+              child: const Text('Continuar'),
+            ),
           ],
         ),
       ),

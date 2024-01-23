@@ -70,7 +70,7 @@ class _DatePageState extends State<DatePage> {
               onPressed: () async {
                 if (selectedDate != null) {
                   if (isUnder18(selectedDate!)) {
-                    _showWarning('No puedes continuar, eres menor de 18 años.');
+                    _showWarning('Para continuar, debes ser de 18 años.');
                   } else {
                     Navigator.push(
                       context,

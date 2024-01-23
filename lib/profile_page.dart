@@ -117,6 +117,7 @@ class ProfilePageState extends State<ProfilePage> {
       ),
     );
   }
+
   Widget _buildHomeSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -143,7 +144,6 @@ class ProfilePageState extends State<ProfilePage> {
                       _pickHomeImages();
                     }
                   },
-
                   style: ElevatedButton.styleFrom(
                     shape: const CircleBorder(),
                     padding: const EdgeInsets.all(16),
@@ -179,7 +179,6 @@ class ProfilePageState extends State<ProfilePage> {
       ],
     );
   }
-
 
   void _openImageGallery(int selectedIndex) {
     Navigator.push(
@@ -232,7 +231,7 @@ class ProfilePageState extends State<ProfilePage> {
 
   Future<void> _pickHomeImages() async {
     final html.FileUploadInputElement uploadInput =
-    html.FileUploadInputElement()..click();
+        html.FileUploadInputElement()..click();
     uploadInput.onChange.listen((event) {
       final List<html.File> files = uploadInput.files!;
       if (files.isNotEmpty) {
@@ -269,7 +268,7 @@ class ProfilePageState extends State<ProfilePage> {
               return;
             }
           });
-                   });
+                  });
       }
     });
   }
@@ -277,10 +276,7 @@ class ProfilePageState extends State<ProfilePage> {
     Navigator.push(
         context,
         MaterialPageRoute(
-            builder: (context) =>
-                AdditionalImagesPage(
-                    additionalImages: widget.additionalImages)
-        )
-    );
+            builder: (context) => AdditionalImagesPage(
+                additionalImages: widget.additionalImages)));
   }
 }

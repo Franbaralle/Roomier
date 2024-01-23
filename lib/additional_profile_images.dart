@@ -46,10 +46,10 @@ class _AdditionalImagesPageState extends State<AdditionalImagesPage> {
             ),
           ),
           Visibility(
-            visible: isAddingImages, // Usar el estado para controlar la visibilidad
+            visible:
+                isAddingImages, // Usar el estado para controlar la visibilidad
             child: ElevatedButton(
               onPressed: _pickMoreImages,
-
               style: ElevatedButton.styleFrom(
                 shape: const CircleBorder(),
                 padding: const EdgeInsets.all(16),
@@ -64,7 +64,7 @@ class _AdditionalImagesPageState extends State<AdditionalImagesPage> {
 
   void _pickMoreImages() {
     final html.FileUploadInputElement uploadInput =
-    html.FileUploadInputElement()..click();
+        html.FileUploadInputElement()..click();
     uploadInput.onChange.listen((event) {
       final List<html.File> files = uploadInput.files!;
       if (files.isNotEmpty) {

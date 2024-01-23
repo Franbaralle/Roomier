@@ -48,7 +48,7 @@ class MyImagePickerState extends State<MyImagePickerPage> {
               child: Stack(
                 children: List.generate(
                   pickedImagesList.length,
-                      (index) => Positioned(
+                  (index) => Positioned(
                     top: imageOffsets[index].dy,
                     left: imageOffsets[index].dx,
                     child: InkWell(

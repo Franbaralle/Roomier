@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:rommier/login_page.dart';
-import 'preferences.dart';
+import 'routes.dart';
 
 class RegisterPage extends StatelessWidget {
   final AuthService authService = AuthService();
@@ -21,8 +21,6 @@ class RegisterPage extends StatelessWidget {
     );
   }
 }
-
-// En register.dart
 
 class RegisterForm extends StatefulWidget {
   final AuthService authService;
@@ -88,10 +86,10 @@ class _RegisterFormState extends State<RegisterForm> {
         ElevatedButton(
           onPressed: () {
             if (_validateFields())
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => PreferenciasPage()),
-              );
+                    Navigator.pushNamed(
+                      context,
+                      registerPreferencesRoute
+                    );
           },
           child: const Text('Continuar'),
         ),
@@ -144,7 +142,7 @@ class _RegisterFormState extends State<RegisterForm> {
     try {
       await widget.authService.register(username, password, email, context);
       print('Registro exitoso');
-      Navigator.pop(context); // Cierra la página de registro
+      Navigator.pop(context);
     } catch (error) {
       print('Error durante el registro: $error');
     }

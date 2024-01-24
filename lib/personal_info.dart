@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'profile_photo.dart';
+import 'routes.dart';
 
-class DatosPersonalesPage extends StatelessWidget {
+class PersonalInfoPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -20,10 +20,10 @@ class DatosPersonalesPage extends StatelessWidget {
             ElevatedButton(
               onPressed: () {
                 // Navegar a la página para subir fotos
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => ProfilePhotoPage()),
-                );
+                    Navigator.pushNamed(
+                      context,
+                      registerProfilePhotoRoute
+                    );
               },
               child: const Text('Continuar'),
             ),

@@ -1,21 +1,13 @@
+// authController.js
 const express = require('express');
 const router = express.Router();
 const User = require('../models/user');
 const bcrypt = require('bcrypt');
 
 // Ruta para el registro de usuarios
-router.get('/', (req, res) => {
-  res.send('¡Hola, mundo!');
-});
-
 router.post('/register', async (req, res) => {
   try {
     const { username, password, email } = req.body;
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-        const user = new User({ username, password: hashedPassword });
-        await user.save();
 
     // Verificar si el usuario ya existe
     const existingUser = await User.findOne({ username });
@@ -23,8 +15,11 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'El usuario ya existe' });
     }
 
+    // Hashear la contraseña antes de guardarla
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     // Crear un nuevo usuario
-    const newUser = new User({ username, password });
+    const newUser = new User({ username, password: hashedPassword, email });
     await newUser.save();
 
     res.status(201).json({ message: 'Usuario registrado exitosamente' });
@@ -34,28 +29,33 @@ router.post('/register', async (req, res) => {
   }
 });
 
+// Ruta para el inicio de sesión
 router.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body;
+
+    // Buscar al usuario por nombre de usuario
     const user = await User.findOne({ username });
 
     if (!user) {
-      return res.status(401).json({ error: 'Invalid username or password.' });
+      return res.status(401).json({ error: 'Usuario o contraseña inválidos' });
     }
 
+    // Verificar si la contraseña es válida
     const isValidPassword = await bcrypt.compare(password, user.password);
 
     if (!isValidPassword) {
-      return res.status(401).json({ error: 'Invalid username or password.' });
+      return res.status(401).json({ error: 'Usuario o contraseña inválidos' });
     }
 
-    res.status(200).json({ message: 'Login successful.' });
+    res.status(200).json({ message: 'Inicio de sesión exitoso' });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
+// Ruta para actualizar la contraseña
 router.put('/update-password/:username', async (req, res) => {
   const { username } = req.params;
   const { newPassword } = req.body;
@@ -80,6 +80,7 @@ router.put('/update-password/:username', async (req, res) => {
   }
 });
 
+// Ruta para eliminar cuenta
 router.delete('/delete/:username', async (req, res) => {
   const { username } = req.params;
 

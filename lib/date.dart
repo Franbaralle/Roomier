@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'register.dart';
+import 'routes.dart';
 
 class DatePage extends StatefulWidget {
   @override
@@ -72,9 +72,9 @@ class _DatePageState extends State<DatePage> {
                   if (isUnder18(selectedDate!)) {
                     _showWarning('Para continuar, debes ser de 18 años.');
                   } else {
-                    Navigator.push(
+                                        Navigator.pushNamed(
                       context,
-                      MaterialPageRoute(builder: (context) => RegisterPage()),
+                      registerRoute
                     );
                   }
                 } else {

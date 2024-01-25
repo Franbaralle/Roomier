@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:rommier/my_image_picker.dart';
 import 'date.dart';
 import 'dart:convert';
+import 'routes.dart';
 
 class AuthService {
   static const String apiUrl = 'http://localhost:3000/api/auth';
@@ -182,7 +183,10 @@ class _LoginPageState extends State<LoginPage> {
                 SizedBox(width: 10), // Espacio entre los botones
                 ElevatedButton(
                   onPressed: () {
-                    _showDatePage();
+                    Navigator.pushNamed(
+                      context,
+                    registerDateRoute
+                    );
                   },
                   child: const Text('Crear Cuenta'),
                 ),

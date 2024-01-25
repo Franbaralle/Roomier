@@ -7,16 +7,19 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-mongoose.connect('mongodb://127.0.0.1:27017/flutter_auth', { useNewUrlParser: true, useUnifiedTopology: true });
+mongoose.connect('mongodb://127.0.0.1:27017/flutter_auth', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+});
 
 const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'MongoDB connection error:'));
 db.once('open', () => {
-console.log('conexion a mongodb establecida con exito');
+  console.log('Conexion a MongoDB establecida con exito');
 });
 
-const authRoutes = require('./controllers/authController');
-app.use('/api/auth', authRoutes);
+const authController = require('./controllers/authController');
+app.use('/api/auth', authController);
 
 app.use((req, res) => {
   res.status(404).send('Página no encontrada');

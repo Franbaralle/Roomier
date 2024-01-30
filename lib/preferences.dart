@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'routes.dart';
+import 'auth_service.dart';
 
 class PreferencesPage extends StatefulWidget {
+  final String username;
+
+  PreferencesPage({required this.username});
+
   @override
   _PreferencesPageState createState() => _PreferencesPageState();
 }
@@ -46,12 +51,10 @@ class _PreferencesPageState extends State<PreferencesPage> {
                     onChanged: (value) {
                       setState(() {
                         if (value!) {
-                          // Agrega el tag si fue seleccionado
                           if (selectedTags.length < 5) {
                             selectedTags.add(tag);
                           }
                         } else {
-                          // Remueve el tag si fue deseleccionado
                           selectedTags.remove(tag);
                         }
                       });
@@ -62,12 +65,15 @@ class _PreferencesPageState extends State<PreferencesPage> {
             ),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () {
-                // Navegar a la página de Datos Personales
-                    Navigator.pushNamed(
-                      context,
-                      registerPersonalInfoRoute
-                    );
+              onPressed: () async {
+                List<String> selectedPreferences = selectedTags;
+                if (selectedPreferences.isEmpty ||
+                    selectedPreferences.length > 5) {
+                  return;
+                }
+                await AuthService()
+                    .updatePreferences(widget.username, selectedPreferences);
+                Navigator.pushNamed(context, registerPersonalInfoRoute, arguments: {'username': widget.username});
               },
               child: const Text('Continuar'),
             ),

@@ -1,12 +1,22 @@
 import 'package:flutter/material.dart';
+import 'auth_service.dart';
 import 'routes.dart';
 
-class PersonalInfoPage extends StatelessWidget {
+class PersonalInfoPage extends StatefulWidget {
+  final String username;
+
+  PersonalInfoPage({required this.username});
+
+  @override
+  _PersonalInfoPageState createState() => _PersonalInfoPageState();
+}
+
+class _PersonalInfoPageState extends State<PersonalInfoPage> {
   // Controladores para los campos de texto
-  final TextEditingController trabajoController = TextEditingController();
+  final TextEditingController jobController = TextEditingController();
   final TextEditingController religionController = TextEditingController();
-  final TextEditingController preferenciaPoliticaController = TextEditingController();
-  final TextEditingController cuentaloController = TextEditingController();
+  final TextEditingController politicPreferencesController = TextEditingController();
+  final TextEditingController aboutMeController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -24,35 +34,37 @@ class PersonalInfoPage extends StatelessWidget {
               style: TextStyle(fontSize: 20),
             ),
             const SizedBox(height: 20),
-            // Cuadro de texto para Trabajo
             TextField(
-              controller: trabajoController,
+              controller: jobController,
               decoration: InputDecoration(labelText: 'Trabajo'),
             ),
             const SizedBox(height: 10),
-            // Cuadro de texto para Religión
             TextField(
               controller: religionController,
               decoration: InputDecoration(labelText: 'Religión'),
             ),
             const SizedBox(height: 10),
-            // Cuadro de texto para Preferencia Política
             TextField(
-              controller: preferenciaPoliticaController,
+              controller: politicPreferencesController,
               decoration: InputDecoration(labelText: 'Preferencia Política'),
             ),
             const SizedBox(height: 10),
-            // Cuadro de texto para "Cuéntame más sobre ti"
             TextField(
-              controller: cuentaloController,
-              maxLines: 5, // Puedes ajustar el número de líneas según tu preferencia
+              controller: aboutMeController,
+              maxLines: 5,
               maxLength: 300,
               decoration: InputDecoration(labelText: 'Cuéntame más sobre ti (300 palabras)'),
             ),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () {
-                // Navegar a la página para subir fotos
+              onPressed: () async {
+                await AuthService().updatePersonalInfo(
+                  widget.username,
+                  jobController.text,
+                  religionController.text,
+                  politicPreferencesController.text,
+                  aboutMeController.text,
+                );
                 Navigator.pushNamed(context, registerProfilePhotoRoute);
               },
               child: const Text('Continuar'),

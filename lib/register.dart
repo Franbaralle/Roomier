@@ -139,7 +139,7 @@ class _RegisterFormState extends State<RegisterForm> {
 
         await widget.authService.register(
             username, password, email, AuthService.getSelectedDate()!, context);
-        Navigator.pushNamed(context, registerPreferencesRoute);
+        Navigator.pushNamed(context, registerPreferencesRoute, arguments: {'username': usernameController.text});
       } catch (error) {
         print('Error durante el registro: $error');
       }

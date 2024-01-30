@@ -5,13 +5,14 @@ import 'dart:convert';
 
 class AuthService {
   static const String apiUrl = 'http://localhost:3000/api/auth';
+  static const String api = 'http://localhost:3000/api';
   static DateTime? _selectedDate;
 
   static void setSelectedDate(DateTime date) {
     _selectedDate = date;
   }
 
-  static DateTime? getSelectedDate(){
+  static DateTime? getSelectedDate() {
     return _selectedDate;
   }
 
@@ -43,9 +44,8 @@ class AuthService {
     }
   }
 
-
-  Future<void> register(String username, String password, String email, DateTime birthdate,
-      BuildContext context) async {
+  Future<void> register(String username, String password, String email,
+      DateTime birthdate, BuildContext context) async {
     try {
       final String registerUrl = '$apiUrl/register';
       final response = await http.post(
@@ -69,27 +69,92 @@ class AuthService {
     }
   }
 
-Future<void> resetPassword(String username, String newPassword) async {
-  try {
-    final String resetPasswordUrl = '$apiUrl/update-password/$username';
-    final response = await http.put(
-      Uri.parse(resetPasswordUrl),
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode({
-        'newPassword': newPassword,
-      }),
-    );
+  Future<void> resetPassword(String username, String newPassword) async {
+    try {
+      final String resetPasswordUrl = '$apiUrl/update-password/$username';
+      final response = await http.put(
+        Uri.parse(resetPasswordUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'newPassword': newPassword,
+        }),
+      );
 
-    if (response.statusCode == 200) {
-      print('Contraseña actualizada exitosamente');
-    } else if (response.statusCode == 404) {
-      print('Usuario no encontrado');
-    } else {
-      print('Error al actualizar la contraseña. Status code: ${response.statusCode}');
-      print('Response Body: ${response.body}');
+      if (response.statusCode == 200) {
+        print('Contraseña actualizada exitosamente');
+      } else if (response.statusCode == 404) {
+        print('Usuario no encontrado');
+      } else {
+        print(
+            'Error al actualizar la contraseña. Status code: ${response.statusCode}');
+        print('Response Body: ${response.body}');
+      }
+    } catch (error) {
+      print('Error al actualizar la contraseña: $error');
     }
-  } catch (error) {
-    print('Error al actualizar la contraseña: $error');
   }
-}
+
+  Future<void> updatePreferences(
+      String username, List<String> preferences) async {
+    try {
+      final String updatePreferencesUrl = '$api/register/preferences';
+      final response = await http.post(
+        Uri.parse(updatePreferencesUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'username': username,
+          'preferences': preferences,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        print('Preferencias actualizadas exitosamente');
+      } else if (response.statusCode == 404) {
+        print('Usuario no encontrado');
+      } else {
+        print(
+            'Error al actualizar las preferencias. Status code: ${response.statusCode}');
+        print('Response Body: ${response.body}');
+      }
+    } catch (error) {
+      print('Error al actualizar las preferencias: $error');
+    }
+  }
+
+  Future<void> updatePersonalInfo(
+    String username,
+    String job,
+    String religion,
+    String politicPreference,
+    String aboutMe,
+  ) async {
+    try {
+      final String updatePersonalInfoUrl = '$api/register/personal_info';
+      final response = await http.post(
+        Uri.parse(updatePersonalInfoUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'username': username,
+          'personalInfo': {
+            'job': job,
+            'religion': religion,
+            'politicPreference': politicPreference,
+            'aboutMe': aboutMe,
+          },
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        print('Información personal actualizada exitosamente');
+      } else if (response.statusCode == 404) {
+        print('Usuario no encontrado');
+      } else {
+        print(
+            'Error al actualizar la información personal. Status code: ${response.statusCode}');
+        print('Response Body: ${response.body}');
+      }
+    } catch (error) {
+      print('Error al actualizar la información personal: $error');
+    }
+  }
 }

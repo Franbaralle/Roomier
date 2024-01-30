@@ -7,7 +7,7 @@ const bcrypt = require('bcrypt');
 // Ruta para el registro de usuarios
 router.post('/register', async (req, res) => {
   try {
-    const { username, password, email } = req.body;
+    const { username, password, email, birthdate } = req.body;
 
     // Verificar si el usuario ya existe
     const existingUser = await User.findOne({ username });
@@ -19,7 +19,7 @@ router.post('/register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Crear un nuevo usuario
-    const newUser = new User({ username, password: hashedPassword, email });
+    const newUser = new User({ username, password: hashedPassword, email, birthdate });
     await newUser.save();
 
     res.status(201).json({ message: 'Usuario registrado exitosamente' });
@@ -61,6 +61,7 @@ router.put('/update-password/:username', async (req, res) => {
   const { newPassword } = req.body;
 
   try {
+    // Lógica para validar al usuario
     const user = await User.findOne({ username });
 
     if (!user) {
@@ -73,9 +74,9 @@ router.put('/update-password/:username', async (req, res) => {
 
     await user.save();
 
-    return res.json({ message: 'Contraseña actualizada exitosamente' });
+    return res.status(200).json({ message: 'Contraseña actualizada exitosamente' });
   } catch (error) {
-    console.error('Error al actualizar la contraseña:', error);
+    console.error('Error al restablecer la contraseña:', error);
     return res.status(500).json({ message: 'Error interno del servidor' });
   }
 });

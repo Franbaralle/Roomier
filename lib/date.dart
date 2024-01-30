@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'routes.dart';
+import 'auth_service.dart';
 
 class DatePage extends StatefulWidget {
   @override
@@ -10,6 +11,7 @@ class DatePage extends StatefulWidget {
 class _DatePageState extends State<DatePage> {
   DateTime? selectedDate = DateTime.now();
   final DateTime currentDate = DateTime.now();
+  String? warningMessage;
 
   Future<void> _selectDate(BuildContext context) async {
     DateTime currentDate = DateTime.now();
@@ -20,25 +22,50 @@ class _DatePageState extends State<DatePage> {
       lastDate: currentDate,
     );
 
-    if (picked != null && picked != selectedDate) {
+    if (picked != null && picked != AuthService.getSelectedDate()) {
       setState(() {
+        AuthService.setSelectedDate(picked);
         selectedDate = picked;
+        // Limpiar cualquier advertencia previa al seleccionar una nueva fecha.
+        _clearWarning();
       });
     }
   }
 
-    bool isUnder18(DateTime birthDate) {
-      DateTime currentDate = DateTime.now();
-      DateTime minimumDate = DateTime(currentDate.year - 18, currentDate.month, currentDate.day);
-      return birthDate.isAfter(minimumDate);
-    }
-
-  String? warningMessage;
+  bool isUnder18(DateTime birthDate) {
+    DateTime currentDate = DateTime.now();
+    DateTime minimumDate =
+        DateTime(currentDate.year - 18, currentDate.month, currentDate.day);
+    return birthDate.isAfter(minimumDate);
+  }
 
   void _showWarning(String message) {
     setState(() {
       warningMessage = message;
     });
+  }
+
+  void _clearWarning() {
+    setState(() {
+      warningMessage = null;
+    });
+  }
+
+  void _registerWithAuthService() async {
+    if (selectedDate != null) {
+      if (isUnder18(selectedDate!)) {
+        _showWarning('Para continuar, debes ser de 18 años.');
+      } else {
+        try {
+          AuthService.setSelectedDate(selectedDate!);
+          Navigator.pushNamed(context, registerRoute);
+        } catch (error) {
+          print('Error durante la configuración de la fecha: $error');
+        }
+      }
+    } else {
+      _showWarning('Por favor, selecciona tu fecha de nacimiento.');
+    }
   }
 
   @override
@@ -67,32 +94,23 @@ class _DatePageState extends State<DatePage> {
             ),
             SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () async {
-                if (selectedDate != null) {
-                  if (isUnder18(selectedDate!)) {
-                    _showWarning('Para continuar, debes ser de 18 años.');
-                  } else {
-                                        Navigator.pushNamed(
-                      context,
-                      registerRoute
-                    );
-                  }
-                } else {
-                  print('Por favor, selecciona tu fecha de nacimiento.');
-                }
+              onPressed: () {
+                _registerWithAuthService();
               },
               child: Text('Continuar'),
             ),
-        Container(
-          margin: EdgeInsets.only(top: 8), // Ajusta el margen según sea necesario
-          child: Text(
-            warningMessage ?? '', // El mensaje de advertencia
-            style: TextStyle(color: Colors.red),
-          ),
-        ),
+            Container(
+              margin: EdgeInsets.only(
+                  top: 8), // Ajusta el margen según sea necesario
+              child: Text(
+                warningMessage ?? '', // El mensaje de advertencia
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 }
+

@@ -1,102 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:rommier/my_image_picker.dart';
-import 'date.dart';
-import 'dart:convert';
 import 'routes.dart';
+import 'auth_service.dart';
 
-class AuthService {
-  static const String apiUrl = 'http://localhost:3000/api/auth';
-
-  Future<void> login(
-      String username, String password, BuildContext context) async {
-    final String loginUrl = '$apiUrl/login';
-
-    try {
-      final response = await http.post(
-        Uri.parse(loginUrl),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'username': username,
-          'password': password,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        // La solicitud fue exitosa
-        print('Login successful');
-
-        // Navegar a la página MyImagePicker
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => MyImagePickerPage()),
-        );
-      } else {
-        // La solicitud no fue exitosa
-        print('Login failed. Status code: ${response.statusCode}');
-      }
-    } catch (error) {
-      print('Error during login: $error');
-    }
-  }
-
-  Future<void> register(String username, String password, String email,
-      BuildContext context) async {
-    final String registerUrl = '$apiUrl/register';
-
-    try {
-      final response = await http.post(
-        Uri.parse(registerUrl),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'username': username,
-          'password': password,
-          'email': email,
-        }),
-      );
-
-      if (response.statusCode == 201) {
-        // Registro exitoso
-        print('Registro exitoso');
-
-        // Puedes navegar a la página de inicio de sesión o realizar alguna otra acción.
-      } else {
-        // Error en el registro
-        print('Error en el registro. Status code: ${response.statusCode}');
-      }
-    } catch (error) {
-      print('Error durante el registro: $error');
-    }
-  }
-
-  Future<void> resetPassword(String username, String newPassword,
-      TextEditingController usernameController) async {
-    print('Username:$username');
-    final String resetPasswordUrl = '$apiUrl/update-password/$username';
-
-    print('Reset Password URL: $resetPasswordUrl');
-    print('New Password: $newPassword');
-
-    try {
-      final response = await http.put(
-        Uri.parse(resetPasswordUrl),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'newPassword': newPassword,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        print('Contraseña actualizada exitosamente');
-      } else {
-        print('Error al actualizar la contraseña: ${response.statusCode}');
-        print('Response Body: ${response.body}');
-      }
-    } catch (error) {
-      print('Error al actualizar la contraseña: $error');
-    }
-  }
-}
 
 class LoginPage extends StatefulWidget {
   @override
@@ -205,53 +110,49 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  void _showDatePage() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => DatePage()),
-    );
-  }
-
   void _forgotPassword() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Restablecer Contraseña'),
-          content: Column(
-            children: [
-              TextField(
-                onChanged: (value) {
-                  usernameController.text = value;
-                },
-                controller: profileNameController,
-                decoration:
-                    const InputDecoration(labelText: 'Nombre de Perfil'),
-              ),
-              TextField(
-                controller: newPasswordController,
-                obscureText: true,
-                decoration:
-                    const InputDecoration(labelText: 'Nueva Contraseña'),
-              ),
-            ],
-          ),
-          actions: [
-            ElevatedButton(
-              onPressed: () {
-                if (usernameController.text.isNotEmpty) {
-                  authService.resetPassword(profileNameController.text,
-                      newPasswordController.text, usernameController);
-                } else {
-                  print("El nombre de usuario no puede venir vacio");
-                }
-                Navigator.of(context).pop();
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: const Text('Restablecer Contraseña'),
+        content: Column(
+          children: [
+            TextField(
+              onChanged: (value) {
+                // Guarda el nombre de usuario en el controlador
+                usernameController.text = value;
               },
-              child: const Text('Restablecer'),
+              decoration: const InputDecoration(labelText: 'Nombre de Usuario'),
+            ),
+            TextField(
+              // Asegúrate de que newPasswordController esté definido previamente
+              controller: newPasswordController,
+              obscureText: true,
+              decoration: const InputDecoration(labelText: 'Nueva Contraseña'),
             ),
           ],
-        );
-      },
-    );
-  }
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () {
+              // Verifica si el nombre de usuario y la nueva contraseña no están vacíos
+              if (usernameController.text.isNotEmpty && newPasswordController.text.isNotEmpty) {
+                // Llama a la función resetPassword con los datos ingresados
+                authService.resetPassword(
+                    usernameController.text,
+                    newPasswordController.text);
+              } else {
+                // Muestra un mensaje si falta información
+                print("Por favor, ingrese el nombre de usuario y la nueva contraseña");
+              }
+              Navigator.of(context).pop(); // Cierra el diálogo
+            },
+            child: const Text('Restablecer'),
+          ),
+        ],
+      );
+    },
+  );
+}
 }

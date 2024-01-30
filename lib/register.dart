@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:rommier/login_page.dart';
 import 'routes.dart';
+import 'auth_service.dart';
 
 class RegisterPage extends StatelessWidget {
   final AuthService authService = AuthService();
@@ -85,11 +85,7 @@ class _RegisterFormState extends State<RegisterForm> {
         const SizedBox(height: 20),
         ElevatedButton(
           onPressed: () {
-            if (_validateFields())
-                    Navigator.pushNamed(
-                      context,
-                      registerPreferencesRoute
-                    );
+              _registerWithAuthService();
           },
           child: const Text('Continuar'),
         ),
@@ -134,17 +130,19 @@ class _RegisterFormState extends State<RegisterForm> {
     return isValid;
   }
 
-  void _register() async {
-    String username = usernameController.text;
-    String password = passwordController.text;
-    String email = emailController.text;
+  void _registerWithAuthService() async {
+    if (_validateFields()) {
+      try {
+        String username = usernameController.text;
+        String password = passwordController.text;
+        String email = emailController.text;
 
-    try {
-      await widget.authService.register(username, password, email, context);
-      print('Registro exitoso');
-      Navigator.pop(context);
-    } catch (error) {
-      print('Error durante el registro: $error');
+        await widget.authService.register(
+            username, password, email, AuthService.getSelectedDate()!, context);
+        Navigator.pushNamed(context, registerPreferencesRoute);
+      } catch (error) {
+        print('Error durante el registro: $error');
+      }
     }
   }
 }

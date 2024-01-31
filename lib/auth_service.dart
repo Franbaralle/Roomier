@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'dart:typed_data';
 import 'my_image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:http_parser/http_parser.dart';
 
 class AuthService {
   static const String apiUrl = 'http://localhost:3000/api/auth';
@@ -157,4 +159,35 @@ class AuthService {
       print('Error al actualizar la información personal: $error');
     }
   }
+
+Future<void> updateProfilePhoto(String username, Uint8List profilePhoto) async {
+  try {
+    final String updateProfilePhotoUrl = '$api/register/profile_photo';
+
+    var request = http.MultipartRequest('POST', Uri.parse(updateProfilePhotoUrl));
+    request.fields['username'] = username;
+    request.files.add(
+      http.MultipartFile.fromBytes(
+        'profilePhoto',
+        profilePhoto,
+        filename: 'profile_photo.jpg',
+        contentType: MediaType('application', 'octet-stream'),
+      ),
+    );
+
+    var response = await request.send();
+
+    if (response.statusCode == 200) {
+      print('Foto de perfil actualizada exitosamente');
+    } else if (response.statusCode == 404) {
+      print('Usuario no encontrado');
+    } else {
+      print(
+          'Error al actualizar la foto de perfil. Status code: ${response.statusCode}');
+      print('Response Body: ${await response.stream.bytesToString()}');
+    }
+  } catch (error) {
+    print('Error al actualizar la foto de perfil: $error');
+  }
+}
 }

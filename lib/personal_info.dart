@@ -15,7 +15,8 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
   // Controladores para los campos de texto
   final TextEditingController jobController = TextEditingController();
   final TextEditingController religionController = TextEditingController();
-  final TextEditingController politicPreferencesController = TextEditingController();
+  final TextEditingController politicPreferencesController =
+      TextEditingController();
   final TextEditingController aboutMeController = TextEditingController();
 
   @override
@@ -53,7 +54,8 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
               controller: aboutMeController,
               maxLines: 5,
               maxLength: 300,
-              decoration: InputDecoration(labelText: 'Cuéntame más sobre ti (300 palabras)'),
+              decoration: InputDecoration(
+                  labelText: 'Cuéntame más sobre ti (300 palabras)'),
             ),
             const SizedBox(height: 20),
             ElevatedButton(
@@ -65,7 +67,8 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
                   politicPreferencesController.text,
                   aboutMeController.text,
                 );
-                Navigator.pushNamed(context, registerProfilePhotoRoute);
+                Navigator.pushNamed(context, registerProfilePhotoRoute,
+                    arguments: {'username': widget.username});
               },
               child: const Text('Continuar'),
             ),

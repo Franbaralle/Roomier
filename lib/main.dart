@@ -34,7 +34,16 @@ void main() {
           return Container();
         }
       },
-      registerProfilePhotoRoute: (context) => ProfilePhotoPage()
+      registerProfilePhotoRoute: (context) {
+        final Map<String, dynamic>? arguments =
+            ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+        if (arguments != null) {
+          final String username = arguments['username'] as String;
+          return ProfilePhotoPage(username: username);
+        } else {
+          return Container();
+        }
+      }
     },
   ));
 }

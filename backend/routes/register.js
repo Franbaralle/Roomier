@@ -1,39 +1,15 @@
 // routes/register.js
+const express = require('express');
 const multer = require('multer');
-const fs = require('fs');
-const storage = multer.diskStorage({
-    destination: function (req, file, cb){
-        const destinationPath = '../uploads'
-
-        fs.mkdirSync(destinationPath, { recursive: true });
-
-        cb(null, destinationPath);
-    },
-    filename: function (req, file, cb){
-        cb(null, file.fieldname + '-' + Date.now() + '.jpg')
-    }
-});
-
+const storage = multer.memoryStorage();
 const upload = multer({
     storage: storage,
     limits: {
-        fileSize: 10 * 1024 * 1024, // Establece el límite en 10 MB, ajusta según tus necesidades
+        fileSize: 10 * 1024 * 1024,
     },
 });
-const express = require('express');
 const router = express.Router();
 const User = require('../models/user');
-
-router.use('/profile_photo', upload.single('profilePhoto'), (req, res, next) => {
-    if (!req.file) {
-        return res.status(400).json({ message: 'No se proporcionó ninguna imagen' });
-    }
-
-    // Puedes acceder a la imagen a través de req.file.buffer
-    req.body.profilePhoto = req.file.buffer;
-
-    next();
-});
 
 // Ruta para manejar las preferencias durante el registro
 router.post('/preferences', async (req, res) => {
@@ -57,7 +33,6 @@ router.post('/preferences', async (req, res) => {
     } catch (error) {
         console.error('Error al actualizar las preferencias durante el registro:', error);
 
-        // Manejar específicamente el error de duplicado en MongoDB
         if (error.name === 'MongoError' && error.code === 11000) {
             return res.status(400).json({ message: 'Error de duplicado. Ya existen preferencias para este usuario.' });
         }
@@ -77,7 +52,6 @@ router.post('/personal_info', async (req, res) => {
             return res.status(404).json({ message: 'Usuario no encontrado' });
         }
 
-        // Actualiza cada campo de personalInfo solo si está presente en la solicitud
         if (personalInfo.job !== undefined) {
             user.personalInfo.job = personalInfo.job;
         }
@@ -101,11 +75,16 @@ router.post('/personal_info', async (req, res) => {
 });
 
 // Ruta para manejar la foto de perfil durante el registro
-router.post('/register/profile_photo', async (req, res) => {
-    const { username, profilePhoto } = req.body;
-
+router.post('/profile_photo', upload.single('profilePhoto'), async (req, res) => {
     try {
+        const { username } = req.body;
+        if (!req.file) {
+            return res.status(400).json({ message: 'No se proporcionó ninguna imagen' });
+        }
+        const profilePhoto = req.file.buffer;
+
         const user = await User.findOne({ username });
+
 
         if (!user) {
             return res.status(404).json({ message: 'Usuario no encontrado' });
@@ -114,9 +93,9 @@ router.post('/register/profile_photo', async (req, res) => {
         user.profilePhoto = profilePhoto;
         await user.save();
 
-        return res.json({ message: 'Foto de perfil actualizada exitosamente durante el registro' });
+        return res.json({ message: 'Foto de perfil actualizada exitosamente' });
     } catch (error) {
-        console.error('Error al actualizar la foto de perfil durante el registro:', error);
+        console.error('Error al actualizar la foto de perfil:', error);
         return res.status(500).json({ message: 'Error interno del servidor' });
     }
 });

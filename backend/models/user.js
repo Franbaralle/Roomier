@@ -12,8 +12,10 @@ const userSchema = new mongoose.Schema({
     politicPreference: {type: String, required: false},
     aboutMe: {type: String, required: false}
   },
-  profilePhoto: { type: Buffer, required: false }
-});
+  profilePhoto: { type: Buffer, required: false },
+  verificationCode: { type: String, required: false },
+  isVerified: { type: Boolean, default: false }
+}); 
 
 const User = mongoose.model('User', userSchema);
 

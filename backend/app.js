@@ -23,8 +23,10 @@ db.once('open', () => {
 
 const registerRoutes = require('./routes/register');
 const authController = require('./controllers/authController');
+const profileRoute = require('./routes/profile');
 app.use('/api/auth', authController);
 app.use('/api/register', registerRoutes);
+app.use('/api/profile', profileRoute);
 
 app.use((req, res) => {
   res.status(404).send('Página no encontrada');

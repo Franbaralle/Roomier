@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:typed_data';
-import 'my_image_picker.dart';
+//import 'my_image_picker.dart';
+import 'routes.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:http_parser/http_parser.dart';
@@ -32,16 +33,53 @@ class AuthService {
       );
 
       if (response.statusCode == 200) {
-        print('Login successful');
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => MyImagePickerPage()),
+        // Hacer la solicitud del perfil en línea sin asignarla a una variable
+        final profileDataResponse = await http.get(
+          Uri.parse('$api/profile/$username'),
+          // Puedes agregar encabezados u otros parámetros según sea necesario
         );
+
+        if (profileDataResponse.statusCode == 200) {
+          final profileData = json.decode(profileDataResponse.body);
+
+          Navigator.pushReplacementNamed(
+            context,
+            profilePageRoute,
+            arguments: {'username': profileData['username']},
+          );
+        } else {
+          print(
+              'Error al obtener la información del perfil. Código de estado: ${profileDataResponse.statusCode}');
+          // Mostrar un mensaje de error al usuario
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Error al obtener la información del perfil.'),
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
       } else {
-        print('Login failed. Status code: ${response.statusCode}');
+        print(
+            'Inicio de sesión fallido. Código de estado: ${response.statusCode}');
+        // Mostrar un mensaje de error al usuario
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content:
+                Text('Inicio de sesión fallido. Verifica tus credenciales.'),
+            duration: Duration(seconds: 3),
+          ),
+        );
       }
     } catch (error) {
-      print('Error during login: $error');
+      print('Error durante el inicio de sesión: $error');
+      // Mostrar un mensaje de error al usuario
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content:
+              Text('Error durante el inicio de sesión. Inténtalo de nuevo.'),
+          duration: Duration(seconds: 3),
+        ),
+      );
       // Puedes lanzar una excepción aquí si es necesario.
     }
   }
@@ -160,34 +198,55 @@ class AuthService {
     }
   }
 
-Future<void> updateProfilePhoto(String username, Uint8List profilePhoto) async {
-  try {
-    final String updateProfilePhotoUrl = '$api/register/profile_photo';
+  Future<void> updateProfilePhoto(
+      String username, Uint8List profilePhoto) async {
+    try {
+      final String updateProfilePhotoUrl = '$api/register/profile_photo';
 
-    var request = http.MultipartRequest('POST', Uri.parse(updateProfilePhotoUrl));
-    request.fields['username'] = username;
-    request.files.add(
-      http.MultipartFile.fromBytes(
-        'profilePhoto',
-        profilePhoto,
-        filename: 'profile_photo.jpg',
-        contentType: MediaType('application', 'octet-stream'),
-      ),
-    );
+      var request =
+          http.MultipartRequest('POST', Uri.parse(updateProfilePhotoUrl));
+      request.fields['username'] = username;
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'profilePhoto',
+          profilePhoto,
+          filename: 'profile_photo.jpg',
+          contentType: MediaType('application', 'octet-stream'),
+        ),
+      );
 
-    var response = await request.send();
+      var response = await request.send();
 
-    if (response.statusCode == 200) {
-      print('Foto de perfil actualizada exitosamente');
-    } else if (response.statusCode == 404) {
-      print('Usuario no encontrado');
-    } else {
-      print(
-          'Error al actualizar la foto de perfil. Status code: ${response.statusCode}');
-      print('Response Body: ${await response.stream.bytesToString()}');
+      if (response.statusCode == 200) {
+        print('Foto de perfil actualizada exitosamente');
+      } else if (response.statusCode == 404) {
+        print('Usuario no encontrado');
+      } else {
+        print(
+            'Error al actualizar la foto de perfil. Status code: ${response.statusCode}');
+        print('Response Body: ${await response.stream.bytesToString()}');
+      }
+    } catch (error) {
+      print('Error al actualizar la foto de perfil: $error');
     }
-  } catch (error) {
-    print('Error al actualizar la foto de perfil: $error');
   }
-}
+
+  Future<Map<String, dynamic>?> getUserInfo(String username) async {
+    try {
+      final String userInfoUrl =
+          '$api/profile/$username'; // Asegúrate de tener una ruta válida en tu backend
+      final response = await http.get(Uri.parse(userInfoUrl));
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        print(
+            'Error al obtener la información del usuario. Status code: ${response.statusCode}');
+        return null;
+      }
+    } catch (error) {
+      print('Error al obtener la información del usuario: $error');
+      return null;
+    }
+  }
 }

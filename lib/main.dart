@@ -6,6 +6,7 @@ import 'register.dart';
 import 'preferences.dart';
 import 'personal_info.dart';
 import 'profile_photo.dart';
+import 'profile_page.dart';
 
 void main() {
   runApp(MaterialApp(
@@ -43,7 +44,18 @@ void main() {
         } else {
           return Container();
         }
-      }
+      },
+      profilePageRoute: (context) {
+  final Map<String, dynamic>? arguments =
+      ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+
+  if (arguments != null) {
+    final String? username = arguments['username'] as String?;
+    return ProfilePage(username: username ?? '');
+  } else {
+    return Container(); // O proporciona otro valor predeterminado
+  }
+},
     },
   ));
 }

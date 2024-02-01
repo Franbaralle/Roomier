@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'profile_page.dart';
+//import 'profile_page.dart';
 import 'dart:typed_data';
 import 'package:universal_html/html.dart' as html;
 import 'dart:convert';
@@ -53,7 +53,7 @@ class MyImagePickerState extends State<MyImagePickerPage> {
                     left: imageOffsets[index].dx,
                     child: InkWell(
                       onTap: () async {
-                        final result = await Navigator.push(
+/*                         final result = await Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) => ProfilePage(
@@ -63,8 +63,8 @@ class MyImagePickerState extends State<MyImagePickerPage> {
                               currentIndex: index,
                             ),
                           ),
-                        );
-                        if (result != null && result is bool && result) {
+                        ); 
+                        if (result != null && result is bool && result) */{
                           setState(() {
                             pickedImagesList[index] = MemoryImage(Uint8List(0));
                           });

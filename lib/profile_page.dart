@@ -59,7 +59,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Widget _buildProfileContent() {
   if (userInfo == null) {
-    return Center(child: CircularProgressIndicator());
+    return const Center(child: CircularProgressIndicator());
   } else {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -105,7 +105,7 @@ Widget _buildProfileImage() {
             width: 400,
             height: 90,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.only(
+              borderRadius: const BorderRadius.only(
                 bottomLeft: Radius.circular(20.0),
                 bottomRight: Radius.circular(20.0),
               ),
@@ -139,7 +139,7 @@ Widget _buildProfileImage() {
   return Container(
     width: 100,
     height: 100,
-    decoration: BoxDecoration(
+    decoration: const BoxDecoration(
       shape: BoxShape.circle,
       color: Colors.grey,
     ),

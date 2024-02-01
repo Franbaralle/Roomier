@@ -199,13 +199,14 @@ class AuthService {
   }
 
   Future<void> updateProfilePhoto(
-      String username, Uint8List profilePhoto) async {
+      String username, String email, Uint8List profilePhoto) async {
     try {
       final String updateProfilePhotoUrl = '$api/register/profile_photo';
 
       var request =
           http.MultipartRequest('POST', Uri.parse(updateProfilePhotoUrl));
       request.fields['username'] = username;
+      request.fields['email'] = email;
       request.files.add(
         http.MultipartFile.fromBytes(
           'profilePhoto',
@@ -249,4 +250,26 @@ class AuthService {
       return null;
     }
   }
+Future<void> verifyVerificationCode(String email, String verificationCode) async {
+  try {
+    final String verifyCodeUrl = '$api/register/verify';
+    print('Verify Code URL: $verifyCodeUrl');
+    final response = await http.post(
+      Uri.parse(verifyCodeUrl),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'email': email,
+        'verificationCode': verificationCode,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      print('Código verificado exitosamente');
+    } else {
+      print('Error al verificar el código. Status code: ${response.statusCode}');
+    }
+  } catch (error) {
+    print('Error durante la verificación del código: $error');
+  }
+}
 }

@@ -6,8 +6,9 @@ import 'auth_service.dart';
 
 class ProfilePhotoPage extends StatefulWidget {
   final String username;
+  final String email;
 
-  ProfilePhotoPage({required this.username});
+  ProfilePhotoPage({required this.username, required this.email});
 
   @override
   _ProfilePhotoPageState createState() => _ProfilePhotoPageState();
@@ -23,14 +24,14 @@ class _ProfilePhotoPageState extends State<ProfilePhotoPage> {
   }
 
   Future<void> _updateProfilePhoto() async {
-    try {
-      await AuthService().updateProfilePhoto(widget.username, _imageData);
-      Navigator.pushNamed(context, loginRoute,
-          arguments: {'username': widget.username});
-    } catch (error) {
-      print('Error al actualizar la foto de perfil: $error');
-    }
+  try {
+      await AuthService().updateProfilePhoto(widget.username, widget.email, _imageData);
+      Navigator.pushNamed(context, emailRoute, arguments: {'email': widget.email});
+
+  } catch (error) {
+    print('Error al actualizar la foto de perfil: $error');
   }
+}
 
   Future<void> _getImage() async {
     final pickedFile =

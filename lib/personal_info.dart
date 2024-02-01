@@ -4,8 +4,9 @@ import 'routes.dart';
 
 class PersonalInfoPage extends StatefulWidget {
   final String username;
+  final String email;
 
-  PersonalInfoPage({required this.username});
+  PersonalInfoPage({required this.username, required this.email});
 
   @override
   _PersonalInfoPageState createState() => _PersonalInfoPageState();
@@ -68,7 +69,7 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
                   aboutMeController.text,
                 );
                 Navigator.pushNamed(context, registerProfilePhotoRoute,
-                    arguments: {'username': widget.username});
+                    arguments: {'username': widget.username, 'email': widget.email});
               },
               child: const Text('Continuar'),
             ),

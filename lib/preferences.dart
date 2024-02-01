@@ -4,8 +4,9 @@ import 'auth_service.dart';
 
 class PreferencesPage extends StatefulWidget {
   final String username;
+  final String email;
 
-  PreferencesPage({required this.username});
+  PreferencesPage({required this.username, required this.email});
 
   @override
   _PreferencesPageState createState() => _PreferencesPageState();
@@ -73,7 +74,7 @@ class _PreferencesPageState extends State<PreferencesPage> {
                 }
                 await AuthService()
                     .updatePreferences(widget.username, selectedPreferences);
-                Navigator.pushNamed(context, registerPersonalInfoRoute, arguments: {'username': widget.username});
+                Navigator.pushNamed(context, registerPersonalInfoRoute, arguments: {'username': widget.username, 'email': widget.email});
               },
               child: const Text('Continuar'),
             ),

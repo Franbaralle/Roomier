@@ -1,282 +1,159 @@
 import 'package:flutter/material.dart';
-import 'package:rommier/additional_profile_images.dart';
-import 'dart:convert';
+import 'auth_service.dart';
 import 'dart:typed_data';
-import 'package:universal_html/html.dart' as html;
-import 'package:photo_view/photo_view_gallery.dart';
+import 'dart:convert';
 
 class ProfilePage extends StatefulWidget {
-  final String profileName;
-  final List<MemoryImage> additionalImages;
-  final MemoryImage profileImage;
-  final int currentIndex;
+  final String username;
 
-  const ProfilePage({
-    Key? key,
-    required this.profileName,
-    required this.profileImage,
-    required this.additionalImages,
-    required this.currentIndex,
-  }) : super(key: key);
+  const ProfilePage({Key? key, required this.username}) : super(key: key);
 
   @override
-  ProfilePageState createState() => ProfilePageState();
+  _ProfilePageState createState() => _ProfilePageState();
 }
 
-class ProfilePageState extends State<ProfilePage> {
-  List<MemoryImage> additionalImages = [];
-  List<MemoryImage> homeImages = [];
-  int currentIndex = 0;
+class _ProfilePageState extends State<ProfilePage> {
+  Map<String, dynamic>? userInfo;
+  Image? profilePhoto;
 
-  void updateProfileImage() {
-    setState(() {});
+  @override
+  void initState() {
+    super.initState();
+    _loadUserInfo();
+  }
+
+  Future<void> _loadUserInfo() async {
+    try {
+      final authService = AuthService();
+      final user = await authService.getUserInfo(widget.username);
+
+      if (user != null) {
+        setState(() {
+          userInfo = user;
+        });
+      }
+
+      if (userInfo?['profilePhoto'] != null) {
+        // Convierte la cadena Base64 a datos binarios y actualiza el estado
+        final String base64String = userInfo?['profilePhoto'];
+        final Uint8List imageData = base64Decode(base64String);
+        setState(() {
+          profilePhoto = Image.memory(imageData);
+        });
+      }
+    } catch (error) {
+      print('Error loading user information: $error');
+      // Puedes manejar el error de alguna manera (por ejemplo, mostrar un mensaje al usuario)
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(),
-      body: Column(
-        children: [
-          _buildProfileImageSection(),
-          const SizedBox(height: 20),
-          _buildHomeSection(),
-        ],
+      appBar: AppBar(
+        title: const Text('Perfil'),
       ),
+      body: _buildProfileContent(),
     );
   }
 
-  Widget _buildProfileImageSection() {
-    return Align(
-      alignment: Alignment.topCenter,
-      child: Container(
-        width: 300,
-        height: 300,
-        decoration: BoxDecoration(
-          image: DecorationImage(
-            image: MemoryImage(
-              widget.additionalImages.isEmpty
-                  ? widget.profileImage.bytes
-                  : widget.additionalImages.last.bytes,
-            ),
-            fit: BoxFit.cover,
-          ),
-        ),
-        child: Stack(
-          children: [
-            ClipRect(
-              child: Align(
-                alignment: Alignment.bottomLeft,
-                child: Container(
-                  padding: const EdgeInsets.all(16.0),
-                  height: 120,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.bottomCenter,
-                      end: Alignment.topCenter,
-                      colors: [
-                        Colors.black.withOpacity(0.7),
-                        Colors.transparent,
-                      ],
-                    ),
-                  ),
-                  child: Align(
-                    alignment: Alignment.bottomLeft,
-                    child: Text(
-                      widget.profileName,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              top: 2,
-              right: -8,
-              child: ElevatedButton(
-                onPressed: _pickAdditionalImage,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.all(8),
-                  shape: const CircleBorder(),
-                  backgroundColor: Colors.transparent,
-                  shadowColor: Colors.transparent,
-                ),
-                child: const Icon(
-                  Icons.add,
-                  size: 24,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHomeSection() {
+  Widget _buildProfileContent() {
+  if (userInfo == null) {
+    return Center(child: CircularProgressIndicator());
+  } else {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const Padding(
-          padding: EdgeInsets.all(8.0),
-          child: Text(
-            'Mi Hogar',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        SizedBox(
-          height: 120,
-          child: Row(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: ElevatedButton(
-                  onPressed: () {
-                    if (homeImages.length < 10) {
-                      _pickHomeImages();
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    shape: const CircleBorder(),
-                    padding: const EdgeInsets.all(16),
-                  ),
-                  child: const Icon(Icons.add, size: 40),
-                ),
-              ),
-              Expanded(
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: homeImages.length,
-                  itemBuilder: (context, index) {
-                    return Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: GestureDetector(
-                        onTap: () {
-                          _openImageGallery(index);
-                        },
-                        child: Image.memory(
-                          homeImages[index].bytes,
-                          width: 80,
-                          height: 80,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
+        ..._buildProfileContentList(),
       ],
     );
   }
+}
 
-  void _openImageGallery(int selectedIndex) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) {
-          return Scaffold(
-            body: Stack(
-              children: [
-                PhotoViewGallery.builder(
-                  itemCount: homeImages.length,
-                  builder: (context, index) {
-                    return PhotoViewGalleryPageOptions(
-                      imageProvider: MemoryImage(homeImages[index].bytes),
-                    );
-                  },
-                  scrollPhysics: const BouncingScrollPhysics(),
-                  backgroundDecoration: const BoxDecoration(
-                    color: Colors.black,
-                  ),
-                  pageController: PageController(initialPage: selectedIndex),
-                ),
-                Positioned(
-                  top: 8,
-                  left: 8,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.all(8),
-                      shape: const CircleBorder(),
-                      backgroundColor: Colors.transparent,
-                      shadowColor: Colors.transparent,
-                    ),
-                    child: const Icon(
-                      Icons.arrow_back,
-                      size: 24,
-                      color: Colors.white,
-                    ),
-                  ),
+List<Widget> _buildProfileContentList() {
+  return [
+    _buildProfileImage(),
+    SizedBox(height: 20),
+    _buildAdditionalImages(),
+    SizedBox(height: 20),
+    _buildHomeImages(),
+  ];
+}
+
+Widget _buildProfileImage() {
+  final dynamic profilePhoto = userInfo?['profilePhoto'];
+
+  if (profilePhoto != null && profilePhoto is String) {
+    try {
+      final Uint8List bytes = base64Decode(profilePhoto);
+
+      return Stack(
+        alignment: Alignment.bottomRight,
+        children: [
+          Container(
+            width: 400,
+            height: 500,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20.0),
+            ),
+            child: ClipRRect(
+              child: Image.memory(bytes, width: 400, height: 500, fit: BoxFit.cover),
+            ),
+          ),
+          Container(
+            width: 400,
+            height: 90,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(20.0),
+                bottomRight: Radius.circular(20.0),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 15.0,
+                  //spreadRadius: 10.0,
+                  offset: Offset(0, 0),
                 ),
               ],
             ),
-          );
-        },
-      ),
-    );
+          ),
+          Positioned(
+            left: 8.0,
+            bottom: 8.0,
+            child: Text(
+              userInfo?['username'] ?? '',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+            ),
+          ),
+        ],
+      );
+    } catch (e) {
+      print('Error decoding profile image: $e');
+    }
+  } else {
+    print('Profile photo is null or not a String (base64): $profilePhoto');
   }
 
-  Future<void> _pickHomeImages() async {
-    final html.FileUploadInputElement uploadInput =
-        html.FileUploadInputElement()..click();
-    uploadInput.onChange.listen((event) {
-      final List<html.File> files = uploadInput.files!;
-      if (files.isNotEmpty) {
-        final reader = html.FileReader();
-        reader.readAsDataUrl(files[0]);
-        reader.onLoad.listen((e) {
-          final result = reader.result as String;
-          final imageData = base64.decode(result.split(',')[1]);
-          setState(() {
-            homeImages.add(MemoryImage(Uint8List.fromList(imageData)));
-          });
-        });
-      }
-    });
+  return Container(
+    width: 100,
+    height: 100,
+    decoration: BoxDecoration(
+      shape: BoxShape.circle,
+      color: Colors.grey,
+    ),
+    child: const Icon(Icons.account_circle, size: 100, color: Colors.white),
+  );
+}
+
+  Widget _buildAdditionalImages() {
+    // Implementa según tus necesidades
+    return Container();
   }
 
-  Future<void> _pickAdditionalImage() async {
-    /*  final html.FileUploadInputElement uploadInput =
-    html.FileUploadInputElement()..click();
-    uploadInput.onChange.listen((e) {
-      final List<html.File> files = uploadInput.files!;
-      if (files.isNotEmpty) {
-        final reader = html.FileReader();
-        reader.readAsDataUrl(files[0]);
-        reader.onLoadEnd.listen((event) {
-          final result = reader.result as String;
-          final imageData = base64.decode(result.split(',')[1]);
-          setState(() {
-            if (widget.currentIndex >= 0 &&
-                widget.currentIndex < widget.additionalImages.length) {
-              widget.additionalImages[widget.currentIndex] =
-                  MemoryImage(Uint8List.fromList(imageData));
-            } else {
-              return;
-            }
-          });
-                  });
-      }
-    });
-  }
-           */
-    Navigator.push(
-        context,
-        MaterialPageRoute(
-            builder: (context) => AdditionalImagesPage(
-                additionalImages: widget.additionalImages)));
+  Widget _buildHomeImages() {
+    // Implementa según tus necesidades
+    return Container();
   }
 }

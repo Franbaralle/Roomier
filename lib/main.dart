@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rommier/home.dart';
 import 'login_page.dart';
 import 'routes.dart';
 import 'date.dart';
@@ -8,6 +9,7 @@ import 'personal_info.dart';
 import 'profile_photo.dart';
 import 'profile_page.dart';
 import 'email_confirmation_page.dart';
+import 'not_found_page.dart';
 
 void main() {
   runApp(MaterialApp(
@@ -70,7 +72,12 @@ void main() {
         } else {
           return Container();
         }
-      }
+      },
+      homeRoute: (context) => HomePage(),
     },
+        onUnknownRoute: (settings) {
+      // Manejo adicional de rutas no encontradas
+      return MaterialPageRoute(builder: (context) => NotFoundPage());
+        }
   ));
 }

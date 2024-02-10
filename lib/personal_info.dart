@@ -26,37 +26,52 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
       appBar: AppBar(
         title: const Text('Datos Personales'),
       ),
-      body: SingleChildScrollView(
+      body: Center(
+        child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             const Text(
               'Esta es la página de Datos Personales',
               style: TextStyle(fontSize: 20),
             ),
             const SizedBox(height: 20),
-            TextField(
-              controller: jobController,
-              decoration: InputDecoration(labelText: 'Trabajo'),
+            SizedBox(
+              width: 300,
+              child: TextField(
+                controller: jobController,
+                decoration: const InputDecoration(labelText: 'Trabajo'),
+              ),
             ),
             const SizedBox(height: 10),
-            TextField(
-              controller: religionController,
-              decoration: InputDecoration(labelText: 'Religión'),
+            SizedBox(
+              width: 300,
+              child: TextField(
+                controller: religionController,
+                decoration: const InputDecoration(labelText: 'Religión'),
+              ),
             ),
             const SizedBox(height: 10),
-            TextField(
-              controller: politicPreferencesController,
-              decoration: InputDecoration(labelText: 'Preferencia Política'),
+            SizedBox(
+              width: 300,
+              child: TextField(
+                controller: politicPreferencesController,
+                decoration:
+                    const InputDecoration(labelText: 'Preferencia Política'),
+              ),
             ),
             const SizedBox(height: 10),
-            TextField(
-              controller: aboutMeController,
-              maxLines: 5,
-              maxLength: 300,
-              decoration: InputDecoration(
-                  labelText: 'Cuéntame más sobre ti (300 palabras)'),
+            SizedBox(
+              width: 300,
+              child: TextField(
+                controller: aboutMeController,
+                maxLines: 5,
+                maxLength: 300,
+                decoration: const InputDecoration(
+                    labelText: 'Cuéntame más sobre ti (300 palabras)'),
+              ),
             ),
             const SizedBox(height: 20),
             ElevatedButton(
@@ -69,12 +84,16 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
                   aboutMeController.text,
                 );
                 Navigator.pushNamed(context, registerProfilePhotoRoute,
-                    arguments: {'username': widget.username, 'email': widget.email});
+                    arguments: {
+                      'username': widget.username,
+                      'email': widget.email
+                    });
               },
               child: const Text('Continuar'),
             ),
           ],
         ),
+      ),
       ),
     );
   }

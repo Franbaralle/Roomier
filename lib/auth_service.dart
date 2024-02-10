@@ -250,26 +250,44 @@ class AuthService {
       return null;
     }
   }
-Future<void> verifyVerificationCode(String email, String verificationCode) async {
-  try {
-    final String verifyCodeUrl = '$api/register/verify';
-    print('Verify Code URL: $verifyCodeUrl');
-    final response = await http.post(
-      Uri.parse(verifyCodeUrl),
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode({
-        'email': email,
-        'verificationCode': verificationCode,
-      }),
-    );
 
+  Future<void> verifyVerificationCode(
+      String email, String verificationCode) async {
+    try {
+      final String verifyCodeUrl = '$api/register/verify';
+      print('Verify Code URL: $verifyCodeUrl');
+      final response = await http.post(
+        Uri.parse(verifyCodeUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'email': email,
+          'verificationCode': verificationCode,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        print('Código verificado exitosamente');
+      } else {
+        print(
+            'Error al verificar el código. Status code: ${response.statusCode}');
+      }
+    } catch (error) {
+      print('Error durante la verificación del código: $error');
+    }
+  }
+
+  Future<List<dynamic>> fetchHomeProfiles() async {
+  try {
+    final response = await http.get(Uri.parse('$api/home'));
     if (response.statusCode == 200) {
-      print('Código verificado exitosamente');
+      return json.decode(response.body);
     } else {
-      print('Error al verificar el código. Status code: ${response.statusCode}');
+      print('Failed to fetch random profiles');
+      return [];
     }
   } catch (error) {
-    print('Error durante la verificación del código: $error');
+    print('Error fetching random profiles: $error');
+    return [];
   }
 }
 }

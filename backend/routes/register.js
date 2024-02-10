@@ -18,7 +18,7 @@ const sendVerificationEmail = async (to, verificationCode) => {
             service: 'gmail', // Puedes cambiarlo según tu proveedor de correo
             auth: {
                 user: 'roomier2024@gmail.com',
-                pass: 'uyaw gmlh jpto enbr',
+                pass: '**************',
             },
         });
 
@@ -148,8 +148,7 @@ router.post('/profile_photo', upload.single('profilePhoto'), async (req, res) =>
 });
 
 router.post('/verify', async (req, res) => {
-    console.log('Ruta de verificación alcanzada');
-    const {email, verificationCode } = req.body;
+    const { email, verificationCode } = req.body;
 
     try {
         const user = await User.findOne({ email });
@@ -157,7 +156,6 @@ router.post('/verify', async (req, res) => {
         if (!user) {
             return res.status(404).json({ message: 'Usuario no encontrado' });
         }
-
         if (user.verificationCode !== verificationCode) {
             return res.status(400).json({ message: 'Código de verificación incorrecto' });
         }

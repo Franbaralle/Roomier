@@ -15,17 +15,17 @@ const sendVerificationEmail = async (to, verificationCode) => {
     try {
         // Configuración del servicio de envío de correos electrónicos (usando nodemailer)
         const transporter = nodemailer.createTransport({
-            service: 'gmail', // Puedes cambiarlo según tu proveedor de correo
+            service: 'gmail',
             auth: {
                 user: 'roomier2024@gmail.com',
-                pass: '**************',
+                pass: 'uyaw gmlh jpto enbr',
             },
         });
 
         // Contenido del correo electrónico
         const mailOptions = {
             from: 'roomier2024@gmail.com', // Remitente
-            to, // Destinatario
+            to, 
             subject: 'Confirmación de Registro', // Asunto del correo
             text: `Tu código de verificación es: ${verificationCode}`, // Cuerpo del correo
         };
@@ -34,7 +34,6 @@ const sendVerificationEmail = async (to, verificationCode) => {
         await transporter.sendMail(mailOptions);
     } catch (error) {
         console.error('Error al enviar el correo electrónico de verificación:', error);
-        // Puedes manejar el error según tus necesidades (por ejemplo, almacenarlo en un registro de errores)
     }
 };
 

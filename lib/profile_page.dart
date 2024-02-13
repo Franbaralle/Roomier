@@ -3,6 +3,7 @@ import 'auth_service.dart';
 import 'dart:typed_data';
 import 'dart:convert';
 import 'routes.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfilePage extends StatefulWidget {
   final String username;
@@ -16,11 +17,25 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   Map<String, dynamic>? userInfo;
   Image? profilePhoto;
+  late SharedPreferences _prefs;
+  String? savedData;
 
   @override
   void initState() {
     super.initState();
+    initializeSharedPreferences();
+    loadData();
     _loadUserInfo();
+  }
+
+  Future<void> initializeSharedPreferences() async {
+    _prefs = await SharedPreferences.getInstance();
+  }
+
+  Future<void> loadData() async {
+    await initializeSharedPreferences();
+    savedData = _prefs.getString('key');
+    setState(() {}); // Actualiza el estado para reflejar los cambios
   }
 
   Future<void> _loadUserInfo() async {
@@ -106,48 +121,48 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-Widget _buildBottomBar() {
-  return Container(
-    color: Colors.white,
-    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Expanded(
-          child: GestureDetector(
-            onTap: () {
-              // Lógica para el botón del rayo
-            },
-            child: Container(
-              height: 60.0,
-              child: const Center(
-                child: Icon(Icons.flash_on, color: Colors.grey),
+  Widget _buildBottomBar() {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: GestureDetector(
+              onTap: () {
+                // Lógica para el botón del rayo
+              },
+              child: Container(
+                height: 60.0,
+                child: const Center(
+                  child: Icon(Icons.flash_on, color: Colors.grey),
+                ),
               ),
             ),
           ),
-        ),
-        Container(
-          height: 60.0,
-          width: 1.0,
-          color: Colors.grey,
-        ),
-        Expanded(
-          child: GestureDetector(
-            onTap: () {
-              Navigator.pushReplacementNamed(context, homeRoute);
-            },
-            child: Container(
-              height: 60.0,
-              child: const Center(
-                child: Icon(Icons.home, color: Colors.grey),
+          Container(
+            height: 60.0,
+            width: 1.0,
+            color: Colors.grey,
+          ),
+          Expanded(
+            child: GestureDetector(
+              onTap: () {
+                Navigator.pushReplacementNamed(context, homeRoute);
+              },
+              child: Container(
+                height: 60.0,
+                child: const Center(
+                  child: Icon(Icons.home, color: Colors.grey),
+                ),
               ),
             ),
           ),
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
 
   List<Widget> _buildProfileContentList() {
     return [

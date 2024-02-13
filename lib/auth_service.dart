@@ -5,8 +5,42 @@ import 'routes.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:http_parser/http_parser.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
+  static final AuthService _instance = AuthService._internal();
+
+  factory AuthService() => _instance;
+
+  AuthService._internal();
+
+  late SharedPreferences _prefs;
+
+  Future<void> saveUserData(String key, dynamic value) async {
+    if (value is String) {
+      await _prefs.setString(key, value);
+    } else if (value is int) {
+      await _prefs.setInt(key, value);
+    } else if (value is double) {
+      await _prefs.setDouble(key, value);
+    } else if (value is bool) {
+      await _prefs.setBool(key, value);
+    } else if (value is List<String>) {
+      await _prefs.setStringList(key, value);
+    } else {
+      throw Exception('Tipo de dato no compatible con SharedPreferences');
+    }
+  }
+
+  dynamic loadUserData(String key) {
+    return _prefs.get(key);
+  }
+
+  // Inicializa SharedPreferences
+  Future<void> initializeSharedPreferences() async {
+    _prefs = await SharedPreferences.getInstance();
+  }
+
   static const String apiUrl = 'http://localhost:3000/api/auth';
   static const String api = 'http://localhost:3000/api';
   static DateTime? _selectedDate;
@@ -39,8 +73,16 @@ class AuthService {
           // Puedes agregar encabezados u otros parámetros según sea necesario
         );
 
+        // Almacenar el token en SharedPreferences
+
         if (profileDataResponse.statusCode == 200) {
+          final Map<String, dynamic> responseData = json.decode(response.body);
+          final String token = responseData['token'];
           final profileData = json.decode(profileDataResponse.body);
+
+          await saveUserData('username', username);
+          await saveUserData('accessToken', token);
+          await saveUserData('profilePhoto', profileData['profilePhoto']);
 
           Navigator.pushReplacementNamed(
             context,
@@ -81,6 +123,33 @@ class AuthService {
         ),
       );
       // Puedes lanzar una excepción aquí si es necesario.
+    }
+  }
+
+  Future<Map<String, dynamic>?> getUserInfoFromToken(
+      String accessToken, String username) async {
+    try {
+      final String profileUrl = '$api/profile/$username';
+      final response = await http.get(
+        Uri.parse(profileUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization':
+              'Bearer $accessToken', // Incluir el token de acceso en los encabezados de autorización
+          'username': username
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        print(
+            'Error al obtener los datos del perfil del usuario. Código de estado: ${response.statusCode}');
+        return null;
+      }
+    } catch (error) {
+      print('Error al obtener los datos del perfil del usuario: $error');
+      return null;
     }
   }
 
@@ -277,17 +346,17 @@ class AuthService {
   }
 
   Future<List<dynamic>> fetchHomeProfiles() async {
-  try {
-    final response = await http.get(Uri.parse('$api/home'));
-    if (response.statusCode == 200) {
-      return json.decode(response.body);
-    } else {
-      print('Failed to fetch random profiles');
+    try {
+      final response = await http.get(Uri.parse('$api/home'));
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        print('Failed to fetch random profiles');
+        return [];
+      }
+    } catch (error) {
+      print('Error fetching random profiles: $error');
       return [];
     }
-  } catch (error) {
-    print('Error fetching random profiles: $error');
-    return [];
   }
-}
 }

@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/user');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
 // Ruta para el registro de usuarios
 router.post('/register', async (req, res) => {
@@ -48,7 +49,9 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Usuario o contraseña inválidos' });
     }
 
-    res.status(200).json({ message: 'Inicio de sesión exitoso' });
+    const token = jwt.sign({ username: user.username }, '614ck63rry5', { expiresIn: '1h' }); // Cambia 'secreto' por tu clave secreta
+
+    res.status(200).json({ message: 'Inicio de sesión exitoso', token });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Error interno del servidor' });

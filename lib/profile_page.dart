@@ -19,13 +19,21 @@ class _ProfilePageState extends State<ProfilePage> {
   Image? profilePhoto;
   late SharedPreferences _prefs;
   String? savedData;
+  late String username;
+  late String currentUser; // Usuario actualmente autenticado
 
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final Map<String, dynamic>? args =
+        ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+    if (args != null) {
+      username = args['username'];
+    }
     initializeSharedPreferences();
     loadData();
     _loadUserInfo();
+    getCurrentUser(); // Obtener el usuario actualmente autenticado
   }
 
   Future<void> initializeSharedPreferences() async {
@@ -67,6 +75,11 @@ class _ProfilePageState extends State<ProfilePage> {
       print('Error loading user information: $error');
       // Puedes manejar el error de alguna manera (por ejemplo, mostrar un mensaje al usuario)
     }
+  }
+
+  Future<void> getCurrentUser() async {
+    final authService = AuthService();
+    currentUser = await authService.loadUserData('username');
   }
 
   @override
@@ -200,18 +213,79 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildAboutMeSubSection(String title, String? content) {
+    final isCurrentUserProfile = currentUser == widget.username; // Comparar con el usuario autenticado
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            if (isCurrentUserProfile) // Mostrar el botón de edición solo si es el perfil del usuario autenticado
+              IconButton(
+                icon: Icon(Icons.edit),
+                onPressed: () {
+                  _editAboutMe(title, content);
+                },
+              ),
+          ],
         ),
         const SizedBox(height: 8),
         Text(content ??
             'No especificado'), // Puedes personalizar el mensaje si el contenido está vacío
         const SizedBox(height: 16),
       ],
+    );
+  }
+
+  void _editAboutMe(String title, String? content) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        String updatedContent =
+            content ?? ''; // Inicializa con el contenido actual
+        return AlertDialog(
+          title: Text('Editar $title'),
+          content: TextFormField(
+            initialValue: content ?? '',
+            onChanged: (value) {
+              updatedContent = value; // Actualiza el contenido al escribir
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Cierra el diálogo
+              },
+              child: Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () async {
+                final authService = AuthService();
+                final username = userInfo?['username'];
+                final accessToken = _prefs.getString('accessToken');
+                await authService.updateProfile(
+                  username,
+                  job: title == 'Trabajo' ? updatedContent : null,
+                  religion: title == 'Religión' ? updatedContent : null,
+                  politicPreference:
+                      title == 'Política' ? updatedContent : null,
+                  aboutMe: title == 'Acerca de mí' ? updatedContent : null,
+                  accessToken:
+                      accessToken, // Asegúrate de pasar el token de acceso
+                );
+                Navigator.of(context).pop(); // Cierra el diálogo
+                // Actualiza la información del usuario después de la edición
+                await _loadUserInfo();
+              },
+              child: Text('Guardar'),
+            ),
+          ],
+        );
+      },
     );
   }
 

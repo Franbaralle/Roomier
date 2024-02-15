@@ -12,7 +12,9 @@ class AuthService {
 
   factory AuthService() => _instance;
 
-  AuthService._internal();
+  AuthService._internal() {
+    initializeSharedPreferences();
+  }
 
   late SharedPreferences _prefs;
 
@@ -86,7 +88,7 @@ class AuthService {
 
           Navigator.pushReplacementNamed(
             context,
-            profilePageRoute,
+            homeRoute,
             arguments: {'username': profileData['username']},
           );
         } else {
@@ -357,6 +359,40 @@ class AuthService {
     } catch (error) {
       print('Error fetching random profiles: $error');
       return [];
+    }
+  }
+
+Future<void> updateProfile(
+    String username, {
+    String? job,
+    String? religion,
+    String? politicPreference,
+    String? aboutMe,
+    String? accessToken
+  }) async {
+    try {
+      final String updateProfileUrl = '$api/profile/$username';
+      final response = await http.put(
+        Uri.parse(updateProfileUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $accessToken', // Asegúrate de incluir el token de autenticación en los encabezados
+        },
+        body: json.encode({
+          'job': job,
+          'religion': religion,
+          'politicPreference': politicPreference,
+          'aboutMe': aboutMe,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        //print('Perfil actualizado correctamente');
+      } else {
+        print('Error al actualizar el perfil: ${response.statusCode}');
+      }
+    } catch (error) {
+      print('Error al conectar con el servidor: $error');
     }
   }
 }

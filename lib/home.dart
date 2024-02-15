@@ -180,8 +180,8 @@ Expanded(
                             ),
                             // Nombre de usuario
                             Positioned(
-                              bottom: 8.0,
-                              left: 8.0,
+                              bottom: 70.0,
+                              left: 128.0,
                               child: Text(
                                 profile['username'] ?? '',
                                 style: TextStyle(

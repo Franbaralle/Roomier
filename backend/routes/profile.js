@@ -34,4 +34,36 @@ router.get('/:username', async (req, res) => {
     }
 });
 
+router.put('/:username', async (req, res) => {
+    try {
+        const username = req.params.username; 
+        const updatedProfileData = req.body; 
+        console.log(req.params.username);
+
+        // Extraer el campo que se está modificando y su nuevo valor
+        const { job, religion, politicPreference, aboutMe } = updatedProfileData;
+
+        // Construir el objeto de actualización
+        const updateFields = {};
+        if (job) {
+            updateFields['personalInfo.job'] = job;
+        }
+        if (religion) {
+            updateFields['personalInfo.religion'] = religion;
+        }
+        if (politicPreference) {
+            updateFields['personalInfo.politicPreference'] = politicPreference;
+        }
+        if (aboutMe) {
+            updateFields['personalInfo.aboutMe'] = aboutMe;
+        }
+        // Actualizar el perfil en la base de datos
+        await User.findOneAndUpdate({ username }, { $set: updateFields }, { new: true });
+        res.status(200).json({ message: 'Perfil actualizado correctamente' });
+    } catch (error) {
+        console.error('Error al actualizar el perfil:', error);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+});
+
 module.exports = router;

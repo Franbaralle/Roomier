@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'dart:typed_data';
-//import 'my_image_picker.dart';
-import 'routes.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:http_parser/http_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'routes.dart';
 
 class AuthService {
   static final AuthService _instance = AuthService._internal();
@@ -17,6 +16,7 @@ class AuthService {
   }
 
   late SharedPreferences _prefs;
+  String? currentUserUsername;
 
   Future<void> saveUserData(String key, dynamic value) async {
     if (value is String) {
@@ -70,6 +70,7 @@ class AuthService {
 
       if (response.statusCode == 200) {
         // Hacer la solicitud del perfil en línea sin asignarla a una variable
+        currentUserUsername = username;
         final profileDataResponse = await http.get(
           Uri.parse('$api/profile/$username'),
           // Puedes agregar encabezados u otros parámetros según sea necesario
@@ -362,21 +363,20 @@ class AuthService {
     }
   }
 
-Future<void> updateProfile(
-    String username, {
-    String? job,
-    String? religion,
-    String? politicPreference,
-    String? aboutMe,
-    String? accessToken
-  }) async {
+  Future<void> updateProfile(String username,
+      {String? job,
+      String? religion,
+      String? politicPreference,
+      String? aboutMe,
+      String? accessToken}) async {
     try {
       final String updateProfileUrl = '$api/profile/$username';
       final response = await http.put(
         Uri.parse(updateProfileUrl),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $accessToken', // Asegúrate de incluir el token de autenticación en los encabezados
+          'Authorization':
+              'Bearer $accessToken', // Asegúrate de incluir el token de autenticación en los encabezados
         },
         body: json.encode({
           'job': job,
@@ -393,6 +393,59 @@ Future<void> updateProfile(
       }
     } catch (error) {
       print('Error al conectar con el servidor: $error');
+    }
+  }
+
+  Future<void> matchProfile(
+      String username, bool addToIsMatch, String accessToken, String currentUserUsername) async {
+    try {
+      final String matchProfileUrl = '$api/profile/match_profile/$username';
+      final response = await http.post(
+        Uri.parse(matchProfileUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $accessToken',
+        },
+        body: json.encode({
+          'isMatched': addToIsMatch,
+          'currentUserUsername': currentUserUsername
+        }), // Aquí se envía correctamente el valor isMatched
+      );
+
+      if (response.statusCode == 200) {
+        print('Perfil actualizado correctamente');
+      } else {
+        print('Error al actualizar el perfil: ${response.statusCode}');
+      }
+    } catch (error) {
+      print('Error al conectar con el servidor: $error');
+    }
+  }
+
+  Future<bool> checkMatch(String accessToken, String username, String currentUserUsername) async {
+    try {
+      final String matchCheckUrl = '$api/profile/check_match/$username';
+      final response = await http.post(
+        Uri.parse(matchCheckUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $accessToken',
+        },
+        body: json.encode({
+          'currentUserUsername': currentUserUsername,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = json.decode(response.body);
+        return responseData['isMatch'];
+      } else {
+        print('Error al verificar la coincidencia: ${response.statusCode}');
+        return false;
+      }
+    } catch (error) {
+      print('Error al conectar con el servidor: $error');
+      return false;
     }
   }
 }

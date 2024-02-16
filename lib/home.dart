@@ -56,36 +56,69 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Future<void> handleProfileButton(BuildContext context) async {
-    final String? accessToken = await AuthService().loadUserData('accessToken');
-    final String? username = await AuthService().loadUserData('username');
-
-    if (accessToken != null && username != null) {
-      final Map<String, dynamic>? profileData =
-          await AuthService().getUserInfoFromToken(accessToken, username);
-
-      if (profileData != null) {
-        Navigator.pushNamed(
-          context,
-          profilePageRoute,
-          arguments: {'username': profileData['username']},
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Error al obtener los datos del perfil del usuario.'),
-            duration: Duration(seconds: 3),
+  Future<void> _showMatchPopup(
+      BuildContext context, Map<String, dynamic> profile) async {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('¡Tienes un nuevo Roomie!'),
+          content: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+                            Image.memory(
+                              base64Decode(profile['profilePhoto'] ?? ''),
+                              width: 250,
+                              height: 250,
+                              fit: BoxFit.cover,
+                            ),
+                                                Text(
+                                    profile['username'] ?? '',
+                                    style: const TextStyle(
+                                      color: Colors.black,
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+              SizedBox(height: 10),
+              Text('¿Qué esperas para hablarle?'),
+            ],
           ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Volver'),
+            ),
+            TextButton(
+              onPressed: () {
+/*                 Navigator.pushNamed(
+                  context,
+                  chatPageRoute,
+                  arguments: {'username': profile['username']},
+                ); */
+              },
+              child: Text('Enviar Mensaje'),
+            ),
+          ],
         );
-      }
-    } else {
-      // Manejo del caso en el que el token de acceso o el nombre de usuario sean nulos
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No se ha iniciado sesión.'),
-          duration: Duration(seconds: 3),
-        ),
-      );
+      },
+    );
+  }
+
+  Future<void> matchProfile(String username, bool addToIsMatch) async {
+    final String? accessToken = await AuthService().loadUserData('accessToken');
+    final String? currentUserUsername =
+        await AuthService().loadUserData('username');
+    if (accessToken != null && currentUserUsername != null) {
+      final authService = AuthService();
+      await authService.matchProfile(
+          currentUserUsername, addToIsMatch, accessToken, username);
+      setState(() {
+        homeProfiles.removeWhere((profile) => profile['username'] == username);
+      });
     }
   }
 
@@ -97,7 +130,7 @@ class _HomePageState extends State<HomePage> {
       ),
       body: Column(
         children: [
-Expanded(
+          Expanded(
             child: Stack(
               alignment: Alignment.center,
               children: homeProfiles.asMap().entries.map((entry) {
@@ -131,7 +164,6 @@ Expanded(
                       }
                     },
                     onTap: () {
-                      // Navegar al perfil del usuario
                       Navigator.pushNamed(
                         context,
                         profilePageRoute,
@@ -139,7 +171,7 @@ Expanded(
                       );
                     },
                     child: Container(
-                      margin: EdgeInsets.symmetric(
+                      margin: const EdgeInsets.symmetric(
                         horizontal: 550,
                         vertical: 20,
                       ),
@@ -152,18 +184,16 @@ Expanded(
                         borderRadius: BorderRadius.circular(10),
                         child: Stack(
                           children: [
-                            // Imagen de perfil
                             Image.memory(
                               base64Decode(profile['profilePhoto'] ?? ''),
                               width: double.infinity,
                               height: double.infinity,
                               fit: BoxFit.cover,
                             ),
-                            // Sombreado debajo de la imagen
                             Positioned.fill(
                               child: Container(
                                 decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.only(
+                                  borderRadius: const BorderRadius.only(
                                     bottomLeft: Radius.circular(10),
                                     bottomRight: Radius.circular(10),
                                   ),
@@ -178,17 +208,66 @@ Expanded(
                                 ),
                               ),
                             ),
-                            // Nombre de usuario
                             Positioned(
                               bottom: 70.0,
                               left: 128.0,
-                              child: Text(
-                                profile['username'] ?? '',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    profile['username'] ?? '',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      IconButton(
+                                        onPressed: () async {
+                                          final String? accessToken =
+                                              await AuthService()
+                                                  .loadUserData('accessToken');
+                                          final String? currentUserUsername =
+                                              await AuthService()
+                                                  .loadUserData('username');
+                                          if (accessToken != null &&
+                                              currentUserUsername != null) {
+                                            matchProfile(
+                                                profile['username'], true);
+                                            AuthService()
+                                                .checkMatch(
+                                              accessToken,
+                                              profile['username'],
+                                              currentUserUsername,
+                                            )
+                                                .then((isMatch) {
+                                              if (isMatch) {
+                                                _showMatchPopup(
+                                                    context, profile);
+                                              }
+                                            });
+                                          } else {
+                                            // Manejar el caso cuando accessToken o currentUserUsername es nulo
+                                          }
+                                        },
+                                        icon: const Icon(Icons.check,
+                                            color: Colors.green),
+                                      ),
+                                      IconButton(
+                                        onPressed: () {
+                                          matchProfile(
+                                              profile['username'], false);
+                                        },
+                                        icon: const Icon(Icons.close,
+                                            color: Colors.red),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ),
                             ),
                           ],
@@ -212,7 +291,7 @@ Expanded(
                 ),
                 IconButton(
                   onPressed: () {
-                    handleProfileButton(context);
+                    // Lógica para el botón del perfil
                   },
                   icon: savedData != null
                       ? CircleAvatar(

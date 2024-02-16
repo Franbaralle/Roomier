@@ -25,10 +25,12 @@ const registerRoutes = require('./routes/register');
 const authController = require('./controllers/authController');
 const profileRoute = require('./routes/profile');
 const homeRoute = require('./routes/home');
+const chatRoute = require('./routes/chat');
 app.use('/api/auth', authController);
 app.use('/api/register', registerRoutes);
 app.use('/api/profile', profileRoute);
 app.use('/api/home', homeRoute);
+app.use('/api/chat', chatRoute);
 
 app.use((req, res) => {
   res.status(404).send('Página no encontrada');

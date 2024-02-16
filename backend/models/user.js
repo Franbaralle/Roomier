@@ -14,8 +14,10 @@ const userSchema = new mongoose.Schema({
   },
   profilePhoto: { type: Buffer, required: false },
   verificationCode: { type: String, required: false },
-  isVerified: { type: Boolean, default: false }
-}); 
+  isVerified: { type: Boolean, default: false },
+  isMatch: [{ type:String }],
+  notMatch: [{ type: String }]
+});
 
 const User = mongoose.model('User', userSchema);
 

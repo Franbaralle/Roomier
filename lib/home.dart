@@ -56,6 +56,39 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  Future<void> handleProfileButton(BuildContext context) async {
+    final String? accessToken = await AuthService().loadUserData('accessToken');
+    final String? username = await AuthService().loadUserData('username');
+
+    if (accessToken != null && username != null) {
+      final Map<String, dynamic>? profileData =
+          await AuthService().getUserInfoFromToken(accessToken, username);
+
+      if (profileData != null) {
+        Navigator.pushNamed(
+          context,
+          profilePageRoute,
+          arguments: {'username': profileData['username']},
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error al obtener los datos del perfil del usuario.'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    } else {
+      // Manejo del caso en el que el token de acceso o el nombre de usuario sean nulos
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No se ha iniciado sesión.'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
   Future<void> _showMatchPopup(
       BuildContext context, Map<String, dynamic> profile) async {
     showDialog(
@@ -291,7 +324,7 @@ class _HomePageState extends State<HomePage> {
                 ),
                 IconButton(
                   onPressed: () {
-                    // Lógica para el botón del perfil
+                    handleProfileButton(context);
                   },
                   icon: savedData != null
                       ? CircleAvatar(

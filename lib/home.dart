@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'auth_service.dart';
 import 'routes.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'chat_service.dart'; // Importamos el servicio de chat
 
 class HomePage extends StatefulWidget {
   @override
@@ -79,7 +80,6 @@ class _HomePageState extends State<HomePage> {
         );
       }
     } else {
-      // Manejo del caso en el que el token de acceso o el nombre de usuario sean nulos
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('No se ha iniciado sesión.'),
@@ -89,57 +89,81 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Future<void> _showMatchPopup(
-      BuildContext context, Map<String, dynamic> profile) async {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('¡Tienes un nuevo Roomie!'),
-          content: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-                            Image.memory(
-                              base64Decode(profile['profilePhoto'] ?? ''),
-                              width: 250,
-                              height: 250,
-                              fit: BoxFit.cover,
-                            ),
-                                                Text(
-                                    profile['username'] ?? '',
-                                    style: const TextStyle(
-                                      color: Colors.black,
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-              SizedBox(height: 10),
-              Text('¿Qué esperas para hablarle?'),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text('Volver'),
+Future<void> _showMatchPopup(
+    BuildContext context, Map<String, dynamic> profile) async {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text('¡Tienes un nuevo Roomie!'),
+        content: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.memory(
+              base64Decode(profile['profilePhoto'] ?? ''),
+              width: 250,
+              height: 250,
+              fit: BoxFit.cover,
             ),
-            TextButton(
-              onPressed: () {
-/*                 Navigator.pushNamed(
-                  context,
-                  chatPageRoute,
-                  arguments: {'username': profile['username']},
-                ); */
-              },
-              child: Text('Enviar Mensaje'),
+            Text(
+              profile['username'] ?? '',
+              style: const TextStyle(
+                color: Colors.black,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
             ),
+            SizedBox(height: 10),
+            Text('¿Qué esperas para hablarle?'),
           ],
-        );
-      },
-    );
-  }
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: Text('Volver'),
+          ),
+          TextButton(
+            onPressed: () async {
+              final String? currentUserUsername =
+                  await AuthService().loadUserData('username');
+              if (currentUserUsername != null) {
+                final chatId = await ChatService.createChat(
+                  currentUserUsername,
+                  profile['username'],
+                );
+                print('A VER QUE CHOTA TRAE ESTO $currentUserUsername');
+                print('Y ESTO QUE MIERDA TRAE ${profile['username']}');
+                if (chatId != null) {
+                  Navigator.of(context).pop(); // Cerrar el diálogo actual
+                  Navigator.of(context).pushNamed( // Usar un nuevo contexto
+                    chatRoute,
+                    arguments: {
+                      'profile': profile,
+                      'chatId': chatId,
+                    },
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'No se pudo crear el chat. Inténtalo de nuevo más tarde.',
+                      ),
+                      duration: Duration(seconds: 3),
+                    ),
+                  );
+                }
+              }
+            },
+            child: Text('Enviar Mensaje'),
+          ),
+        ],
+      );
+    },
+  );
+}
 
   Future<void> matchProfile(String username, bool addToIsMatch) async {
     final String? accessToken = await AuthService().loadUserData('accessToken');
@@ -152,6 +176,41 @@ class _HomePageState extends State<HomePage> {
       setState(() {
         homeProfiles.removeWhere((profile) => profile['username'] == username);
       });
+    }
+  }
+
+  // Método para enviar el mensaje al chat
+  void _sendMessage(String chatId, String message) async {
+    final String? accessToken = await AuthService().loadUserData('accessToken');
+    final String? currentUsername =
+        await AuthService().loadUserData('username');
+
+    if (accessToken != null && currentUsername != null) {
+      try {
+        await ChatService.sendMessage(chatId, currentUsername, message);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Mensaje enviado correctamente'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      } catch (error) {
+        print('Error sending message: $error');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error al enviar el mensaje'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+              'Error: no se pudo obtener el token de acceso o el nombre de usuario'),
+          duration: Duration(seconds: 3),
+        ),
+      );
     }
   }
 

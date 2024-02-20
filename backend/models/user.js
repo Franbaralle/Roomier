@@ -16,7 +16,8 @@ const userSchema = new mongoose.Schema({
   verificationCode: { type: String, required: false },
   isVerified: { type: Boolean, default: false },
   isMatch: [{ type:String }],
-  notMatch: [{ type: String }]
+  notMatch: [{ type: String }],
+  chatId: { type: mongoose.Schema.Types.ObjectId, ref: 'Chat', required: false } 
 });
 
 const User = mongoose.model('User', userSchema);

@@ -19,7 +19,8 @@ router.get('/:username', async (req, res) => {
             birthdate: user.birthdate,
             preferences: user.preferences,
             personalInfo: user.personalInfo,
-            profilePhoto: user.profilePhoto
+            profilePhoto: user.profilePhoto,
+            chatId: user.chatId // Agregar el campo chatId al perfil
         };
 
         if (user.profilePhoto) {
@@ -70,9 +71,6 @@ router.post('/match_profile/:username', async (req, res) => {
     const { username } = req.params;
     const { isMatched, currentUserUsername } = req.body;
 
-    console.log('Username:', username);
-    console.log('isMatched:', isMatched); // Aquí deberías ver el valor booleano isMatched
-
     try {
         let updateField;
         if (isMatched) {
@@ -86,8 +84,6 @@ router.post('/match_profile/:username', async (req, res) => {
             updateField,
             { new: true }
         );
-
-        console.log('User:', user);
 
         if (!user) {
             return res.status(404).json({ message: 'Usuario no encontrado' });

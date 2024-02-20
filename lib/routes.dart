@@ -8,3 +8,4 @@ const String profilePageRoute = '/profile';
 const String emailRoute = '/register/verify';
 const String onUnknownRoute = '/404';
 const String homeRoute = '/home';
+const String chatRoute = '/chat';

@@ -29,10 +29,7 @@ app.use(express.json());
 
 // Usar variable de entorno para MongoDB
 const mongoUri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/flutter_auth';
-mongoose.connect(mongoUri, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-});
+mongoose.connect(mongoUri);
 
 const db = mongoose.connection;
 db.on('error', (error) => logger.error(`MongoDB connection error: ${error.message}`));

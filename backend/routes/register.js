@@ -17,14 +17,14 @@ const sendVerificationEmail = async (to, verificationCode) => {
         const transporter = nodemailer.createTransport({
             service: 'gmail',
             auth: {
-                user: 'roomier2024@gmail.com',
-                pass: 'uyaw gmlh jpto enbr',
+                user: process.env.EMAIL_USER || 'roomier2024@gmail.com',
+                pass: process.env.EMAIL_PASSWORD || 'uyaw gmlh jpto enbr',
             },
         });
 
         // Contenido del correo electrónico
         const mailOptions = {
-            from: 'roomier2024@gmail.com', // Remitente
+            from: process.env.EMAIL_USER || 'roomier2024@gmail.com', // Remitente
             to, 
             subject: 'Confirmación de Registro', // Asunto del correo
             text: `Tu código de verificación es: ${verificationCode}`, // Cuerpo del correo

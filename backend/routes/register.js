@@ -15,7 +15,9 @@ const sendVerificationEmail = async (to, verificationCode) => {
     try {
         // Configuración del servicio de envío de correos electrónicos (usando nodemailer)
         const transporter = nodemailer.createTransport({
-            service: 'gmail',
+            host: 'smtp.gmail.com',
+            port: 465,
+            secure: true, // true para puerto 465
             auth: {
                 user: process.env.EMAIL_USER || 'roomier2024@gmail.com',
                 pass: process.env.EMAIL_PASSWORD || 'uyaw gmlh jpto enbr',

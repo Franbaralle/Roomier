@@ -4,9 +4,11 @@ const router = express.Router();
 const User = require('../models/user');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const { jwtSecret, jwtExpiration, bcryptSaltRounds } = require('../config/security');
+const { loginLimiter, registerLimiter, passwordResetLimiter } = require('../middleware/rateLimiter');
 
 // Ruta para el registro de usuarios
-router.post('/register', async (req, res) => {
+router.post('/register', registerLimiter, async (req, res) => {
   try {
     const { username, password, email, birthdate } = req.body;
 
@@ -17,13 +19,20 @@ router.post('/register', async (req, res) => {
     }
 
     // Hashear la contraseña antes de guardarla
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, bcryptSaltRounds);
 
     // Crear un nuevo usuario
     const newUser = new User({ username, password: hashedPassword, email, birthdate });
     await newUser.save();
 
-    res.status(201).json({ message: 'Usuario registrado exitosamente' });
+    // Generar token JWT para el nuevo usuario
+    const token = jwt.sign({ username: newUser.username, userId: newUser._id }, jwtSecret, { expiresIn: jwtExpiration });
+
+    res.status(201).json({ 
+      message: 'Usuario registrado exitosamente',
+      token,
+      username: newUser.username
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Error en el servidor' });
@@ -31,7 +40,7 @@ router.post('/register', async (req, res) => {
 });
 
 // Ruta para el inicio de sesión
-router.post('/login', async (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
   try {
     const { username, password } = req.body;
 
@@ -49,9 +58,15 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Usuario o contraseña inválidos' });
     }
 
-    const token = jwt.sign({ username: user.username }, '614ck63rry5', { expiresIn: '1h' }); // Cambia 'secreto' por tu clave secreta
+    const token = jwt.sign({ username: user.username, userId: user._id }, jwtSecret, { expiresIn: jwtExpiration });
 
-    res.status(200).json({ message: 'Inicio de sesión exitoso', token });
+    res.status(200).json({ 
+      message: 'Inicio de sesión exitoso', 
+      token,
+      username: user.username,
+      email: user.email,
+      isAdmin: user.isAdmin || false
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Error interno del servidor' });
@@ -59,7 +74,7 @@ router.post('/login', async (req, res) => {
 });
 
 // Ruta para actualizar la contraseña
-router.put('/update-password/:username', async (req, res) => {
+router.put('/update-password/:username', passwordResetLimiter, async (req, res) => {
   const { username } = req.params;
   const { newPassword } = req.body;
 
@@ -72,7 +87,7 @@ router.put('/update-password/:username', async (req, res) => {
     }
 
     // Hashear la nueva contraseña antes de guardarla
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const hashedPassword = await bcrypt.hash(newPassword, bcryptSaltRounds);
     user.password = hashedPassword;
 
     await user.save();

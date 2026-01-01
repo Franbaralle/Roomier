@@ -114,6 +114,85 @@ router.post('/personal_info', async (req, res) => {
     }
 });
 
+// Ruta para manejar hábitos de convivencia durante el registro
+router.post('/living_habits', async (req, res) => {
+    const { username, livingHabits, dealBreakers } = req.body;
+
+    try {
+        const user = await User.findOne({ username });
+
+        if (!user) {
+            return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+
+        // Actualizar hábitos de convivencia
+        if (livingHabits) {
+            user.livingHabits = {
+                smoker: livingHabits.smoker || false,
+                hasPets: livingHabits.hasPets || false,
+                acceptsPets: livingHabits.acceptsPets || false,
+                cleanliness: livingHabits.cleanliness || 'normal',
+                noiseLevel: livingHabits.noiseLevel || 'normal',
+                schedule: livingHabits.schedule || 'normal',
+                socialLevel: livingHabits.socialLevel || 'friendly',
+                hasGuests: livingHabits.hasGuests || false,
+                drinker: livingHabits.drinker || 'social'
+            };
+        }
+
+        // Actualizar deal breakers
+        if (dealBreakers) {
+            user.dealBreakers = {
+                noSmokers: dealBreakers.noSmokers || false,
+                noPets: dealBreakers.noPets || false,
+                noParties: dealBreakers.noParties || false,
+                noChildren: dealBreakers.noChildren || false
+            };
+        }
+
+        await user.save();
+
+        return res.json({ message: 'Hábitos de convivencia actualizados exitosamente' });
+    } catch (error) {
+        console.error('Error al actualizar hábitos de convivencia:', error);
+        return res.status(500).json({ message: 'Error interno del servidor' });
+    }
+});
+
+// Ruta para manejar información de vivienda durante el registro
+router.post('/housing_info', async (req, res) => {
+    const { username, housingInfo } = req.body;
+
+    try {
+        const user = await User.findOne({ username });
+
+        if (!user) {
+            return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+
+        // Actualizar información de vivienda
+        if (housingInfo) {
+            user.housingInfo = {
+                budgetMin: housingInfo.budgetMin,
+                budgetMax: housingInfo.budgetMax,
+                preferredZones: housingInfo.preferredZones || [],
+                hasPlace: housingInfo.hasPlace || false,
+                moveInDate: housingInfo.moveInDate,
+                stayDuration: housingInfo.stayDuration,
+                city: housingInfo.city,
+                generalZone: housingInfo.generalZone
+            };
+        }
+
+        await user.save();
+
+        return res.json({ message: 'Información de vivienda actualizada exitosamente' });
+    } catch (error) {
+        console.error('Error al actualizar información de vivienda:', error);
+        return res.status(500).json({ message: 'Error interno del servidor' });
+    }
+});
+
 // Ruta para manejar la foto de perfil durante el registro
 router.post('/profile_photo', upload.single('profilePhoto'), async (req, res) => {
     try {

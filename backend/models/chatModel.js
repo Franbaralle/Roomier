@@ -5,8 +5,10 @@ const chatSchema = new mongoose.Schema({
     messages: [{
         sender: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
         content: String,
-        timestamp: { type: Date, default: Date.now }
-    }]
+        timestamp: { type: Date, default: Date.now },
+        read: { type: Boolean, default: false }
+    }],
+    lastMessage: { type: Date, default: Date.now }
 });
 
 const Chat = mongoose.model('Chat', chatSchema);

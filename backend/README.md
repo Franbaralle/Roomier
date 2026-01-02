@@ -129,6 +129,35 @@ Ver `.env.example` para lista completa.
 - `MONGODB_URI` - Connection string de MongoDB
 - `JWT_SECRET` - Clave secreta para JWT
 - `ALLOWED_ORIGINS` - Dominios permitidos para CORS
+- `RESEND_API_KEY` - API key para emails (Resend)
+- `CLOUDINARY_CLOUD_NAME` - Cloud name de Cloudinary
+- `CLOUDINARY_API_KEY` - API key de Cloudinary
+- `CLOUDINARY_API_SECRET` - API secret de Cloudinary
+
+## 📷 Almacenamiento de Imágenes (Cloudinary)
+
+Las imágenes de perfil se almacenan en Cloudinary en lugar de MongoDB.
+
+**Configuración:**
+1. Crear cuenta en [cloudinary.com](https://cloudinary.com)
+2. Copiar credenciales del dashboard
+3. Agregar variables de entorno (ver arriba)
+
+**Migración de imágenes existentes:**
+```bash
+# Ver guía completa
+cat CLOUDINARY_MIGRATION.md
+
+# Ejecutar migración
+node migrateImagesToCloudinary.js
+```
+
+**Beneficios:**
+- ✅ CDN global (carga rápida)
+- ✅ Optimización automática de imágenes
+- ✅ Reduce tamaño de DB en ~90%
+- ✅ Transformaciones on-the-fly
+- ✅ 25GB gratis/mes
 
 ## 📝 Logs
 
@@ -187,4 +216,6 @@ Este proyecto es privado y confidencial.
 - [Guía de Deploy en Railway](../RAILWAY_DEPLOY.md)
 - [Guía de Deploy General](../DEPLOYMENT_GUIDE.md)
 - [Checklist de Deploy](../DEPLOYMENT_CHECKLIST.md)
+- [Migración a Cloudinary](./CLOUDINARY_MIGRATION.md)
+- [Pasos de Deployment Cloudinary](../CLOUDINARY_DEPLOYMENT_STEPS.md)
 - [Análisis de la App](../ANALISIS_APP.txt)

@@ -1,6 +1,7 @@
 const express = require('express');
 const { Resend } = require('resend');
 const multer = require('multer');
+const { uploadImage } = require('../utils/cloudinary');
 const storage = multer.memoryStorage();
 const upload = multer({
     storage: storage,
@@ -204,7 +205,6 @@ router.post('/profile_photo', upload.single('profilePhoto'), async (req, res) =>
             console.log('ERROR: No se proporcionó ninguna imagen');
             return res.status(400).json({ message: 'No se proporcionó ninguna imagen' });
         }
-        const profilePhoto = req.file.buffer;
 
         const user = await User.findOne({ username });
 
@@ -213,8 +213,20 @@ router.post('/profile_photo', upload.single('profilePhoto'), async (req, res) =>
             return res.status(404).json({ message: 'Usuario no encontrado' });
         }
 
-        user.profilePhoto = profilePhoto;
+        // Subir imagen a Cloudinary
+        console.log('Subiendo imagen a Cloudinary...');
+        const cloudinaryResult = await uploadImage(
+            req.file.buffer, 
+            'profile_photos', 
+            `user_${username}`
+        );
+        
+        // Guardar URL de Cloudinary en el usuario
+        user.profilePhoto = cloudinaryResult.secure_url;
+        user.profilePhotoPublicId = cloudinaryResult.public_id;
         await user.save();
+        
+        console.log('Imagen subida exitosamente a Cloudinary:', cloudinaryResult.secure_url);
 
         const verificationCode = generateVerificationCode();
         user.verificationCode = verificationCode;
@@ -224,7 +236,10 @@ router.post('/profile_photo', upload.single('profilePhoto'), async (req, res) =>
         await sendVerificationEmail(email, verificationCode);
         console.log('Email enviado exitosamente');
 
-        return res.json({ message: 'Foto de perfil actualizada exitosamente' });
+        return res.json({ 
+            message: 'Foto de perfil actualizada exitosamente',
+            photoUrl: cloudinaryResult.secure_url
+        });
     } catch (error) {
         console.error('Error al actualizar la foto de perfil:', error);
         return res.status(500).json({ message: 'Error interno del servidor' });

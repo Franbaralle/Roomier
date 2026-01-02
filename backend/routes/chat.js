@@ -93,13 +93,16 @@ router.get('/user_chats/:username', async (req, res) => {
                 msg.sender.username !== username && (msg.read === undefined || !msg.read)
             ).length;
 
-            // Convertir profilePhoto a base64 si es un Buffer
-            let profilePhotoBase64 = null;
+            // profilePhoto ahora es una URL de Cloudinary (String)
+            // Mantener compatibilidad con usuarios legacy que tienen Buffer
+            let profilePhotoUrl = null;
             if (otherUser?.profilePhoto) {
-                if (Buffer.isBuffer(otherUser.profilePhoto)) {
-                    profilePhotoBase64 = otherUser.profilePhoto.toString('base64');
-                } else if (typeof otherUser.profilePhoto === 'string') {
-                    profilePhotoBase64 = otherUser.profilePhoto;
+                if (typeof otherUser.profilePhoto === 'string') {
+                    // Es una URL de Cloudinary
+                    profilePhotoUrl = otherUser.profilePhoto;
+                } else if (Buffer.isBuffer(otherUser.profilePhoto)) {
+                    // Legacy: convertir Buffer a base64
+                    profilePhotoUrl = otherUser.profilePhoto.toString('base64');
                 }
             }
 
@@ -107,7 +110,7 @@ router.get('/user_chats/:username', async (req, res) => {
                 chatId: chat._id,
                 otherUser: {
                     username: otherUser?.username,
-                    profilePhoto: profilePhotoBase64
+                    profilePhoto: profilePhotoUrl
                 },
                 lastMessage: lastMessage ? {
                     content: lastMessage.content,

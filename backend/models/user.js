@@ -68,7 +68,13 @@ const userSchema = new mongoose.Schema({
     revealedContact: { type: Boolean, default: false }
   }],
   
-  profilePhoto: { type: Buffer, required: false },
+  // Foto de perfil (URL de Cloudinary)
+  profilePhoto: { type: String, required: false }, // URL de Cloudinary
+  profilePhotoPublicId: { type: String, required: false }, // Public ID en Cloudinary para eliminación
+  
+  // Campos obsoletos - mantener para migración gradual
+  profilePhotoBuffer: { type: Buffer, required: false }, // Buffer legacy (deprecated)
+  
   verificationCode: { type: String, required: false }, // Mantener por retrocompatibilidad
   isVerified: { type: Boolean, default: false }, // Mantener por retrocompatibilidad
   isMatch: [{ type:String }],

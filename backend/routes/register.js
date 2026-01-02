@@ -13,15 +13,20 @@ const User = require('../models/user');
 
 const sendVerificationEmail = async (to, verificationCode) => {
     try {
+        console.log('[EMAIL] Iniciando envío a:', to);
         // Configuración del servicio de envío de correos electrónicos (usando nodemailer)
         const transporter = nodemailer.createTransport({
             host: 'smtp.gmail.com',
-            port: 465,
-            secure: true, // true para puerto 465
+            port: 587,
+            secure: false, // false para STARTTLS
             auth: {
                 user: process.env.EMAIL_USER || 'roomier2024@gmail.com',
                 pass: process.env.EMAIL_PASSWORD || 'uyaw gmlh jpto enbr',
             },
+            tls: {
+                ciphers: 'SSLv3',
+                rejectUnauthorized: false
+            }
         });
 
         // Contenido del correo electrónico
@@ -33,9 +38,12 @@ const sendVerificationEmail = async (to, verificationCode) => {
         };
 
         // Envío del correo electrónico
-        await transporter.sendMail(mailOptions);
+        console.log('[EMAIL] Enviando email...');
+        const info = await transporter.sendMail(mailOptions);
+        console.log('[EMAIL] Email enviado exitosamente:', info.messageId);
     } catch (error) {
-        console.error('Error al enviar el correo electrónico de verificación:', error);
+        console.error('[EMAIL] Error al enviar el correo electrónico de verificación:', error);
+        throw error; // Re-lanzar el error para que el endpoint lo capture
     }
 };
 

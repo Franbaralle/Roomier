@@ -5,10 +5,14 @@ const socketIo = require('socket.io');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const logger = require('./utils/logger');
+const { initializeFirebase } = require('./utils/firebase');
 const app = express();
 const server = http.createServer(app);
 const PORT = process.env.PORT || 3000;
 const bodyParser = require('body-parser');
+
+// Inicializar Firebase Admin SDK
+initializeFirebase();
 
 // Confiar en proxy (necesario para Railway, Heroku, etc.)
 app.set('trust proxy', true);
@@ -60,6 +64,7 @@ const moderationRoute = require('./routes/moderation');
 const adminRoute = require('./routes/admin');
 const editProfileRoute = require('./routes/editProfile');
 const analyticsRoute = require('./routes/analytics');
+const notificationsRoute = require('./routes/notifications');
 
 app.use('/api/auth', authController);
 app.use('/api/register', registerRoutes);
@@ -70,6 +75,7 @@ app.use('/api/moderation', moderationRoute);
 app.use('/api/admin', adminRoute);
 app.use('/api/edit-profile', editProfileRoute);
 app.use('/api/analytics', analyticsRoute);
+app.use('/api/notifications', notificationsRoute);
 
 app.use((req, res) => {
   res.status(404).send('Página no encontrada');
@@ -96,6 +102,7 @@ if (process.env.NODE_ENV !== 'test') {
 // Configuración de Socket.IO
 const Chat = require('./models/chatModel');
 const User = require('./models/user');
+const { sendPushNotification } = require('./utils/firebase');
 
 // Mapa para rastrear usuarios conectados: userId -> socketId
 const connectedUsers = new Map();
@@ -158,6 +165,32 @@ io.on('connection', (socket) => {
           sender: { username: sender, _id: user._id }
         }
       });
+
+      // Enviar notificación push al otro usuario si no está conectado
+      const otherUser = chat.users.find(u => u.username !== sender);
+      if (otherUser) {
+        const otherUserData = await User.findOne({ username: otherUser.username });
+        
+        // Verificar si el otro usuario está conectado
+        const isOtherUserConnected = connectedUsers.has(otherUserData._id.toString());
+        
+        // Solo enviar notificación push si no está conectado o no está en el chat
+        if (!isOtherUserConnected && otherUserData.fcmToken) {
+          await sendPushNotification(
+            otherUserData.fcmToken,
+            {
+              title: `Nuevo mensaje de ${sender}`,
+              body: message.length > 100 ? message.substring(0, 100) + '...' : message
+            },
+            {
+              type: 'chat_message',
+              chatId: chatId,
+              sender: sender
+            }
+          );
+          logger.info(`Notificación push enviada a ${otherUser.username}`);
+        }
+      }
 
       logger.info(`Mensaje enviado en chat ${chatId} por ${sender}`);
     } catch (error) {

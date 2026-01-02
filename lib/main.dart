@@ -19,12 +19,21 @@ import 'terms_and_conditions_page.dart';
 import 'privacy_policy_page.dart';
 import 'admin_panel_page.dart';
 import 'edit_profile_page.dart';
+import 'notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding
       .ensureInitialized(); // Asegúrate de inicializar los widgets de Flutter
   await AuthService()
       .initializeSharedPreferences(); // Inicializa SharedPreferences
+  
+  // Inicializar Firebase y notificaciones
+  try {
+    await NotificationService().initialize();
+  } catch (e) {
+    print('Error inicializando notificaciones: $e');
+  }
+  
   runApp(MyApp());
 }
 

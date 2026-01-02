@@ -75,6 +75,9 @@ const userSchema = new mongoose.Schema({
   // Campos obsoletos - mantener para migración gradual
   profilePhotoBuffer: { type: Buffer, required: false }, // Buffer legacy (deprecated)
   
+  // Token FCM para notificaciones push
+  fcmToken: { type: String, required: false }, // Token de Firebase Cloud Messaging
+  
   verificationCode: { type: String, required: false }, // Mantener por retrocompatibilidad
   isVerified: { type: Boolean, default: false }, // Mantener por retrocompatibilidad
   isMatch: [{ type:String }],

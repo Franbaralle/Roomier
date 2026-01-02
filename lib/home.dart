@@ -10,21 +10,47 @@ class HomePage extends StatefulWidget {
   _HomePageState createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
   List<Map<String, dynamic>> homeProfiles = [];
   late SharedPreferences _prefs;
   String? savedData;
+  int _unreadMessagesCount = 0;
 
   Offset _imageOffset = Offset.zero;
   Offset _startPosition = Offset.zero;
   int _draggingIndex = -1;
+  double _rotationAngle = 0.0;
+  late AnimationController _animationController;
 
   @override
   void initState() {
     super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
     initializeSharedPreferences();
     loadData();
     _fetchHomeProfiles();
+    _loadUnreadMessagesCount();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  Color _getCompatibilityColor(int compatibility) {
+    if (compatibility >= 80) {
+      return Colors.green.shade600;
+    } else if (compatibility >= 60) {
+      return Colors.lightGreen.shade700;
+    } else if (compatibility >= 40) {
+      return Colors.orange.shade600;
+    } else {
+      return Colors.red.shade600;
+    }
   }
 
   Future<void> initializeSharedPreferences() async {
@@ -42,18 +68,30 @@ class _HomePageState extends State<HomePage> {
       final authService = AuthService();
       final profiles = await authService.fetchHomeProfiles();
 
-      final String? currentUsername =
-          await AuthService().loadUserData('username');
+      setState(() {
+        homeProfiles = profiles.cast<Map<String, dynamic>>();
+      });
+    } catch (error) {
+      // Error fetching profiles
+      print('Error al obtener perfiles: $error');
+    }
+  }
 
-      if (currentUsername != null) {
-        final filteredProfiles =
-            profiles.where((profile) => profile['username'] != currentUsername);
+  Future<void> _loadUnreadMessagesCount() async {
+    try {
+      final username = await AuthService().loadUserData('username');
+      if (username != null) {
+        final chats = await ChatService.getUserChats(username);
+        int totalUnread = 0;
+        for (var chat in chats) {
+          totalUnread += (chat['unreadCount'] ?? 0) as int;
+        }
         setState(() {
-          homeProfiles = filteredProfiles.toList().cast<Map<String, dynamic>>();
+          _unreadMessagesCount = totalUnread;
         });
       }
     } catch (error) {
-      print('Error fetching random profiles: $error');
+      // Error loading unread messages count
     }
   }
 
@@ -90,7 +128,10 @@ class _HomePageState extends State<HomePage> {
   }
 
 Future<void> _showMatchPopup(
-    BuildContext context, Map<String, dynamic> profile) async {
+    BuildContext context, Map<String, dynamic> profile, String chatId) async {
+  // Recargar el contador de mensajes no leídos
+  await _loadUnreadMessagesCount();
+  
   showDialog(
     context: context,
     builder: (BuildContext context) {
@@ -126,36 +167,18 @@ Future<void> _showMatchPopup(
             child: Text('Volver'),
           ),
           TextButton(
-            onPressed: () async {
-              final String? currentUserUsername =
-                  await AuthService().loadUserData('username');
-              if (currentUserUsername != null) {
-                final chatId = await ChatService.createChat(
-                  currentUserUsername,
-                  profile['username'],
-                );
-                print('A VER QUE CHOTA TRAE ESTO $currentUserUsername');
-                print('Y ESTO QUE MIERDA TRAE ${profile['username']}');
-                if (chatId != null) {
-                  Navigator.of(context).pop(); // Cerrar el diálogo actual
-                  Navigator.of(context).pushNamed( // Usar un nuevo contexto
-                    chatRoute,
-                    arguments: {
-                      'profile': profile,
-                      'chatId': chatId,
-                    },
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'No se pudo crear el chat. Inténtalo de nuevo más tarde.',
-                      ),
-                      duration: Duration(seconds: 3),
-                    ),
-                  );
-                }
-              }
+            onPressed: () {
+              Navigator.of(context).pop(); // Cerrar el diálogo actual
+              Navigator.of(context).pushNamed(
+                chatRoute,
+                arguments: {
+                  'profile': profile,
+                  'chatId': chatId,
+                },
+              ).then((_) {
+                // Recargar contador cuando vuelves del chat
+                _loadUnreadMessagesCount();
+              });
             },
             child: Text('Enviar Mensaje'),
           ),
@@ -179,6 +202,72 @@ Future<void> _showMatchPopup(
     }
   }
 
+  Future<void> _swipeCard(int index, bool isLike) async {
+    if (index < 0 || index >= homeProfiles.length) return;
+    
+    final profile = homeProfiles[index];
+    final screenWidth = MediaQuery.of(context).size.width;
+    
+    // Animar el swipe (izquierda = like, derecha = nope)
+    final targetOffset = isLike ? -screenWidth : screenWidth;
+    
+    setState(() {
+      _draggingIndex = index;
+    });
+
+    // Animación suave
+    for (double i = 0; i <= 1.0; i += 0.05) {
+      await Future.delayed(const Duration(milliseconds: 10));
+      if (mounted) {
+        setState(() {
+          _imageOffset = Offset(targetOffset * i, 0);
+          _rotationAngle = (isLike ? -0.2 : 0.2) * i;
+        });
+      }
+    }
+
+    // Realizar el match
+    if (isLike) {
+      final String? accessToken = await AuthService().loadUserData('accessToken');
+      final String? currentUserUsername = await AuthService().loadUserData('username');
+      
+      if (accessToken != null && currentUserUsername != null) {
+        await matchProfile(profile['username'], true);
+        
+        // Verificar si hay match
+        final isMatch = await AuthService().checkMatch(
+          accessToken,
+          profile['username'],
+          currentUserUsername,
+        );
+        
+        if (isMatch && mounted) {
+          // Crear el chat automáticamente cuando hay match
+          final chatId = await ChatService.createChat(
+            currentUserUsername,
+            profile['username'],
+          );
+          
+          if (chatId != null) {
+            // Mostrar popup con el chatId ya creado
+            _showMatchPopup(context, profile, chatId);
+          }
+        }
+      }
+    } else {
+      await matchProfile(profile['username'], false);
+    }
+
+    // Resetear estado
+    if (mounted) {
+      setState(() {
+        _draggingIndex = -1;
+        _imageOffset = Offset.zero;
+        _rotationAngle = 0.0;
+      });
+    }
+  }
+
   // Método para enviar el mensaje al chat
   void _sendMessage(String chatId, String message) async {
     final String? accessToken = await AuthService().loadUserData('accessToken');
@@ -195,7 +284,6 @@ Future<void> _showMatchPopup(
           ),
         );
       } catch (error) {
-        print('Error sending message: $error');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Error al enviar el mensaje'),
@@ -217,9 +305,6 @@ Future<void> _showMatchPopup(
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Perfiles al Azar'),
-      ),
       body: Column(
         children: [
           Expanded(
@@ -231,37 +316,54 @@ Future<void> _showMatchPopup(
                 return Positioned(
                   top: index == _draggingIndex ? _imageOffset.dy : 0,
                   left: index == _draggingIndex ? _imageOffset.dx : 0,
-                  child: GestureDetector(
-                    onPanStart: (details) {
-                      setState(() {
-                        _draggingIndex = index;
-                        _startPosition = details.globalPosition;
-                      });
-                    },
-                    onPanUpdate: (details) {
-                      if (_draggingIndex == index) {
-                        setState(() {
-                          _imageOffset +=
-                              details.globalPosition - _startPosition;
-                          _startPosition = details.globalPosition;
-                        });
-                      }
-                    },
-                    onPanEnd: (details) {
-                      if (_draggingIndex == index) {
-                        setState(() {
-                          _draggingIndex = -1;
-                          _imageOffset = Offset.zero;
-                        });
-                      }
-                    },
-                    onTap: () {
-                      Navigator.pushNamed(
-                        context,
-                        profilePageRoute,
-                        arguments: {'username': profile['username']},
-                      );
-                    },
+                  child: Transform.rotate(
+                    angle: index == _draggingIndex ? _rotationAngle : 0,
+                    child: GestureDetector(
+                      onPanStart: (details) {
+                        if (index == 0) { // Solo la primera tarjeta es interactiva
+                          setState(() {
+                            _draggingIndex = index;
+                            _startPosition = details.globalPosition;
+                          });
+                        }
+                      },
+                      onPanUpdate: (details) {
+                        if (_draggingIndex == index && index == 0) {
+                          setState(() {
+                            _imageOffset += details.globalPosition - _startPosition;
+                            _startPosition = details.globalPosition;
+                            
+                            // Calcular rotación basada en el movimiento horizontal
+                            _rotationAngle = (_imageOffset.dx / 1000).clamp(-0.3, 0.3);
+                          });
+                        }
+                      },
+                      onPanEnd: (details) {
+                        if (_draggingIndex == index && index == 0) {
+                          final screenWidth = MediaQuery.of(context).size.width;
+                          final swipeThreshold = screenWidth * 0.3;
+                          
+                          if (_imageOffset.dx.abs() > swipeThreshold) {
+                            // Swipe detectado (izquierda = like, derecha = nope)
+                            final isLike = _imageOffset.dx < 0;
+                            _swipeCard(index, isLike);
+                          } else {
+                            // Volver a la posición original
+                            setState(() {
+                              _draggingIndex = -1;
+                              _imageOffset = Offset.zero;
+                              _rotationAngle = 0.0;
+                            });
+                          }
+                        }
+                      },
+                      onTap: () {
+                        Navigator.pushNamed(
+                          context,
+                          profilePageRoute,
+                          arguments: {'username': profile['username']},
+                        );
+                      },
                     child: Container(
                       margin: const EdgeInsets.symmetric(
                         horizontal: 550,
@@ -282,6 +384,66 @@ Future<void> _showMatchPopup(
                               height: double.infinity,
                               fit: BoxFit.cover,
                             ),
+                            // Indicador de LIKE
+                            if (index == _draggingIndex && _imageOffset.dx > 50)
+                              Positioned(
+                                top: 50,
+                                left: 50,
+                                child: Transform.rotate(
+                                  angle: -0.3,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                      vertical: 10,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                        color: Colors.red,
+                                        width: 4,
+                                      ),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      'NOPE',
+                                      style: TextStyle(
+                                        color: Colors.red,
+                                        fontSize: 32,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            // Indicador de NOPE
+                            if (index == _draggingIndex && _imageOffset.dx < -50)
+                              Positioned(
+                                top: 50,
+                                right: 50,
+                                child: Transform.rotate(
+                                  angle: 0.3,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                      vertical: 10,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                        color: Colors.green,
+                                        width: 4,
+                                      ),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      'LIKE',
+                                      style: TextStyle(
+                                        color: Colors.green,
+                                        fontSize: 32,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
                             Positioned.fill(
                               child: Container(
                                 decoration: BoxDecoration(
@@ -301,61 +463,158 @@ Future<void> _showMatchPopup(
                               ),
                             ),
                             Positioned(
-                              bottom: 70.0,
-                              left: 128.0,
+                              bottom: 20.0,
+                              left: 0,
+                              right: 0,
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
-                                  Text(
-                                    profile['username'] ?? '',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
+                                  // Porcentaje de compatibilidad
+                                  if (profile['compatibility'] != null)
+                                    Container(
+                                      margin: const EdgeInsets.only(bottom: 8),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: _getCompatibilityColor(profile['compatibility']),
+                                        borderRadius: BorderRadius.circular(20),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withOpacity(0.3),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(
+                                            Icons.favorite,
+                                            color: Colors.white,
+                                            size: 18,
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            '${profile['compatibility']}% Compatible',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                      vertical: 8,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withOpacity(0.6),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Column(
+                                      children: [
+                                        Text(
+                                          profile['username'] ?? '',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 28,
+                                            fontWeight: FontWeight.bold,
+                                            letterSpacing: 1.2,
+                                            shadows: [
+                                              Shadow(
+                                                offset: Offset(0, 2),
+                                                blurRadius: 4,
+                                                color: Colors.black45,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        if (profile['housingInfo']?['city'] != null) ...[
+                                          const SizedBox(height: 4),
+                                          Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              const Icon(
+                                                Icons.location_on,
+                                                color: Colors.white70,
+                                                size: 16,
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                '${profile['housingInfo']['city']} - ${profile['housingInfo']['generalZone'] ?? ''}',
+                                                style: const TextStyle(
+                                                  color: Colors.white70,
+                                                  fontSize: 14,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ],
                                     ),
                                   ),
-                                  const SizedBox(height: 10),
+                                  const SizedBox(height: 20),
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      IconButton(
-                                        onPressed: () async {
-                                          final String? accessToken =
-                                              await AuthService()
-                                                  .loadUserData('accessToken');
-                                          final String? currentUserUsername =
-                                              await AuthService()
-                                                  .loadUserData('username');
-                                          if (accessToken != null &&
-                                              currentUserUsername != null) {
-                                            matchProfile(
-                                                profile['username'], true);
-                                            AuthService()
-                                                .checkMatch(
-                                              accessToken,
-                                              profile['username'],
-                                              currentUserUsername,
-                                            )
-                                                .then((isMatch) {
-                                              if (isMatch) {
-                                                _showMatchPopup(
-                                                    context, profile);
-                                              }
-                                            });
-                                          } else {
-                                            // Manejar el caso cuando accessToken o currentUserUsername es nulo
-                                          }
-                                        },
-                                        icon: const Icon(Icons.check,
-                                            color: Colors.green),
+                                      // Botón de LIKE
+                                      Container(
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: Colors.white,
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.green.withOpacity(0.3),
+                                              blurRadius: 15,
+                                              spreadRadius: 2,
+                                            ),
+                                          ],
+                                        ),
+                                        child: IconButton(
+                                          iconSize: 35,
+                                          onPressed: () {
+                                            if (index == 0) {
+                                              _swipeCard(index, true);
+                                            }
+                                          },
+                                          icon: const Icon(
+                                            Icons.check,
+                                            color: Colors.green,
+                                          ),
+                                        ),
                                       ),
-                                      IconButton(
-                                        onPressed: () {
-                                          matchProfile(
-                                              profile['username'], false);
-                                        },
-                                        icon: const Icon(Icons.close,
-                                            color: Colors.red),
+                                      const SizedBox(width: 30),
+                                      // Botón de NOPE
+                                      Container(
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: Colors.white,
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.red.withOpacity(0.3),
+                                              blurRadius: 15,
+                                              spreadRadius: 2,
+                                            ),
+                                          ],
+                                        ),
+                                        child: IconButton(
+                                          iconSize: 35,
+                                          onPressed: () {
+                                            if (index == 0) {
+                                              _swipeCard(index, false);
+                                            }
+                                          },
+                                          icon: const Icon(
+                                            Icons.close,
+                                            color: Colors.red,
+                                          ),
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -365,6 +624,7 @@ Future<void> _showMatchPopup(
                           ],
                         ),
                       ),
+                    ),
                     ),
                   ),
                 );
@@ -380,6 +640,46 @@ Future<void> _showMatchPopup(
                     // Lógica para el botón del rayo
                   },
                   icon: const Icon(Icons.flash_on),
+                ),
+                Stack(
+                  children: [
+                    IconButton(
+                      onPressed: () {
+                        Navigator.pushNamed(context, chatsListRoute).then((_) {
+                          // Recargar contador cuando vuelves de la lista de chats
+                          _loadUnreadMessagesCount();
+                        });
+                      },
+                      icon: const Icon(Icons.chat_bubble),
+                    ),
+                    if (_unreadMessagesCount > 0)
+                      Positioned(
+                        right: 8,
+                        top: 8,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 16,
+                            minHeight: 16,
+                          ),
+                          child: Text(
+                            _unreadMessagesCount > 99
+                                ? '99+'
+                                : '$_unreadMessagesCount',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
                 IconButton(
                   onPressed: () {

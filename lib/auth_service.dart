@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:http_parser/http_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'routes.dart';
+import 'analytics_service.dart';
 
 class AuthService {
   static final AuthService _instance = AuthService._internal();
@@ -43,8 +44,8 @@ class AuthService {
     _prefs = await SharedPreferences.getInstance();
   }
 
-  static const String apiUrl = 'http://localhost:3000/api/auth';
-  static const String api = 'http://localhost:3000/api';
+  static const String apiUrl = 'https://roomier-production.up.railway.app/api/auth';
+  static const String api = 'https://roomier-production.up.railway.app/api';
   static DateTime? _selectedDate;
 
   static void setSelectedDate(DateTime date) {
@@ -81,11 +82,21 @@ class AuthService {
         if (profileDataResponse.statusCode == 200) {
           final Map<String, dynamic> responseData = json.decode(response.body);
           final String token = responseData['token'];
+          final bool isAdmin = responseData['isAdmin'] ?? false;
           final profileData = json.decode(profileDataResponse.body);
 
           await saveUserData('username', username);
           await saveUserData('accessToken', token);
+          await saveUserData('isAdmin', isAdmin);
           await saveUserData('profilePhoto', profileData['profilePhoto']);
+
+          // Track login event
+          try {
+            final analyticsService = AnalyticsService();
+            await analyticsService.trackLogin();
+          } catch (e) {
+            print('Analytics tracking failed: $e');
+          }
 
           Navigator.pushReplacementNamed(
             context,
@@ -270,6 +281,68 @@ class AuthService {
     }
   }
 
+  Future<void> updateLivingHabits(
+    String username,
+    Map<String, dynamic> livingHabitsData,
+    Map<String, dynamic> dealBreakersData,
+  ) async {
+    try {
+      final String updateLivingHabitsUrl = '$api/register/living_habits';
+      final response = await http.post(
+        Uri.parse(updateLivingHabitsUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'username': username,
+          'livingHabits': livingHabitsData,
+          'dealBreakers': dealBreakersData,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        print('Hábitos de convivencia actualizados exitosamente');
+      } else if (response.statusCode == 404) {
+        print('Usuario no encontrado');
+      } else {
+        print(
+            'Error al actualizar hábitos de convivencia. Status code: ${response.statusCode}');
+        print('Response Body: ${response.body}');
+      }
+    } catch (error) {
+      print('Error al actualizar hábitos de convivencia: $error');
+      throw error;
+    }
+  }
+
+  Future<void> updateHousingInfo(
+    String username,
+    Map<String, dynamic> housingInfoData,
+  ) async {
+    try {
+      final String updateHousingInfoUrl = '$api/register/housing_info';
+      final response = await http.post(
+        Uri.parse(updateHousingInfoUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'username': username,
+          'housingInfo': housingInfoData,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        print('Información de vivienda actualizada exitosamente');
+      } else if (response.statusCode == 404) {
+        print('Usuario no encontrado');
+      } else {
+        print(
+            'Error al actualizar información de vivienda. Status code: ${response.statusCode}');
+        print('Response Body: ${response.body}');
+      }
+    } catch (error) {
+      print('Error al actualizar información de vivienda: $error');
+      throw error;
+    }
+  }
+
   Future<void> updateProfilePhoto(
       String username, String email, Uint8List profilePhoto) async {
     try {
@@ -350,15 +423,26 @@ class AuthService {
 
   Future<List<dynamic>> fetchHomeProfiles() async {
     try {
-      final response = await http.get(Uri.parse('$api/home'));
+      // Obtener el username actual
+      final currentUsername = await loadUserData('username');
+      
+      if (currentUsername == null) {
+        print('No hay usuario actual');
+        return [];
+      }
+
+      final response = await http.get(
+        Uri.parse('$api/home?currentUser=$currentUsername')
+      );
+      
       if (response.statusCode == 200) {
         return json.decode(response.body);
       } else {
-        print('Failed to fetch random profiles');
+        print('Failed to fetch profiles: ${response.statusCode}');
         return [];
       }
     } catch (error) {
-      print('Error fetching random profiles: $error');
+      print('Error fetching profiles: $error');
       return [];
     }
   }
@@ -446,6 +530,163 @@ class AuthService {
     } catch (error) {
       print('Error al conectar con el servidor: $error');
       return false;
+    }
+  }
+
+  Future<bool> unmatchProfile(String username, String currentUserUsername) async {
+    try {
+      final String unmatchUrl = '$api/profile/unmatch/$username';
+      final response = await http.post(
+        Uri.parse(unmatchUrl),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'currentUserUsername': currentUserUsername,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        print('Match deshecho correctamente');
+        return true;
+      } else {
+        print('Error al deshacer el match: ${response.statusCode}');
+        return false;
+      }
+    } catch (error) {
+      print('Error al conectar con el servidor: $error');
+      return false;
+    }
+  }
+
+  Future<bool> revealInformation(
+    String currentUsername,
+    String matchedUsername,
+    String infoType,
+  ) async {
+    try {
+      final String revealInfoUrl = '$api/profile/reveal_info';
+      final response = await http.post(
+        Uri.parse(revealInfoUrl),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'currentUsername': currentUsername,
+          'matchedUsername': matchedUsername,
+          'infoType': infoType, // 'zones', 'budget', 'contact'
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        print('Información revelada correctamente');
+        return true;
+      } else {
+        print('Error al revelar información: ${response.statusCode}');
+        return false;
+      }
+    } catch (error) {
+      print('Error al conectar con el servidor: $error');
+      return false;
+    }
+  }
+
+  Future<Map<String, dynamic>> reportUser({
+    required String reportedUsername,
+    required String reason,
+    required String description,
+  }) async {
+    try {
+      final String? token = loadUserData('accessToken');
+      if (token == null) {
+        return {'success': false, 'message': 'No hay token de autenticación'};
+      }
+
+      final String reportUrl = '$api/moderation/report';
+      final response = await http.post(
+        Uri.parse(reportUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode({
+          'reportedUsername': reportedUsername,
+          'reason': reason,
+          'description': description,
+        }),
+      );
+
+      if (response.statusCode == 201) {
+        return {'success': true, 'message': 'Reporte enviado correctamente'};
+      } else {
+        final data = json.decode(response.body);
+        return {'success': false, 'message': data['message'] ?? 'Error al enviar el reporte'};
+      }
+    } catch (error) {
+      print('Error al reportar usuario: $error');
+      return {'success': false, 'message': 'Error al conectar con el servidor'};
+    }
+  }
+
+  Future<Map<String, dynamic>> blockUser(String blockedUsername) async {
+    try {
+      final String? token = loadUserData('accessToken');
+      if (token == null) {
+        return {'success': false, 'message': 'No hay token de autenticación'};
+      }
+
+      final String blockUrl = '$api/moderation/block';
+      final response = await http.post(
+        Uri.parse(blockUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode({
+          'blockedUsername': blockedUsername,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        return {'success': true, 'message': 'Usuario bloqueado correctamente'};
+      } else {
+        final data = json.decode(response.body);
+        return {'success': false, 'message': data['message'] ?? 'Error al bloquear el usuario'};
+      }
+    } catch (error) {
+      print('Error al bloquear usuario: $error');
+      return {'success': false, 'message': 'Error al conectar con el servidor'};
+    }
+  }
+
+  Future<Map<String, dynamic>> unblockUser(String blockedUsername) async {
+    try {
+      final String? token = loadUserData('accessToken');
+      if (token == null) {
+        return {'success': false, 'message': 'No hay token de autenticación'};
+      }
+
+      final String unblockUrl = '$api/moderation/unblock';
+      final response = await http.post(
+        Uri.parse(unblockUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode({
+          'blockedUsername': blockedUsername,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        return {'success': true, 'message': 'Usuario desbloqueado correctamente'};
+      } else {
+        final data = json.decode(response.body);
+        return {'success': false, 'message': data['message'] ?? 'Error al desbloquear el usuario'};
+      }
+    } catch (error) {
+      print('Error al desbloquear usuario: $error');
+      return {'success': false, 'message': 'Error al conectar con el servidor'};
     }
   }
 }

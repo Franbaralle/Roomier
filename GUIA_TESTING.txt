@@ -1,0 +1,666 @@
+═══════════════════════════════════════════════════════════════════
+                    GUÍA DE TESTING - ROOMIER
+                Pruebas de Mejoras Críticas Implementadas
+═══════════════════════════════════════════════════════════════════
+
+📅 Fecha: 31 de Diciembre de 2025
+
+═══════════════════════════════════════════════════════════════════
+                    🧪 CONFIGURACIÓN INICIAL
+═══════════════════════════════════════════════════════════════════
+
+1. Iniciar MongoDB:
+   - MongoDB debe estar corriendo en localhost:27017
+
+2. Iniciar Backend:
+   > cd backend
+   > node app.js
+   
+   ✓ Debe mostrar: "Conexion a MongoDB establecida con exito"
+   ✓ Backend corriendo en http://localhost:3000
+
+3. Iniciar Flutter:
+   > flutter run -d chrome
+   
+   ✓ App debe abrir en Chrome
+
+
+═══════════════════════════════════════════════════════════════════
+        🔐 PRUEBA 1: HASHING DE CONTRASEÑAS (BCRYPT)
+═══════════════════════════════════════════════════════════════════
+
+OBJETIVO: Verificar que las contraseñas se almacenan hasheadas
+
+PASOS:
+1. Crear un nuevo usuario desde la app
+   - Usuario: test_security_01
+   - Email: test@security.com
+   - Contraseña: Password123!
+
+2. Verificar en MongoDB:
+   > mongo
+   > use flutter_auth
+   > db.users.findOne({username: "test_security_01"})
+
+RESULTADO ESPERADO:
+✓ El campo "password" debe empezar con "$2b$" o "$2a$"
+✓ La contraseña NO debe ser "Password123!" en texto plano
+✓ Ejemplo válido: "$2b$10$iHKJDKJFkjdfkj3k4j5k6..."
+
+RESULTADO INVÁLIDO:
+✗ Si el password es "Password123!" (texto plano)
+✗ Si el password es legible
+
+
+═══════════════════════════════════════════════════════════════════
+        🎫 PRUEBA 2: JWT TOKENS
+═══════════════════════════════════════════════════════════════════
+
+OBJETIVO: Verificar que se generan tokens JWT correctamente
+
+PASOS CON LA APP:
+1. Hacer login con un usuario existente
+2. Abrir DevTools (F12) → Network
+3. Observar la respuesta del endpoint /api/auth/login
+
+RESULTADO ESPERADO:
+✓ Respuesta debe incluir campo "token"
+✓ Token tiene formato: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ..."
+✓ Respuesta incluye "username" y "email"
+
+PRUEBA CON CURL:
+> curl -X POST http://localhost:3000/api/auth/login ^
+  -H "Content-Type: application/json" ^
+  -d "{\"username\":\"test_security_01\",\"password\":\"Password123!\"}"
+
+RESULTADO ESPERADO:
+{
+  "message": "Inicio de sesión exitoso",
+  "token": "eyJhbGci...",
+  "username": "test_security_01",
+  "email": "test@security.com"
+}
+
+VERIFICAR EXPIRACIÓN DEL TOKEN:
+- El token debe tener expiración de 24 horas
+- Decodificar en https://jwt.io para verificar payload
+
+
+═══════════════════════════════════════════════════════════════════
+        ⏱️ PRUEBA 3: RATE LIMITING
+═══════════════════════════════════════════════════════════════════
+
+OBJETIVO: Verificar que los limitadores de tasa funcionan
+
+PRUEBA 3A: RATE LIMIT EN LOGIN
+--------------------------------
+PASOS:
+1. Intentar login con contraseña incorrecta 6 veces seguidas
+
+CURL (ejecutar 6 veces):
+> curl -X POST http://localhost:3000/api/auth/login ^
+  -H "Content-Type: application/json" ^
+  -d "{\"username\":\"test\",\"password\":\"wrong\"}"
+
+RESULTADO ESPERADO:
+✓ Intentos 1-5: Error 401 "Usuario o contraseña inválidos"
+✓ Intento 6: Error 429 "Demasiados intentos de inicio de sesión"
+✓ Mensaje: "Has excedido el número de intentos..."
+✓ Headers incluyen: RateLimit-Limit, RateLimit-Remaining
+
+PRUEBA 3B: RATE LIMIT EN REGISTRO
+----------------------------------
+PASOS:
+1. Intentar registrar 4 usuarios diferentes en menos de 1 hora
+
+CURL (ejecutar 4 veces con diferentes usernames):
+> curl -X POST http://localhost:3000/api/auth/register ^
+  -H "Content-Type: application/json" ^
+  -d "{\"username\":\"test1\",\"password\":\"pass\",\"email\":\"t1@t.com\",\"birthdate\":\"2000-01-01\"}"
+
+> curl -X POST http://localhost:3000/api/auth/register ^
+  -H "Content-Type: application/json" ^
+  -d "{\"username\":\"test2\",\"password\":\"pass\",\"email\":\"t2@t.com\",\"birthdate\":\"2000-01-01\"}"
+
+> curl -X POST http://localhost:3000/api/auth/register ^
+  -H "Content-Type: application/json" ^
+  -d "{\"username\":\"test3\",\"password\":\"pass\",\"email\":\"t3@t.com\",\"birthdate\":\"2000-01-01\"}"
+
+> curl -X POST http://localhost:3000/api/auth/register ^
+  -H "Content-Type: application/json" ^
+  -d "{\"username\":\"test4\",\"password\":\"pass\",\"email\":\"t4@t.com\",\"birthdate\":\"2000-01-01\"}"
+
+RESULTADO ESPERADO:
+✓ Intentos 1-3: Success (201)
+✓ Intento 4: Error 429 "Demasiados registros"
+
+PRUEBA 3C: RATE LIMIT EN CAMBIO DE CONTRASEÑA
+----------------------------------------------
+PASOS:
+1. Intentar cambiar contraseña 4 veces en 1 hora
+
+CURL (ejecutar 4 veces):
+> curl -X PUT http://localhost:3000/api/auth/update-password/test ^
+  -H "Content-Type: application/json" ^
+  -d "{\"newPassword\":\"NewPass123\"}"
+
+RESULTADO ESPERADO:
+✓ Intentos 1-3: Success o Error
+✓ Intento 4: Error 429 "Demasiados intentos"
+
+
+═══════════════════════════════════════════════════════════════════
+        🚫 PRUEBA 4: SISTEMA DE REPORTES Y BLOQUEO
+═══════════════════════════════════════════════════════════════════
+
+PREPARACIÓN:
+1. Crear 2 usuarios de prueba:
+   - Usuario A: reportTest01
+   - Usuario B: reportTest02
+2. Hacer login con ambos (obtener tokens)
+
+PRUEBA 4A: REPORTAR USUARIO
+----------------------------
+PASOS:
+1. Usuario A reporta a Usuario B
+
+CURL:
+> curl -X POST http://localhost:3000/api/moderation/report ^
+  -H "Content-Type: application/json" ^
+  -H "Authorization: Bearer {TOKEN_USUARIO_A}" ^
+  -d "{\"reportedUser\":\"reportTest02\",\"reason\":\"harassment\",\"description\":\"Comportamiento inapropiado\"}"
+
+RESULTADO ESPERADO:
+✓ Status: 201 Created
+✓ Mensaje: "Reporte enviado exitosamente..."
+✓ Incluye reportId
+
+VERIFICAR EN MONGO:
+> db.reports.find({reportedUser: "reportTest02"})
+
+✓ Debe existir el reporte
+✓ Status: "pending"
+✓ Reason: "harassment"
+
+CASOS DE ERROR A PROBAR:
+1. Reportar sin token:
+   ✓ Error 401 "Acceso denegado"
+
+2. Auto-reportarse:
+   > curl -X POST http://localhost:3000/api/moderation/report ^
+     -H "Authorization: Bearer {TOKEN}" ^
+     -d "{\"reportedUser\":\"reportTest01\",\"reason\":\"spam\"}"
+   
+   ✓ Error 400 "No puedes reportarte a ti mismo"
+
+3. Reportar mismo usuario dos veces:
+   ✓ Error 400 "Ya has reportado a este usuario anteriormente"
+
+4. Reportar usuario inexistente:
+   ✓ Error 404 "El usuario que intentas reportar no existe"
+
+PRUEBA 4B: BLOQUEAR USUARIO
+----------------------------
+PASOS:
+1. Usuario A bloquea a Usuario B
+
+CURL:
+> curl -X POST http://localhost:3000/api/moderation/block ^
+  -H "Content-Type: application/json" ^
+  -H "Authorization: Bearer {TOKEN_USUARIO_A}" ^
+  -d "{\"blockedUser\":\"reportTest02\"}"
+
+RESULTADO ESPERADO:
+✓ Status: 200 OK
+✓ Mensaje: "Usuario bloqueado exitosamente"
+✓ Retorna lista actualizada de blockedUsers
+
+VERIFICAR EN MONGO:
+> db.users.findOne({username: "reportTest01"}, {blockedUsers: 1})
+
+✓ blockedUsers debe incluir "reportTest02"
+
+PRUEBA 4C: USUARIO BLOQUEADO NO APARECE EN HOME
+------------------------------------------------
+PASOS:
+1. Usuario A hace request a /api/home
+
+CURL:
+> curl http://localhost:3000/api/home?currentUser=reportTest01
+
+RESULTADO ESPERADO:
+✓ La lista NO debe incluir "reportTest02"
+✓ Usuario bloqueado filtrado correctamente
+
+PRUEBA 4D: DESBLOQUEAR USUARIO
+-------------------------------
+CURL:
+> curl -X POST http://localhost:3000/api/moderation/unblock ^
+  -H "Content-Type: application/json" ^
+  -H "Authorization: Bearer {TOKEN_USUARIO_A}" ^
+  -d "{\"unblockedUser\":\"reportTest02\"}"
+
+RESULTADO ESPERADO:
+✓ Status: 200 OK
+✓ Mensaje: "Usuario desbloqueado exitosamente"
+✓ blockedUsers ya no incluye "reportTest02"
+
+PRUEBA 4E: OBTENER LISTA DE BLOQUEADOS
+---------------------------------------
+CURL:
+> curl http://localhost:3000/api/moderation/blocked ^
+  -H "Authorization: Bearer {TOKEN}"
+
+RESULTADO ESPERADO:
+✓ Status: 200 OK
+✓ Retorna array de usernames bloqueados
+
+PRUEBA 4F: OBTENER MIS REPORTES
+--------------------------------
+CURL:
+> curl http://localhost:3000/api/moderation/my-reports ^
+  -H "Authorization: Bearer {TOKEN}"
+
+RESULTADO ESPERADO:
+✓ Status: 200 OK
+✓ Lista de reportes hechos por el usuario
+✓ Incluye: reportedUser, reason, description, status, createdAt
+
+
+═══════════════════════════════════════════════════════════════════
+        📜 PRUEBA 5: TÉRMINOS Y POLÍTICA DE PRIVACIDAD
+═══════════════════════════════════════════════════════════════════
+
+PASOS:
+1. Abrir la app en Chrome
+2. En la página de login, hacer scroll hasta abajo
+3. Verificar que existen dos links
+
+PRUEBA 5A: TÉRMINOS Y CONDICIONES
+----------------------------------
+1. Click en "Términos y Condiciones"
+
+RESULTADO ESPERADO:
+✓ Navega a página de términos
+✓ Muestra 14 secciones numeradas
+✓ Incluye fecha: "31 de Diciembre de 2025"
+✓ Tiene advertencia en amarillo al final
+✓ Email de contacto: roomier2024@gmail.com
+✓ Diseño con Card elevada
+✓ Texto legible y bien formateado
+
+SECCIONES A VERIFICAR:
+1. Aceptación de los Términos
+2. Elegibilidad
+3. Uso de la Aplicación
+4. Contenido del Usuario
+5. Conducta Prohibida
+6. Verificación y Seguridad
+7. Privacidad de la Información
+8. Terminación de Cuenta
+9. Limitación de Responsabilidad
+10. Recomendaciones de Seguridad
+11. Propiedad Intelectual
+12. Modificaciones
+13. Legislación Aplicable
+14. Contacto
+
+PRUEBA 5B: POLÍTICA DE PRIVACIDAD
+----------------------------------
+1. Click en "Política de Privacidad"
+
+RESULTADO ESPERADO:
+✓ Navega a página de privacidad
+✓ Muestra 14 secciones numeradas
+✓ Incluye fecha actualizada
+✓ Tiene box azul de privacidad al final
+✓ Diseño consistente con términos
+✓ Menciona sistema de privacidad progresiva
+
+SECCIONES A VERIFICAR:
+1. Introducción
+2. Información que Recopilamos
+3. Cómo Usamos su Información
+4. Sistema de Privacidad Progresiva
+5. Compartir Información
+6. Seguridad de Datos
+7. Sus Derechos
+8. Retención de Datos
+9. Menores de Edad
+10. Cookies y Tecnologías Similares
+11. Transferencias Internacionales
+12. Cambios a esta Política
+13. Contacto y Preguntas
+14. Cumplimiento Legal
+
+
+═══════════════════════════════════════════════════════════════════
+        🔄 PRUEBA 6: INTEGRACIÓN COMPLETA
+═══════════════════════════════════════════════════════════════════
+
+ESCENARIO: Flujo completo de usuario con seguridad
+
+PASOS:
+1. Registrar nuevo usuario
+   ✓ Contraseña debe hashearse
+   ✓ Debe recibir token JWT
+   
+2. Hacer login
+   ✓ Contraseña debe verificarse contra hash
+   ✓ Debe recibir nuevo token
+   
+3. Ver home con token
+   ✓ No debe incluir usuarios bloqueados
+   
+4. Reportar un usuario
+   ✓ Requiere token válido
+   ✓ Reporte se guarda correctamente
+   
+5. Bloquear un usuario
+   ✓ Usuario desaparece del home
+   ✓ Match mutuo se elimina
+   
+6. Intentar login 6 veces con contraseña incorrecta
+   ✓ Se bloquea después de 5 intentos
+   
+7. Esperar 15 minutos
+   ✓ Rate limit se resetea
+   
+8. Login exitoso
+   ✓ Funciona normalmente
+
+
+═══════════════════════════════════════════════════════════════════
+        🧪 PROPUESTA: TESTS UNITARIOS AUTOMATIZADOS
+═══════════════════════════════════════════════════════════════════
+
+ESTRUCTURA DE TESTS:
+/backend/tests/
+  ├── auth.test.js          - Tests de autenticación
+  ├── rateLimiter.test.js   - Tests de rate limiting
+  ├── moderation.test.js    - Tests de reportes/bloqueo
+  ├── security.test.js      - Tests de seguridad general
+  └── integration.test.js   - Tests de integración
+
+TECNOLOGÍAS SUGERIDAS:
+- Jest: Framework de testing
+- Supertest: Testing de APIs HTTP
+- MongoDB Memory Server: DB en memoria para tests
+
+INSTALACIÓN:
+> npm install --save-dev jest supertest mongodb-memory-server
+
+═══════════════════════════════════════════════════════════════════
+EJEMPLO: auth.test.js
+═══════════════════════════════════════════════════════════════════
+
+const request = require('supertest');
+const app = require('../app');
+const User = require('../models/user');
+
+describe('Authentication Tests', () => {
+  
+  describe('POST /api/auth/register', () => {
+    it('should hash password with bcrypt', async () => {
+      const res = await request(app)
+        .post('/api/auth/register')
+        .send({
+          username: 'testuser',
+          password: 'plainpassword',
+          email: 'test@test.com',
+          birthdate: '2000-01-01'
+        });
+      
+      expect(res.statusCode).toBe(201);
+      
+      const user = await User.findOne({ username: 'testuser' });
+      expect(user.password).not.toBe('plainpassword');
+      expect(user.password).toMatch(/^\$2[aby]\$/);
+    });
+    
+    it('should return JWT token on registration', async () => {
+      const res = await request(app)
+        .post('/api/auth/register')
+        .send({
+          username: 'testuser2',
+          password: 'password',
+          email: 'test2@test.com',
+          birthdate: '2000-01-01'
+        });
+      
+      expect(res.statusCode).toBe(201);
+      expect(res.body).toHaveProperty('token');
+      expect(res.body.token).toMatch(/^eyJ/);
+    });
+  });
+  
+  describe('POST /api/auth/login', () => {
+    it('should verify hashed password correctly', async () => {
+      // Primero registrar
+      await request(app)
+        .post('/api/auth/register')
+        .send({
+          username: 'logintest',
+          password: 'correctpassword',
+          email: 'login@test.com',
+          birthdate: '2000-01-01'
+        });
+      
+      // Luego hacer login
+      const res = await request(app)
+        .post('/api/auth/login')
+        .send({
+          username: 'logintest',
+          password: 'correctpassword'
+        });
+      
+      expect(res.statusCode).toBe(200);
+      expect(res.body).toHaveProperty('token');
+    });
+    
+    it('should reject incorrect password', async () => {
+      const res = await request(app)
+        .post('/api/auth/login')
+        .send({
+          username: 'logintest',
+          password: 'wrongpassword'
+        });
+      
+      expect(res.statusCode).toBe(401);
+      expect(res.body.error).toContain('inválidos');
+    });
+  });
+});
+
+═══════════════════════════════════════════════════════════════════
+EJEMPLO: rateLimiter.test.js
+═══════════════════════════════════════════════════════════════════
+
+describe('Rate Limiting Tests', () => {
+  
+  it('should block after 5 failed login attempts', async () => {
+    // Intentar login 6 veces
+    for (let i = 0; i < 6; i++) {
+      const res = await request(app)
+        .post('/api/auth/login')
+        .send({
+          username: 'test',
+          password: 'wrong'
+        });
+      
+      if (i < 5) {
+        expect(res.statusCode).toBe(401);
+      } else {
+        expect(res.statusCode).toBe(429);
+        expect(res.body.error).toContain('Demasiados intentos');
+      }
+    }
+  });
+  
+  it('should include rate limit headers', async () => {
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({
+        username: 'test',
+        password: 'wrong'
+      });
+    
+    expect(res.headers).toHaveProperty('ratelimit-limit');
+    expect(res.headers).toHaveProperty('ratelimit-remaining');
+  });
+});
+
+═══════════════════════════════════════════════════════════════════
+EJEMPLO: moderation.test.js
+═══════════════════════════════════════════════════════════════════
+
+describe('Moderation Tests', () => {
+  let token;
+  let userId;
+  
+  beforeEach(async () => {
+    // Crear usuario y obtener token
+    const res = await request(app)
+      .post('/api/auth/register')
+      .send({
+        username: 'moderator',
+        password: 'pass',
+        email: 'mod@test.com',
+        birthdate: '2000-01-01'
+      });
+    
+    token = res.body.token;
+  });
+  
+  describe('POST /api/moderation/report', () => {
+    it('should create report with valid token', async () => {
+      const res = await request(app)
+        .post('/api/moderation/report')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          reportedUser: 'baduser',
+          reason: 'harassment',
+          description: 'Test report'
+        });
+      
+      expect(res.statusCode).toBe(201);
+      expect(res.body).toHaveProperty('reportId');
+    });
+    
+    it('should reject report without token', async () => {
+      const res = await request(app)
+        .post('/api/moderation/report')
+        .send({
+          reportedUser: 'baduser',
+          reason: 'harassment'
+        });
+      
+      expect(res.statusCode).toBe(401);
+    });
+    
+    it('should prevent self-reporting', async () => {
+      const res = await request(app)
+        .post('/api/moderation/report')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          reportedUser: 'moderator',
+          reason: 'spam'
+        });
+      
+      expect(res.statusCode).toBe(400);
+      expect(res.body.error).toContain('ti mismo');
+    });
+  });
+  
+  describe('POST /api/moderation/block', () => {
+    it('should block user successfully', async () => {
+      const res = await request(app)
+        .post('/api/moderation/block')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          blockedUser: 'baduser'
+        });
+      
+      expect(res.statusCode).toBe(200);
+      expect(res.body.blockedUsers).toContain('baduser');
+    });
+  });
+});
+
+═══════════════════════════════════════════════════════════════════
+CONFIGURACIÓN DE JEST (package.json)
+═══════════════════════════════════════════════════════════════════
+
+{
+  "scripts": {
+    "test": "jest --watchAll",
+    "test:coverage": "jest --coverage"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "coveragePathIgnorePatterns": ["/node_modules/"]
+  }
+}
+
+EJECUTAR TESTS:
+> npm test                  # Modo watch
+> npm run test:coverage     # Con coverage report
+
+
+═══════════════════════════════════════════════════════════════════
+        📊 CHECKLIST DE VERIFICACIÓN COMPLETA
+═══════════════════════════════════════════════════════════════════
+
+SEGURIDAD:
+[ ] Contraseñas hasheadas con bcrypt ($2b$10$...)
+[ ] JWT tokens generados correctamente
+[ ] Tokens incluyen userId y username
+[ ] Tokens expiran en 24 horas
+[ ] Rate limiting en login (5 intentos/15min)
+[ ] Rate limiting en registro (3 intentos/hora)
+[ ] Rate limiting en password reset (3 intentos/hora)
+
+MODERACIÓN:
+[ ] Reportar usuario funciona con token
+[ ] Bloquear usuario funciona
+[ ] Usuario bloqueado no aparece en home
+[ ] Desbloquear usuario funciona
+[ ] Ver lista de bloqueados funciona
+[ ] Ver mis reportes funciona
+[ ] Auto-reporte bloqueado
+[ ] Reporte duplicado bloqueado
+[ ] Usuarios que te bloquearon no aparecen en home
+
+DOCUMENTACIÓN LEGAL:
+[ ] Página de Términos y Condiciones visible
+[ ] Página de Política de Privacidad visible
+[ ] Links en página de login funcionan
+[ ] Contenido completo y legible
+[ ] Diseño consistente y profesional
+
+INTEGRACIÓN:
+[ ] Flujo completo de registro → login → home funciona
+[ ] Tokens persisten entre requests
+[ ] Rate limits se resetean correctamente
+[ ] MongoDB guarda datos correctamente
+
+
+═══════════════════════════════════════════════════════════════════
+                    🎯 PRÓXIMOS PASOS RECOMENDADOS
+═══════════════════════════════════════════════════════════════════
+
+1. Implementar tests unitarios automatizados
+2. Agregar CI/CD con GitHub Actions
+3. Configurar entorno de staging
+4. Implementar logging centralizado (Winston)
+5. Agregar monitoring (PM2)
+6. Configurar backup automático de MongoDB
+7. Migrar a MongoDB Atlas (cloud)
+8. Implementar S3 para imágenes
+9. Configurar dominio y HTTPS
+10. Deploy a servidor de producción
+
+
+═══════════════════════════════════════════════════════════════════
+Fin de Guía de Testing
+═══════════════════════════════════════════════════════════════════

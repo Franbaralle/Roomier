@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ChatService {
-  static const String apiUrl = 'http://localhost:3000/api/chat';
+  static const String apiUrl = 'https://roomier-production.up.railway.app/api/chat';
 
   // Método para crear un nuevo chat entre dos usuarios
 static Future<String?> createChat(String userA, String userB) async {
@@ -57,6 +57,78 @@ static Future<String?> createChat(String userA, String userB) async {
       }
     } catch (error) {
       print('Error sending message: $error');
+    }
+  }
+
+  // Método para obtener todos los chats de un usuario
+  static Future<List<Map<String, dynamic>>> getUserChats(String username) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$apiUrl/user_chats/$username'),
+        headers: <String, String>{
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        final List<dynamic> chats = responseData['chats'];
+        return chats.cast<Map<String, dynamic>>();
+      } else {
+        print('Error fetching user chats: ${response.statusCode}');
+        return [];
+      }
+    } catch (error) {
+      print('Error fetching user chats: $error');
+      return [];
+    }
+  }
+
+  // Método para obtener los mensajes de un chat específico
+  static Future<List<Map<String, dynamic>>> getChatMessages(String chatId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$apiUrl/messages/$chatId'),
+        headers: <String, String>{
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        final List<dynamic> messages = responseData['messages'];
+        return messages.cast<Map<String, dynamic>>();
+      } else {
+        print('Error fetching messages: ${response.statusCode}');
+        return [];
+      }
+    } catch (error) {
+      print('Error fetching messages: $error');
+      return [];
+    }
+  }
+
+  // Método para marcar mensajes como leídos
+  static Future<void> markMessagesAsRead(String chatId, String username) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$apiUrl/mark_as_read'),
+        headers: <String, String>{
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'chatId': chatId,
+          'username': username,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        print('Messages marked as read');
+      } else {
+        print('Error marking messages as read: ${response.statusCode}');
+      }
+    } catch (error) {
+      print('Error marking messages as read: $error');
     }
   }
 }

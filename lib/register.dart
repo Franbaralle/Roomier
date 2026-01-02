@@ -8,8 +8,12 @@ class RegisterPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
         title: const Text('Crear Cuenta'),
+        centerTitle: true,
+        elevation: 0,
+        backgroundColor: Colors.blue.shade700,
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -36,6 +40,7 @@ class _RegisterFormState extends State<RegisterForm> {
   TextEditingController passwordController = TextEditingController();
   TextEditingController emailController = TextEditingController();
   bool obscurePassword = true;
+  bool acceptedTerms = false;
 
   String? usernameError;
   String? passwordError;
@@ -43,53 +48,191 @@ class _RegisterFormState extends State<RegisterForm> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        SizedBox(
-          width: 300,
-          child: TextField(
-            controller: usernameController,
-            decoration: InputDecoration(
-                labelText: 'Username', errorText: usernameError),
-          ),
+    return Padding(
+      padding: const EdgeInsets.all(24.0),
+      child: Card(
+        elevation: 8,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
         ),
-        SizedBox(
-          width: 300,
-          child: TextField(
-            controller: passwordController,
-            obscureText: obscurePassword,
-            decoration: InputDecoration(
-              labelText: 'Password',
-              errorText: passwordError,
-              suffixIcon: IconButton(
-                icon: Icon(
-                  obscurePassword ? Icons.visibility : Icons.visibility_off,
-                ),
-                onPressed: () {
-                  setState(() {
-                    obscurePassword = !obscurePassword;
-                  });
-                },
+        child: Container(
+          width: 400,
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.person_add,
+                size: 64,
+                color: Colors.blue.shade700,
               ),
-            ),
+              const SizedBox(height: 16),
+              const Text(
+                'Crea tu cuenta',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Completa los datos para comenzar',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 32),
+              TextField(
+                controller: usernameController,
+                decoration: InputDecoration(
+                  labelText: 'Usuario',
+                  hintText: 'Elige un nombre de usuario',
+                  errorText: usernameError,
+                  prefixIcon: const Icon(Icons.account_circle),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey[50],
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: emailController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: InputDecoration(
+                  labelText: 'Email',
+                  hintText: 'tu@email.com',
+                  errorText: emailError,
+                  prefixIcon: const Icon(Icons.email_outlined),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey[50],
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: passwordController,
+                obscureText: obscurePassword,
+                decoration: InputDecoration(
+                  labelText: 'Contraseña',
+                  hintText: 'Mínimo 6 caracteres',
+                  errorText: passwordError,
+                  prefixIcon: const Icon(Icons.lock_outlined),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey[50],
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      obscurePassword ? Icons.visibility_off : Icons.visibility,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        obscurePassword = !obscurePassword;
+                      });
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              // Checkbox de términos y condiciones
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Checkbox(
+                    value: acceptedTerms,
+                    onChanged: (bool? value) {
+                      setState(() {
+                        acceptedTerms = value ?? false;
+                      });
+                    },
+                  ),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          acceptedTerms = !acceptedTerms;
+                        });
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 12.0),
+                        child: RichText(
+                          text: TextSpan(
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey[700],
+                            ),
+                            children: [
+                              const TextSpan(text: 'Acepto los '),
+                              WidgetSpan(
+                                child: GestureDetector(
+                                  onTap: () {
+                                    Navigator.pushNamed(context, '/legal/terms');
+                                  },
+                                  child: Text(
+                                    'Términos y Condiciones',
+                                    style: TextStyle(
+                                      color: Colors.blue.shade700,
+                                      decoration: TextDecoration.underline,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const TextSpan(text: ' y la '),
+                              WidgetSpan(
+                                child: GestureDetector(
+                                  onTap: () {
+                                    Navigator.pushNamed(context, '/legal/privacy');
+                                  },
+                                  child: Text(
+                                    'Política de Privacidad',
+                                    style: TextStyle(
+                                      color: Colors.blue.shade700,
+                                      decoration: TextDecoration.underline,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: acceptedTerms ? () {
+                    _registerWithAuthService();
+                  } : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: acceptedTerms ? Colors.blue.shade700 : Colors.grey,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 2,
+                  ),
+                  child: const Text(
+                    'Continuar',
+                    style: TextStyle(fontSize: 16, color: Colors.white),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
-        SizedBox(
-          width: 300,
-          child: TextField(
-            controller: emailController,
-            decoration:
-                InputDecoration(labelText: 'Email', errorText: emailError),
-          ),
-        ),
-        const SizedBox(height: 20),
-        ElevatedButton(
-          onPressed: () {
-              _registerWithAuthService();
-          },
-          child: const Text('Continuar'),
-        ),
-      ],
+      ),
     );
   }
 
@@ -136,12 +279,30 @@ class _RegisterFormState extends State<RegisterForm> {
         String username = usernameController.text;
         String password = passwordController.text;
         String email = emailController.text;
+        
+        // Verificar que la fecha de nacimiento esté seleccionada
+        DateTime? birthdate = AuthService.getSelectedDate();
+        if (birthdate == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Error: Fecha de nacimiento no seleccionada'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
 
         await widget.authService.register(
-            username, password, email, AuthService.getSelectedDate()!, context);
+            username, password, email, birthdate, context);
         Navigator.pushNamed(context, registerPreferencesRoute, arguments: {'username': usernameController.text, 'email': emailController.text});
       } catch (error) {
         print('Error durante el registro: $error');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error durante el registro: $error'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     }
   }

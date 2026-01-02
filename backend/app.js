@@ -7,6 +7,9 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const bodyParser = require('body-parser');
 
+// Confiar en proxy (necesario para Railway, Heroku, etc.)
+app.set('trust proxy', true);
+
 // Middleware de logging HTTP
 app.use(logger.httpMiddleware);
 

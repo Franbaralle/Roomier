@@ -77,12 +77,18 @@ app.use('/api/edit-profile', editProfileRoute);
 app.use('/api/analytics', analyticsRoute);
 app.use('/api/notifications', notificationsRoute);
 
-app.use((req, res) => {
-  res.status(404).send('Página no encontrada');
-});
-
+// Rutas de salud y raíz
 app.get('/', (req, res) => {
   res.send('Servidor en funcionamiento');
+});
+
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Middleware 404 debe ir AL FINAL
+app.use((req, res) => {
+  res.status(404).send('Página no encontrada');
 });
 
 // Manejador de errores global

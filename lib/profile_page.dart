@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'dart:convert';
 import 'routes.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'image_utils.dart';
 
 class ProfilePage extends StatefulWidget {
   final String username;
@@ -69,12 +70,12 @@ class _ProfilePageState extends State<ProfilePage> {
       }
 
       if (userInfo?['profilePhoto'] != null) {
-        // Convierte la cadena Base64 a datos binarios y actualiza el estado
-        final String base64String = userInfo?['profilePhoto'];
-        final Uint8List imageData = base64Decode(base64String);
-        setState(() {
-          profilePhoto = Image.memory(imageData);
-        });
+        final imageProvider = ImageUtils.getImageProvider(userInfo?['profilePhoto']);
+        if (imageProvider != null) {
+          setState(() {
+            profilePhoto = Image(image: imageProvider);
+          });
+        }
       }
     } catch (error) {
       print('Error loading user information: $error');
@@ -659,9 +660,9 @@ class _ProfilePageState extends State<ProfilePage> {
     final dynamic profilePhoto = userInfo?['profilePhoto'];
 
     if (profilePhoto != null && profilePhoto is String) {
-      try {
-        final Uint8List bytes = base64Decode(profilePhoto);
-
+      final imageProvider = ImageUtils.getImageProvider(profilePhoto);
+      
+      if (imageProvider != null) {
         return Container(
           margin: const EdgeInsets.all(16),
           child: Stack(
@@ -682,8 +683,8 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(24.0),
-                  child: Image.memory(
-                    bytes,
+                  child: Image(
+                    image: imageProvider,
                     width: 400,
                     height: 500,
                     fit: BoxFit.cover,
@@ -737,11 +738,7 @@ class _ProfilePageState extends State<ProfilePage> {
             ],
           ),
         );
-      } catch (e) {
-        print('Error decoding profile image: $e');
       }
-    } else {
-      print('Profile photo is null or not a String (base64): $profilePhoto');
     }
 
     return Container(

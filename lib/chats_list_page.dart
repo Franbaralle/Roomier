@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'chat_service.dart';
 import 'auth_service.dart';
 import 'routes.dart';
+import 'image_utils.dart';
 
 class ChatsListPage extends StatefulWidget {
   @override
@@ -145,11 +146,8 @@ class _ChatsListPageState extends State<ChatsListPage> {
                           children: [
                             CircleAvatar(
                               radius: 28,
-                              backgroundImage: otherUser['profilePhoto'] != null && otherUser['profilePhoto'] is String
-                                  ? MemoryImage(
-                                      base64Decode(otherUser['profilePhoto'] as String))
-                                  : null,
-                              child: otherUser['profilePhoto'] == null || otherUser['profilePhoto'] is! String
+                              backgroundImage: ImageUtils.getImageProvider(otherUser['profilePhoto']),
+                              child: ImageUtils.getImageProvider(otherUser['profilePhoto']) == null
                                   ? const Icon(Icons.person)
                                   : null,
                             ),
@@ -264,9 +262,7 @@ class _ChatsListPageState extends State<ChatsListPage> {
               },
               icon: _savedProfilePhoto != null
                   ? CircleAvatar(
-                      backgroundImage: MemoryImage(
-                        base64Decode(_savedProfilePhoto!),
-                      ),
+                      backgroundImage: ImageUtils.getImageProvider(_savedProfilePhoto),
                     )
                   : const Icon(Icons.person),
             ),

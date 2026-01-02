@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'chat_service.dart';
 import 'auth_service.dart';
 import 'reveal_info_widget.dart';
+import 'socket_service.dart';
+import 'dart:async';
 
 class ChatPage extends StatefulWidget {
   final Map<String, dynamic> profile;
@@ -18,11 +20,57 @@ class _ChatPageState extends State<ChatPage> {
   String _currentUser = '';
   String? _chatId;
   bool _isLoading = true;
+  final SocketService _socketService = SocketService();
+  StreamSubscription? _messageSubscription;
+  StreamSubscription? _typingSubscription;
+  StreamSubscription? _stopTypingSubscription;
+  bool _isOtherUserTyping = false;
+  Timer? _typingTimer;
 
   @override
   void initState() {
     super.initState();
     _loadCurrentUser();
+    _setupSocketListeners();
+  }
+
+  void _setupSocketListeners() {
+    // Escuchar mensajes recibidos
+    _messageSubscription = _socketService.onMessageReceived.listen((data) {
+      if (data['chatId'] == _chatId) {
+        setState(() {
+          _messages.add({
+            'sender': data['message']['sender'],
+            'content': data['message']['content'],
+            'timestamp': data['message']['timestamp'],
+            'read': data['message']['read'] ?? false,
+          });
+        });
+        
+        // Marcar como leído si estamos en el chat
+        if (_currentUser.isNotEmpty && _chatId != null) {
+          _socketService.markAsRead(_chatId!, _currentUser);
+        }
+      }
+    });
+
+    // Escuchar indicador de escritura
+    _typingSubscription = _socketService.onUserTyping.listen((data) {
+      if (data['chatId'] == _chatId && data['username'] != _currentUser) {
+        setState(() {
+          _isOtherUserTyping = true;
+        });
+      }
+    });
+
+    // Escuchar cuando dejan de escribir
+    _stopTypingSubscription = _socketService.onUserStopTyping.listen((data) {
+      if (data['chatId'] == _chatId) {
+        setState(() {
+          _isOtherUserTyping = false;
+        });
+      }
+    });
   }
 
   @override
@@ -36,6 +84,11 @@ class _ChatPageState extends State<ChatPage> {
     setState(() {
       _currentUser = currentUser ?? '';
     });
+    
+    // Conectar socket si el usuario está cargado
+    if (_currentUser.isNotEmpty) {
+      _socketService.connect(_currentUser);
+    }
   }
 
   void _initializeChatId() async {
@@ -49,6 +102,9 @@ class _ChatPageState extends State<ChatPage> {
       // Cargar mensajes existentes
       if (_chatId != null) {
         await _loadMessages(_chatId!);
+        
+        // Unirse a la sala de Socket.IO
+        _socketService.joinChat(_chatId!);
       }
     }
   }
@@ -196,6 +252,25 @@ class _ChatPageState extends State<ChatPage> {
                     },
                   ),
                 ),
+                // Indicador de escritura
+                if (_isOtherUserTyping)
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Row(
+                      children: [
+                        const SizedBox(width: 12),
+                        Text(
+                          '${widget.profile['username']} está escribiendo...',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                // Campo de texto y botón enviar
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: Row(
@@ -207,6 +282,20 @@ class _ChatPageState extends State<ChatPage> {
                             hintText: 'Escribe tu mensaje...',
                             border: OutlineInputBorder(),
                           ),
+                          onChanged: (text) {
+                            // Indicador de escritura
+                            if (_chatId != null && text.isNotEmpty) {
+                              _socketService.typing(_chatId!, _currentUser);
+                              
+                              // Cancelar el timer anterior
+                              _typingTimer?.cancel();
+                              
+                              // Crear nuevo timer para detener el indicador después de 2 segundos
+                              _typingTimer = Timer(const Duration(seconds: 2), () {
+                                _socketService.stopTyping(_chatId!, _currentUser);
+                              });
+                            }
+                          },
                         ),
                       ),
                       IconButton(
@@ -235,18 +324,28 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   void _sendMessage(String chatId, String message) async {
+    if (message.trim().isEmpty) return;
+
     try {
+      // Enviar mensaje via Socket.IO (tiempo real)
+      _socketService.sendMessage(
+        chatId: chatId,
+        sender: _currentUser,
+        message: message,
+      );
+
+      // También enviar via HTTP como respaldo
       await ChatService.sendMessage(chatId, _currentUser, message);
       
-      // Agregar el mensaje localmente a la lista
+      // Limpiar el controlador
       setState(() {
-        _messages.add({
-          'sender': {'username': _currentUser},
-          'content': message,
-          'timestamp': DateTime.now().toIso8601String(),
-        });
         _messageController.clear();
       });
+
+      // Detener indicador de escritura
+      if (_chatId != null) {
+        _socketService.stopTyping(_chatId!, _currentUser);
+      }
     } catch (error) {
       print('Error sending message: $error');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -444,5 +543,15 @@ class _ChatPageState extends State<ChatPage> {
         );
       }
     }
+  }
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    _messageSubscription?.cancel();
+    _typingSubscription?.cancel();
+    _stopTypingSubscription?.cancel();
+    _typingTimer?.cancel();
+    super.dispose();
   }
 }

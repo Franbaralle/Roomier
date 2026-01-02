@@ -411,8 +411,8 @@ ALTA PRIORIDAD (Primeras semanas):
 ✅ 3. Edición de perfil completo - COMPLETADO
 ✅ 4. Migración de imágenes a Cloudinary - COMPLETADO (2 usuarios migrados)
 5. Múltiples fotos de perfil
-5. Sistema de verificación real (al menos teléfono)
-✅ 6. Analytics básicos - COMPLETADO
+6. Sistema de verificación real (al menos teléfono)
+✅ 7. Analytics básicos - COMPLETADO
 
 MEDIA PRIORIDAD (Primer mes):
 1. Tutorial de onboarding

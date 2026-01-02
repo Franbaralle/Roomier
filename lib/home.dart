@@ -4,6 +4,7 @@ import 'auth_service.dart';
 import 'routes.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'chat_service.dart'; // Importamos el servicio de chat
+import 'image_utils.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -132,6 +133,8 @@ Future<void> _showMatchPopup(
   // Recargar el contador de mensajes no leídos
   await _loadUnreadMessagesCount();
   
+  final imageProvider = ImageUtils.getImageProvider(profile['profilePhoto']);
+  
   showDialog(
     context: context,
     builder: (BuildContext context) {
@@ -141,12 +144,19 @@ Future<void> _showMatchPopup(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Image.memory(
-              base64Decode(profile['profilePhoto'] ?? ''),
-              width: 250,
-              height: 250,
-              fit: BoxFit.cover,
-            ),
+            imageProvider != null
+              ? Image(
+                  image: imageProvider,
+                  width: 250,
+                  height: 250,
+                  fit: BoxFit.cover,
+                )
+              : Container(
+                  width: 250,
+                  height: 250,
+                  color: Colors.grey[300],
+                  child: Icon(Icons.person, size: 100),
+                ),
             Text(
               profile['username'] ?? '',
               style: const TextStyle(
@@ -378,12 +388,19 @@ Future<void> _showMatchPopup(
                         borderRadius: BorderRadius.circular(10),
                         child: Stack(
                           children: [
-                            Image.memory(
-                              base64Decode(profile['profilePhoto'] ?? ''),
-                              width: double.infinity,
-                              height: double.infinity,
-                              fit: BoxFit.cover,
-                            ),
+                            ImageUtils.getImageProvider(profile['profilePhoto']) != null
+                              ? Image(
+                                  image: ImageUtils.getImageProvider(profile['profilePhoto'])!,
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                  fit: BoxFit.cover,
+                                )
+                              : Container(
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                  color: Colors.grey[300],
+                                  child: Icon(Icons.person, size: 100),
+                                ),
                             // Indicador de LIKE
                             if (index == _draggingIndex && _imageOffset.dx > 50)
                               Positioned(
@@ -687,9 +704,7 @@ Future<void> _showMatchPopup(
                   },
                   icon: savedData != null
                       ? CircleAvatar(
-                          backgroundImage: MemoryImage(
-                            base64Decode(savedData!),
-                          ),
+                          backgroundImage: ImageUtils.getImageProvider(savedData),
                         )
                       : const Icon(Icons.person),
                 ),

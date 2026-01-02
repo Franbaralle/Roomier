@@ -12,6 +12,7 @@ const loginLimiter = rateLimit({
     },
     standardHeaders: true, // Retorna info de rate limit en headers `RateLimit-*`
     legacyHeaders: false, // Deshabilita headers `X-RateLimit-*`
+    validate: { trustProxy: false }, // Desactivar validación de trust proxy
 });
 
 // Rate limiter para registro
@@ -25,6 +26,7 @@ const registerLimiter = rateLimit({
     },
     standardHeaders: true,
     legacyHeaders: false,
+    validate: { trustProxy: false }, // Desactivar validación de trust proxy
 });
 
 // Rate limiter general para API
@@ -38,6 +40,7 @@ const apiLimiter = rateLimit({
     },
     standardHeaders: true,
     legacyHeaders: false,
+    validate: { trustProxy: false }, // Desactivar validación de trust proxy
 });
 
 // Rate limiter para cambio de contraseña

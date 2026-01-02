@@ -1,3 +1,6 @@
+// Cargar variables de entorno primero
+require('dotenv').config();
+
 const cloudinary = require('cloudinary').v2;
 const logger = require('./logger');
 
@@ -6,10 +9,9 @@ const logger = require('./logger');
 // 1. CLOUDINARY_URL (recomendado): cloudinary://api_key:api_secret@cloud_name
 // 2. Variables separadas: CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
 if (process.env.CLOUDINARY_URL) {
-    // Opción 1: Usar CLOUDINARY_URL (más simple)
-    cloudinary.config({
-        cloudinary_url: process.env.CLOUDINARY_URL
-    });
+    // Opción 1: Cloudinary parseará automáticamente CLOUDINARY_URL
+    // Solo necesitamos que la variable de entorno exista
+    cloudinary.config();
 } else {
     // Opción 2: Variables separadas
     cloudinary.config({

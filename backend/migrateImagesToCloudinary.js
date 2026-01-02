@@ -13,10 +13,16 @@ async function migrateImagesToCloudinary() {
         await mongoose.connect(MONGODB_URI);
         console.log('✅ Conectado a MongoDB');
 
-        // Encontrar usuarios con profilePhoto tipo Buffer (campo legacy)
-        const usersWithBufferPhotos = await User.find({
-            profilePhoto: { $exists: true, $type: 'binData' }
-        });
+        // Acceder directamente a la colección sin pasar por el modelo
+        // para evitar conversiones automáticas de Mongoose
+        const db = mongoose.connection.db;
+        const usersCollection = db.collection('users');
+
+        // Encontrar usuarios con profilePhoto que no hayan sido migrados
+        const usersWithBufferPhotos = await usersCollection.find({
+            profilePhoto: { $exists: true, $ne: null },
+            profilePhotoPublicId: { $exists: false }
+        }).toArray();
 
         console.log(`📊 Encontrados ${usersWithBufferPhotos.length} usuarios con fotos en Buffer`);
 
@@ -33,27 +39,73 @@ async function migrateImagesToCloudinary() {
             try {
                 console.log(`\n🔄 Migrando foto de usuario: ${user.username}`);
                 
-                // Verificar que el Buffer existe y tiene contenido
-                if (!user.profilePhoto || !Buffer.isBuffer(user.profilePhoto)) {
-                    console.log(`⚠️  Usuario ${user.username} no tiene Buffer válido, saltando...`);
+                // Verificar que el profilePhoto existe
+                if (!user.profilePhoto) {
+                    console.log(`⚠️  Usuario ${user.username} no tiene foto, saltando...`);
                     continue;
                 }
 
+                // Si ya es una URL de Cloudinary (string que empieza con http), saltar
+                if (typeof user.profilePhoto === 'string' && user.profilePhoto.startsWith('http')) {
+                    console.log(`⚠️  Usuario ${user.username} ya tiene URL de Cloudinary, saltando...`);
+                    continue;
+                }
+
+                // Convertir a Buffer
+                let photoBuffer;
+                
+                // MongoDB almacena Binary data como objeto Binary con propiedad buffer
+                if (user.profilePhoto && user.profilePhoto.buffer && Buffer.isBuffer(user.profilePhoto.buffer)) {
+                    photoBuffer = user.profilePhoto.buffer;
+                    console.log(`   📦 Encontrado Binary object con buffer de ${photoBuffer.length} bytes`);
+                } else if (Buffer.isBuffer(user.profilePhoto)) {
+                    photoBuffer = user.profilePhoto;
+                    console.log(`   📦 Buffer directo de ${photoBuffer.length} bytes`);
+                } else if (typeof user.profilePhoto === 'string') {
+                    // Es un string, intentar diferentes encodings
+                    if (user.profilePhoto.startsWith('http')) {
+                        console.log(`   ⚠️  Ya es una URL, saltando...`);
+                        continue;
+                    }
+                    // Primero intentar como base64
+                    try {
+                        photoBuffer = Buffer.from(user.profilePhoto, 'base64');
+                    } catch (e) {
+                        // Si falla, intentar como latin1 (binary)
+                        photoBuffer = Buffer.from(user.profilePhoto, 'latin1');
+                    }
+                    console.log(`   📦 String convertido a Buffer de ${photoBuffer.length} bytes`);
+                } else {
+                    console.log(`   ❌ Tipo no reconocido: ${typeof user.profilePhoto}`);
+                    continue;
+                }
+
+                // Validar que el buffer tiene contenido razonable (> 1KB para una imagen)
+                if (photoBuffer.length < 1024) {
+                    console.log(`   ⚠️  Buffer muy pequeño (${photoBuffer.length} bytes), probablemente no es una imagen válida`);
+                    continue;
+                }
+
+
+
                 // Subir a Cloudinary
                 const cloudinaryResult = await uploadImage(
-                    user.profilePhoto,
+                    photoBuffer,
                     'profile_photos',
                     `user_${user.username}`
                 );
 
-                // Guardar la imagen vieja en el campo legacy
-                user.profilePhotoBuffer = user.profilePhoto;
-                
-                // Actualizar con la URL de Cloudinary
-                user.profilePhoto = cloudinaryResult.secure_url;
-                user.profilePhotoPublicId = cloudinaryResult.public_id;
-
-                await user.save();
+                // Actualizar el documento en la base de datos
+                await usersCollection.updateOne(
+                    { _id: user._id },
+                    {
+                        $set: {
+                            profilePhoto: cloudinaryResult.secure_url,
+                            profilePhotoPublicId: cloudinaryResult.public_id,
+                            profilePhotoBuffer: user.profilePhoto // Guardar el original
+                        }
+                    }
+                );
 
                 console.log(`✅ Migrado: ${user.username} -> ${cloudinaryResult.secure_url}`);
                 migratedCount++;

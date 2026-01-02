@@ -198,16 +198,21 @@ router.post('/housing_info', async (req, res) => {
 // Ruta para manejar la foto de perfil durante el registro
 router.post('/profile_photo', upload.single('profilePhoto'), async (req, res) => {
     try {
+        console.log('=== PROFILE PHOTO REQUEST ===');
+        console.log('Body:', req.body);
+        console.log('File:', req.file ? 'Present' : 'Missing');
+        
         const { username, email } = req.body;
         if (!req.file) {
+            console.log('ERROR: No se proporcionó ninguna imagen');
             return res.status(400).json({ message: 'No se proporcionó ninguna imagen' });
         }
         const profilePhoto = req.file.buffer;
 
         const user = await User.findOne({ username });
 
-
         if (!user) {
+            console.log('ERROR: Usuario no encontrado:', username);
             return res.status(404).json({ message: 'Usuario no encontrado' });
         }
 
@@ -218,7 +223,9 @@ router.post('/profile_photo', upload.single('profilePhoto'), async (req, res) =>
         user.verificationCode = verificationCode;
         await user.save();
 
+        console.log('Enviando email a:', email);
         await sendVerificationEmail(email, verificationCode);
+        console.log('Email enviado exitosamente');
 
         return res.json({ message: 'Foto de perfil actualizada exitosamente' });
     } catch (error) {

@@ -10,11 +10,15 @@ const { loginLimiter, registerLimiter, passwordResetLimiter } = require('../midd
 // Ruta para el registro de usuarios
 router.post('/register', registerLimiter, async (req, res) => {
   try {
+    console.log('=== REGISTER REQUEST ===');
+    console.log('Body:', JSON.stringify(req.body));
+    
     const { username, password, email, birthdate } = req.body;
 
     // Verificar si el usuario ya existe
     const existingUser = await User.findOne({ username });
     if (existingUser) {
+      console.log('ERROR: El usuario ya existe:', username);
       return res.status(400).json({ error: 'El usuario ya existe' });
     }
 
@@ -24,6 +28,7 @@ router.post('/register', registerLimiter, async (req, res) => {
     // Crear un nuevo usuario
     const newUser = new User({ username, password: hashedPassword, email, birthdate });
     await newUser.save();
+    console.log('Usuario creado exitosamente:', username);
 
     // Generar token JWT para el nuevo usuario
     const token = jwt.sign({ username: newUser.username, userId: newUser._id }, jwtSecret, { expiresIn: jwtExpiration });
@@ -34,7 +39,7 @@ router.post('/register', registerLimiter, async (req, res) => {
       username: newUser.username
     });
   } catch (error) {
-    console.error(error);
+    console.error('ERROR EN REGISTRO:', error);
     res.status(500).json({ error: 'Error en el servidor' });
   }
 });

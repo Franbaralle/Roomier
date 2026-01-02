@@ -1,5 +1,5 @@
 const express = require('express');
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 const multer = require('multer');
 const storage = multer.memoryStorage();
 const upload = multer({
@@ -14,33 +14,22 @@ const User = require('../models/user');
 const sendVerificationEmail = async (to, verificationCode) => {
     try {
         console.log('[EMAIL] Iniciando envío a:', to);
-        // Configuración del servicio de envío de correos electrónicos (usando nodemailer)
-        const transporter = nodemailer.createTransport({
-            host: 'smtp.gmail.com',
-            port: 587,
-            secure: false, // false para STARTTLS
-            auth: {
-                user: process.env.EMAIL_USER || 'roomier2024@gmail.com',
-                pass: process.env.EMAIL_PASSWORD || 'uyaw gmlh jpto enbr',
-            },
-            tls: {
-                ciphers: 'SSLv3',
-                rejectUnauthorized: false
-            }
+        
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        
+        const { data, error } = await resend.emails.send({
+            from: 'Roomier <onboarding@resend.dev>', // Usar dominio verificado de Resend
+            to: [to],
+            subject: 'Confirmación de Registro',
+            html: `<h2>¡Bienvenido a Roomier!</h2><p>Tu código de verificación es: <strong>${verificationCode}</strong></p>`,
         });
 
-        // Contenido del correo electrónico
-        const mailOptions = {
-            from: process.env.EMAIL_USER || 'roomier2024@gmail.com', // Remitente
-            to, 
-            subject: 'Confirmación de Registro', // Asunto del correo
-            text: `Tu código de verificación es: ${verificationCode}`, // Cuerpo del correo
-        };
+        if (error) {
+            console.error('[EMAIL] Error de Resend:', error);
+            throw error;
+        }
 
-        // Envío del correo electrónico
-        console.log('[EMAIL] Enviando email...');
-        const info = await transporter.sendMail(mailOptions);
-        console.log('[EMAIL] Email enviado exitosamente:', info.messageId);
+        console.log('[EMAIL] Email enviado exitosamente:', data.id);
     } catch (error) {
         console.error('[EMAIL] Error al enviar el correo electrónico de verificación:', error);
         throw error; // Re-lanzar el error para que el endpoint lo capture

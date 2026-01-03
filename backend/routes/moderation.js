@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const User = require('../models/User');
+const User = require('../models/user');
 const Report = require('../models/report');
 const { verifyToken } = require('../middleware/auth');
 const { apiLimiter } = require('../middleware/rateLimiter');

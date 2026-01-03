@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const analyticsController = require('../controllers/analyticsController');
 const { verifyToken } = require('../middleware/auth');
-const User = require('../models/User');
+const User = require('../models/user');
 
 // Middleware para verificar si el usuario es admin
 const isAdmin = async (req, res, next) => {

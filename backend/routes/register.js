@@ -10,7 +10,7 @@ const upload = multer({
     },
 });
 const router = express.Router();
-const User = require('../models/User');
+const User = require('../models/user');
 
 const sendVerificationEmail = async (to, verificationCode) => {
     try {

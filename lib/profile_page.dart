@@ -395,12 +395,14 @@ class _ProfilePageState extends State<ProfilePage> {
                 color: Colors.transparent,
                 child: InkWell(
                   borderRadius: BorderRadius.circular(12),
-                  onTap: () {
-                    Navigator.pushNamed(
+                  onTap: () async {
+                    await Navigator.pushNamed(
                       context,
                       '/manage-profile-photos',
                       arguments: {'username': widget.username},
                     );
+                    // Recargar perfil cuando vuelve de la página de fotos
+                    _loadUserInfo();
                   },
                   child: Padding(
                     padding: const EdgeInsets.all(14.0),
@@ -449,8 +451,8 @@ class _ProfilePageState extends State<ProfilePage> {
                 color: Colors.transparent,
                 child: InkWell(
                   borderRadius: BorderRadius.circular(12),
-                  onTap: () {
-                    Navigator.pushNamed(
+                  onTap: () async {
+                    await Navigator.pushNamed(
                       context,
                       '/manage-home-photos',
                       arguments: {
@@ -458,6 +460,8 @@ class _ProfilePageState extends State<ProfilePage> {
                         'hasPlace': hasPlace,
                       },
                     );
+                    // Recargar perfil cuando vuelve de la página de fotos del hogar
+                    _loadUserInfo();
                   },
                   child: Padding(
                     padding: const EdgeInsets.all(14.0),

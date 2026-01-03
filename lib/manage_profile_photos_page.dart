@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'photo_service.dart';
 
 class ManageProfilePhotosPage extends StatefulWidget {
@@ -148,7 +149,20 @@ class _ManageProfilePhotosPageState extends State<ManageProfilePhotosPage> {
       await PhotoService.setPrimaryPhoto(publicId);
       
       Navigator.of(context).pop();
+      
+      // Forzar recarga con setState
+      setState(() {
+        _isLoading = true;
+      });
       await _loadPhotos();
+      
+      // Actualizar foto en SharedPreferences para que se actualice en toda la app
+      final primaryPhoto = _photos.firstWhere((p) => p['isPrimary'] == true, orElse: () => {});
+      if (primaryPhoto.isNotEmpty) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('profilePhoto', primaryPhoto['url']);
+      }
+      
       _showSuccess('Foto principal actualizada');
     } catch (e) {
       if (Navigator.of(context).canPop()) {

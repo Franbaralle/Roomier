@@ -34,6 +34,15 @@ class _ChatPageState extends State<ChatPage> {
     _setupSocketListeners();
   }
 
+  @override
+  void didUpdateWidget(ChatPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Notificar cuando entramos al chat
+    if (_chatId != null && _currentUser.isNotEmpty) {
+      _socketService.emit('enter_chat', {'chatId': _chatId, 'username': _currentUser});
+    }
+  }
+
   void _setupSocketListeners() {
     // Escuchar mensajes recibidos
     _messageSubscription = _socketService.onMessageReceived.listen((data) {
@@ -327,15 +336,13 @@ class _ChatPageState extends State<ChatPage> {
     if (message.trim().isEmpty) return;
 
     try {
-      // Enviar mensaje via Socket.IO (tiempo real)
+      // Enviar mensaje solo via Socket.IO (tiempo real)
+      // El backend se encarga de guardarlo en la BD
       _socketService.sendMessage(
         chatId: chatId,
         sender: _currentUser,
         message: message,
       );
-
-      // También enviar via HTTP como respaldo
-      await ChatService.sendMessage(chatId, _currentUser, message);
       
       // Limpiar el controlador
       setState(() {
@@ -547,6 +554,10 @@ class _ChatPageState extends State<ChatPage> {
 
   @override
   void dispose() {
+    // Notificar al backend que salimos del chat
+    if (_chatId != null && _currentUser.isNotEmpty) {
+      _socketService.emit('leave_chat', {'chatId': _chatId, 'username': _currentUser});
+    }
     _messageController.dispose();
     _messageSubscription?.cancel();
     _typingSubscription?.cancel();

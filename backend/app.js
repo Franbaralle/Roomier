@@ -113,6 +113,9 @@ const { sendPushNotification } = require('./utils/firebase');
 // Mapa para rastrear usuarios conectados: userId -> socketId
 const connectedUsers = new Map();
 
+// Mapa para rastrear usuarios activos en chats específicos: chatId -> Set(userIds)
+const activeChats = new Map();
+
 io.on('connection', (socket) => {
   logger.info(`Cliente conectado: ${socket.id}`);
 
@@ -134,7 +137,43 @@ io.on('connection', (socket) => {
   // Unirse a una sala de chat específica
   socket.on('join_chat', (chatId) => {
     socket.join(chatId);
-    logger.info(`Usuario ${socket.username} se unió al chat ${chatId}`);
+    
+    // Registrar usuario como activo en este chat
+    if (socket.userId) {
+      if (!activeChats.has(chatId)) {
+        activeChats.set(chatId, new Set());
+      }
+      activeChats.get(chatId).add(socket.userId);
+      logger.info(`Usuario ${socket.username} se unió al chat ${chatId} (activos: ${activeChats.get(chatId).size})`);
+    } else {
+      logger.info(`Usuario ${socket.username} se unió al chat ${chatId}`);
+    }
+  });
+
+  // Usuario entra al chat (app en foreground con chat abierto)
+  socket.on('enter_chat', (data) => {
+    const { chatId, username } = data;
+    if (socket.userId) {
+      if (!activeChats.has(chatId)) {
+        activeChats.set(chatId, new Set());
+      }
+      activeChats.get(chatId).add(socket.userId);
+      logger.info(`Usuario ${username} entró al chat ${chatId} (activos: ${activeChats.get(chatId).size})`);
+    }
+  });
+
+  // Usuario sale del chat
+  socket.on('leave_chat', (data) => {
+    const { chatId, username } = data;
+    if (socket.userId && activeChats.has(chatId)) {
+      activeChats.get(chatId).delete(socket.userId);
+      logger.info(`Usuario ${username} salió del chat ${chatId} (activos: ${activeChats.get(chatId).size})`);
+      
+      // Limpiar el Set si está vacío
+      if (activeChats.get(chatId).size === 0) {
+        activeChats.delete(chatId);
+      }
+    }
   });
 
   // Enviar mensaje
@@ -172,16 +211,19 @@ io.on('connection', (socket) => {
         }
       });
 
-      // Enviar notificación push al otro usuario si no está conectado
+      // Enviar notificación push al otro usuario si no está viendo el chat
       const otherUser = chat.users.find(u => u.username !== sender);
       if (otherUser) {
         const otherUserData = await User.findOne({ username: otherUser.username });
         
-        // Verificar si el otro usuario está conectado
-        const isOtherUserConnected = connectedUsers.has(otherUserData._id.toString());
+        // Verificar si el otro usuario está actualmente viendo este chat
+        const isUserActiveInChat = activeChats.has(chatId) && 
+                                   activeChats.get(chatId).has(otherUserData._id.toString());
         
-        // Solo enviar notificación push si no está conectado o no está en el chat
-        if (!isOtherUserConnected && otherUserData.fcmToken) {
+        // Solo enviar notificación push si:
+        // 1. El usuario tiene un token FCM registrado
+        // 2. El usuario NO está actualmente viendo este chat específico
+        if (otherUserData.fcmToken && !isUserActiveInChat) {
           await sendPushNotification(
             otherUserData.fcmToken,
             {
@@ -195,6 +237,8 @@ io.on('connection', (socket) => {
             }
           );
           logger.info(`Notificación push enviada a ${otherUser.username}`);
+        } else if (isUserActiveInChat) {
+          logger.info(`Usuario ${otherUser.username} está viendo el chat, no se envía notificación`);
         }
       }
 
@@ -215,6 +259,28 @@ io.on('connection', (socket) => {
   socket.on('stop_typing', (data) => {
     const { chatId, username } = data;
     socket.to(chatId).emit('user_stop_typing', { chatId, username });
+  });
+
+  // Revelar información adicional
+  socket.on('reveal_info', async (data) => {
+    try {
+      const { username, matchedUser, infoType } = data;
+      logger.info(`Usuario ${username} reveló ${infoType} a ${matchedUser}`);
+      
+      // Encontrar el socket del otro usuario para notificarle
+      const otherUserData = await User.findOne({ username: matchedUser });
+      if (otherUserData && connectedUsers.has(otherUserData._id.toString())) {
+        const otherSocketId = connectedUsers.get(otherUserData._id.toString());
+        io.to(otherSocketId).emit('reveal_info_updated', {
+          username: username,
+          matchedUser: matchedUser,
+          infoType: infoType
+        });
+        logger.info(`Notificación de reveal_info enviada a ${matchedUser}`);
+      }
+    } catch (error) {
+      logger.error(`Error en reveal_info: ${error.message}`);
+    }
   });
 
   // Marcar mensajes como leídos
@@ -245,6 +311,20 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     if (socket.userId) {
       connectedUsers.delete(socket.userId);
+      
+      // Remover usuario de todos los chats activos
+      activeChats.forEach((users, chatId) => {
+        if (users.has(socket.userId)) {
+          users.delete(socket.userId);
+          logger.info(`Usuario ${socket.username} removido del chat ${chatId} por desconexión`);
+          
+          // Limpiar el Set si está vacío
+          if (users.size === 0) {
+            activeChats.delete(chatId);
+          }
+        }
+      });
+      
       logger.info(`Usuario desconectado: ${socket.username} (${socket.id})`);
     } else {
       logger.info(`Cliente desconectado: ${socket.id}`);

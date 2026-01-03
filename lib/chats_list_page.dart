@@ -4,6 +4,8 @@ import 'chat_service.dart';
 import 'auth_service.dart';
 import 'routes.dart';
 import 'image_utils.dart';
+import 'socket_service.dart';
+import 'dart:async';
 
 class ChatsListPage extends StatefulWidget {
   @override
@@ -15,12 +17,23 @@ class _ChatsListPageState extends State<ChatsListPage> {
   bool _isLoading = true;
   String _currentUsername = '';
   String? _savedProfilePhoto;
+  final SocketService _socketService = SocketService();
+  StreamSubscription? _messageSubscription;
 
   @override
   void initState() {
     super.initState();
     _loadChats();
     _loadProfilePhoto();
+    _setupSocketListeners();
+  }
+
+  void _setupSocketListeners() {
+    // Escuchar mensajes nuevos para actualizar la lista
+    _messageSubscription = _socketService.onMessageReceived.listen((data) {
+      // Recargar la lista de chats cuando llega un mensaje nuevo
+      _loadChats();
+    });
   }
 
   Future<void> _loadProfilePhoto() async {
@@ -292,5 +305,11 @@ class _ChatsListPageState extends State<ChatsListPage> {
     } catch (e) {
       return '';
     }
+  }
+
+  @override
+  void dispose() {
+    _messageSubscription?.cancel();
+    super.dispose();
   }
 }

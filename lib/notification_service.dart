@@ -4,15 +4,21 @@ import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'auth_service.dart';
+import 'firebase_options.dart';
 
 /// Handler para notificaciones en background
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   print('📩 Notificación recibida en background: ${message.messageId}');
   print('   Título: ${message.notification?.title}');
   print('   Cuerpo: ${message.notification?.body}');
   print('   Data: ${message.data}');
+  
+  // Las notificaciones en background se muestran automáticamente por Firebase
+  // Este handler solo se usa para procesamiento adicional si es necesario
 }
 
 class NotificationService {
@@ -20,7 +26,7 @@ class NotificationService {
   factory NotificationService() => _instance;
   NotificationService._internal();
 
-  final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
+  FirebaseMessaging? _firebaseMessaging;
   String? _fcmToken;
   bool _initialized = false;
 
@@ -35,15 +41,29 @@ class NotificationService {
     }
 
     try {
-      // Inicializar Firebase
-      await Firebase.initializeApp();
-      print('✅ Firebase Core inicializado');
+      // Inicializar Firebase solo si no está inicializado
+      try {
+        await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform,
+        );
+        print('✅ Firebase Core inicializado');
+      } catch (e) {
+        // Si Firebase ya está inicializado, continuar
+        if (e.toString().contains('core/duplicate-app')) {
+          print('ℹ️ Firebase ya estaba inicializado');
+        } else {
+          rethrow;
+        }
+      }
+
+      // Inicializar FirebaseMessaging después de que Firebase esté listo
+      _firebaseMessaging = FirebaseMessaging.instance;
 
       // Registrar el handler de background
       FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
       // Solicitar permisos de notificación
-      final settings = await _firebaseMessaging.requestPermission(
+      final settings = await _firebaseMessaging!.requestPermission(
         alert: true,
         announcement: false,
         badge: true,
@@ -63,7 +83,7 @@ class NotificationService {
       }
 
       // Obtener el token FCM
-      _fcmToken = await _firebaseMessaging.getToken();
+      _fcmToken = await _firebaseMessaging!.getToken();
       if (_fcmToken != null) {
         print('📱 Token FCM obtenido: ${_fcmToken!.substring(0, 20)}...');
         await _sendTokenToServer(_fcmToken!);
@@ -106,7 +126,7 @@ class NotificationService {
     });
 
     // Verificar si la app se abrió desde una notificación (app estaba cerrada)
-    _firebaseMessaging.getInitialMessage().then((RemoteMessage? message) {
+    _firebaseMessaging!.getInitialMessage().then((RemoteMessage? message) {
       if (message != null) {
         print('📩 App iniciada desde notificación: ${message.messageId}');
         _handleNotificationData(message.data);
@@ -114,7 +134,7 @@ class NotificationService {
     });
 
     // Listener para cuando el token se actualiza
-    _firebaseMessaging.onTokenRefresh.listen((String newToken) {
+    _firebaseMessaging!.onTokenRefresh.listen((String newToken) {
       print('🔄 Token FCM actualizado');
       _fcmToken = newToken;
       _sendTokenToServer(newToken);
@@ -208,7 +228,7 @@ class NotificationService {
     }
 
     try {
-      _fcmToken = await _firebaseMessaging.getToken();
+      _fcmToken = await _firebaseMessaging!.getToken();
       return _fcmToken;
     } catch (e) {
       print('❌ Error obteniendo token FCM: $e');

@@ -28,11 +28,8 @@ void main() async {
       .initializeSharedPreferences(); // Inicializa SharedPreferences
   
   // Inicializar Firebase y notificaciones
-  try {
-    await NotificationService().initialize();
-  } catch (e) {
-    print('Error inicializando notificaciones: $e');
-  }
+  // No capturar errores aquí para ver el verdadero problema
+  await NotificationService().initialize();
   
   runApp(MyApp());
 }

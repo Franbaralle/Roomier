@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'auth_service.dart';
+import 'socket_service.dart';
+import 'dart:async';
 
 class RevealInfoWidget extends StatefulWidget {
   final String currentUsername;
@@ -19,11 +21,26 @@ class _RevealInfoWidgetState extends State<RevealInfoWidget> {
   Map<String, dynamic>? _revealedInfo;
   Map<String, dynamic>? _matchedUserInfo;
   bool _isLoading = true;
+  final SocketService _socketService = SocketService();
+  StreamSubscription? _revealInfoSubscription;
 
   @override
   void initState() {
     super.initState();
     _loadRevealedInfo();
+    _setupSocketListeners();
+  }
+
+  void _setupSocketListeners() {
+    // Escuchar eventos de reveal_info_updated
+    _socketService.onCustomEvent('reveal_info_updated').listen((data) {
+      // Solo actualizar si el evento es relevante para este match
+      if (data['matchedUser'] == widget.currentUsername || 
+          data['matchedUser'] == widget.matchedUsername) {
+        print('[DEBUG] Reveal info updated event received, reloading...');
+        _loadRevealedInfo();
+      }
+    });
   }
 
   Future<void> _loadRevealedInfo() async {
@@ -108,6 +125,13 @@ class _RevealInfoWidgetState extends State<RevealInfoWidget> {
       );
 
       if (response) {
+        // Notificar al otro usuario via Socket.IO
+        _socketService.emit('reveal_info', {
+          'username': widget.currentUsername,
+          'matchedUser': widget.matchedUsername,
+          'infoType': infoType,
+        });
+        
         // Recargar la información inmediatamente
         await _loadRevealedInfo();
         
@@ -321,5 +345,11 @@ class _RevealInfoWidgetState extends State<RevealInfoWidget> {
         ],
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _revealInfoSubscription?.cancel();
+    super.dispose();
   }
 }

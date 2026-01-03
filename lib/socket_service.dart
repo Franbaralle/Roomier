@@ -15,12 +15,27 @@ class SocketService {
   final _typingController = StreamController<Map<String, dynamic>>.broadcast();
   final _stopTypingController = StreamController<Map<String, dynamic>>.broadcast();
   final _messagesReadController = StreamController<Map<String, dynamic>>.broadcast();
+  final Map<String, StreamController<Map<String, dynamic>>> _customEventControllers = {};
 
   // Getters para los streams
   Stream<Map<String, dynamic>> get onMessageReceived => _messageController.stream;
   Stream<Map<String, dynamic>> get onUserTyping => _typingController.stream;
   Stream<Map<String, dynamic>> get onUserStopTyping => _stopTypingController.stream;
   Stream<Map<String, dynamic>> get onMessagesRead => _messagesReadController.stream;
+
+  // Método para escuchar eventos personalizados
+  Stream<Map<String, dynamic>> onCustomEvent(String eventName) {
+    if (!_customEventControllers.containsKey(eventName)) {
+      _customEventControllers[eventName] = StreamController<Map<String, dynamic>>.broadcast();
+      
+      // Registrar el listener en el socket
+      _socket?.on(eventName, (data) {
+        print('🔔 Evento personalizado recibido: $eventName - $data');
+        _customEventControllers[eventName]?.add(data as Map<String, dynamic>);
+      });
+    }
+    return _customEventControllers[eventName]!.stream;
+  }
 
   bool get isConnected => _socket?.connected ?? false;
 
@@ -158,6 +173,11 @@ class SocketService {
     });
   }
 
+  // Emitir evento genérico al servidor
+  void emit(String event, dynamic data) {
+    _socket?.emit(event, data);
+  }
+
   // Desconectar
   void disconnect() {
     print('👋 Desconectando Socket.IO');
@@ -174,6 +194,13 @@ class SocketService {
     _typingController.close();
     _stopTypingController.close();
     _messagesReadController.close();
+    
+    // Cerrar todos los controladores de eventos personalizados
+    _customEventControllers.forEach((key, controller) {
+      controller.close();
+    });
+    _customEventControllers.clear();
+    
     disconnect();
   }
 }

@@ -49,18 +49,36 @@ async function sendPushNotification(fcmToken, notification, data = {}) {
   }
 
   try {
+    // Convertir todos los valores de data a strings (requerido por FCM)
+    const stringifiedData = {};
+    Object.keys(data).forEach(key => {
+      stringifiedData[key] = String(data[key]);
+    });
+
     const message = {
       notification: {
         title: notification.title,
         body: notification.body,
       },
-      data: data,
+      data: stringifiedData,
       token: fcmToken,
       android: {
         priority: 'high',
         notification: {
           sound: 'default',
           channelId: 'chat_messages',
+          priority: 'high',
+          defaultSound: true,
+          defaultVibrateTimings: true,
+          clickAction: 'FLUTTER_NOTIFICATION_CLICK',
+        },
+      },
+      apns: {
+        payload: {
+          aps: {
+            sound: 'default',
+            badge: 1,
+          },
         },
       },
     };
@@ -70,6 +88,10 @@ async function sendPushNotification(fcmToken, notification, data = {}) {
     return response;
   } catch (error) {
     logger.error(`Error enviando notificación push: ${error.message}`);
+    if (error.code === 'messaging/invalid-registration-token' || 
+        error.code === 'messaging/registration-token-not-registered') {
+      logger.warn(`Token FCM inválido o no registrado: ${fcmToken}`);
+    }
     return null;
   }
 }

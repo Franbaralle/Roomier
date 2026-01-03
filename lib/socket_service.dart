@@ -62,9 +62,10 @@ class SocketService {
           .setTransports(['websocket', 'polling'])
           .enableAutoConnect()
           .enableReconnection()
-          .setReconnectionDelay(1000)
-          .setReconnectionDelayMax(5000)
-          .setReconnectionAttempts(5)
+          .setReconnectionDelay(2000)
+          .setReconnectionDelayMax(10000)
+          .setReconnectionAttempts(3) // Reducir a 3 intentos
+          .setTimeout(5000) // Timeout de 5 segundos
           .build(),
     );
 

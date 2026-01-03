@@ -34,27 +34,29 @@ class _ChatPageState extends State<ChatPage> {
     _setupSocketListeners();
   }
 
-  @override
-  void didUpdateWidget(ChatPage oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // Notificar cuando entramos al chat
-    if (_chatId != null && _currentUser.isNotEmpty) {
-      _socketService.emit('enter_chat', {'chatId': _chatId, 'username': _currentUser});
-    }
-  }
-
   void _setupSocketListeners() {
     // Escuchar mensajes recibidos
     _messageSubscription = _socketService.onMessageReceived.listen((data) {
       if (data['chatId'] == _chatId) {
-        setState(() {
-          _messages.add({
-            'sender': data['message']['sender'],
-            'content': data['message']['content'],
-            'timestamp': data['message']['timestamp'],
-            'read': data['message']['read'] ?? false,
+        final newMessage = {
+          'sender': data['message']['sender'],
+          'content': data['message']['content'],
+          'timestamp': data['message']['timestamp'],
+          'read': data['message']['read'] ?? false,
+        };
+        
+        // Verificar si el mensaje ya existe para evitar duplicados
+        final messageExists = _messages.any((msg) => 
+          msg['content'] == newMessage['content'] && 
+          msg['timestamp'] == newMessage['timestamp']
+        );
+        
+        if (!messageExists) {
+          setState(() {
+            _messages.add(newMessage);
+            _isOtherUserTyping = false; // Limpiar indicador al recibir mensaje
           });
-        });
+        }
         
         // Marcar como leído si estamos en el chat
         if (_currentUser.isNotEmpty && _chatId != null) {
@@ -104,16 +106,46 @@ class _ChatPageState extends State<ChatPage> {
     final Map<String, dynamic>? args =
         ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
     if (args != null) {
-      setState(() {
-        _chatId = args['chatId'] as String?;
-      });
+      final chatId = args['chatId'] as String?;
       
-      // Cargar mensajes existentes
-      if (_chatId != null) {
-        await _loadMessages(_chatId!);
+      if (chatId != null) {
+        setState(() {
+          _chatId = chatId;
+        });
         
-        // Unirse a la sala de Socket.IO
-        _socketService.joinChat(_chatId!);
+        // Cargar mensajes INMEDIATAMENTE por HTTP (no esperar socket)
+        await _loadMessages(chatId);
+        
+        // Socket se conecta en segundo plano (no bloqueante)
+        _connectSocketInBackground(chatId);
+      }
+    }
+  }
+
+  void _connectSocketInBackground(String chatId) async {
+    // Esperar al usuario de forma asíncrona
+    int attempts = 0;
+    while (_currentUser.isEmpty && attempts < 100) {
+      await Future.delayed(Duration(milliseconds: 50));
+      attempts++;
+    }
+    
+    if (_currentUser.isNotEmpty) {
+      // Marcar mensajes como leídos ahora que tenemos el usuario
+      try {
+        await ChatService.markMessagesAsRead(chatId, _currentUser);
+      } catch (e) {
+        print('⚠️ Error marcando como leído por HTTP: $e');
+      }
+      
+      // Conectar socket para tiempo real
+      try {
+        _socketService.joinChat(chatId);
+        _socketService.emit('enter_chat', {'chatId': chatId, 'username': _currentUser});
+        _socketService.markAsRead(chatId, _currentUser);
+        print('✅ Socket conectado al chat en segundo plano');
+      } catch (e) {
+        print('⚠️ Socket no disponible, funcionando solo con HTTP: $e');
       }
     }
   }
@@ -124,12 +156,8 @@ class _ChatPageState extends State<ChatPage> {
       setState(() {
         _messages = messages;
         _isLoading = false;
+        _isOtherUserTyping = false; // Limpiar indicador de escritura al cargar
       });
-      
-      // Marcar mensajes como leídos
-      if (_currentUser.isNotEmpty) {
-        await ChatService.markMessagesAsRead(chatId, _currentUser);
-      }
     } catch (error) {
       print('Error loading messages: $error');
       setState(() {

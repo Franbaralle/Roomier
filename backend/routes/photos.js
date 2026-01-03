@@ -191,6 +191,12 @@ router.put('/profile/:publicId/primary', verifyToken, async (req, res) => {
             return res.status(404).json({ message: 'No tienes fotos de perfil' });
         }
 
+        console.log('Fotos del usuario:');
+        user.profilePhotos.forEach((photo, idx) => {
+            console.log(`  [${idx}] publicId: "${photo.publicId}", isPrimary: ${photo.isPrimary}`);
+        });
+        console.log('PublicId buscado:', publicId);
+
         // Quitar isPrimary de todas las fotos
         user.profilePhotos.forEach(photo => {
             photo.isPrimary = false;

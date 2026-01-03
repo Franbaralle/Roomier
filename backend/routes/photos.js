@@ -4,7 +4,7 @@ const router = express.Router();
 const User = require('../models/user');
 const multer = require('multer');
 const { uploadImage, deleteImage } = require('../utils/cloudinary');
-const { authenticate } = require('../middleware/authenticate');
+const { verifyToken } = require('../middleware/auth');
 
 // Configuración de Multer para manejar múltiples archivos en memoria
 const storage = multer.memoryStorage();
@@ -31,7 +31,7 @@ const upload = multer({
  * Agregar fotos de perfil (hasta 10 total)
  * Body: username (string), files (array de imágenes)
  */
-router.post('/profile', authenticate, upload.array('photos', 10), async (req, res) => {
+router.post('/profile', verifyToken, upload.array('photos', 10), async (req, res) => {
     try {
         console.log('=== ADDING PROFILE PHOTOS ===');
         const { username } = req.body;
@@ -109,10 +109,10 @@ router.post('/profile', authenticate, upload.array('photos', 10), async (req, re
  * DELETE /api/photos/profile/:publicId
  * Eliminar una foto de perfil específica
  */
-router.delete('/profile/:publicId', authenticate, async (req, res) => {
+router.delete('/profile/:publicId', verifyToken, async (req, res) => {
     try {
         const { publicId } = req.params;
-        const username = req.user.username; // Del middleware authenticate
+        const username = req.user.username; // Del middleware verifyToken
 
         const user = await User.findOne({ username });
         if (!user) {
@@ -162,7 +162,7 @@ router.delete('/profile/:publicId', authenticate, async (req, res) => {
  * PUT /api/photos/profile/:publicId/primary
  * Establecer una foto como principal
  */
-router.put('/profile/:publicId/primary', authenticate, async (req, res) => {
+router.put('/profile/:publicId/primary', verifyToken, async (req, res) => {
     try {
         const { publicId } = req.params;
         const username = req.user.username;
@@ -253,7 +253,7 @@ router.get('/profile/:username', async (req, res) => {
  * Agregar fotos del hogar (solo si hasPlace es true)
  * Body: username (string), files (array de imágenes), descriptions (array de strings opcional)
  */
-router.post('/home', authenticate, upload.array('photos', 50), async (req, res) => {
+router.post('/home', verifyToken, upload.array('photos', 50), async (req, res) => {
     try {
         console.log('=== ADDING HOME PHOTOS ===');
         const { username, descriptions } = req.body;
@@ -329,7 +329,7 @@ router.post('/home', authenticate, upload.array('photos', 50), async (req, res) 
  * DELETE /api/photos/home/:publicId
  * Eliminar una foto del hogar específica
  */
-router.delete('/home/:publicId', authenticate, async (req, res) => {
+router.delete('/home/:publicId', verifyToken, async (req, res) => {
     try {
         const { publicId } = req.params;
         const username = req.user.username;
@@ -367,7 +367,7 @@ router.delete('/home/:publicId', authenticate, async (req, res) => {
  * PUT /api/photos/home/:publicId/description
  * Actualizar descripción de una foto del hogar
  */
-router.put('/home/:publicId/description', authenticate, async (req, res) => {
+router.put('/home/:publicId/description', verifyToken, async (req, res) => {
     try {
         const { publicId } = req.params;
         const { description } = req.body;

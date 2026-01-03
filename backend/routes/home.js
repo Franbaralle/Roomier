@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const User = require('../models/user');
+const User = require('../models/User');
 
 // Función para calcular compatibilidad entre dos usuarios
 function calculateCompatibility(userA, userB) {
@@ -197,19 +197,12 @@ router.get('/', async (req, res) => {
         const currentHasPlace = currentUser.housingInfo?.hasPlace || false;
         const targetHasPlace = !currentHasPlace;
 
-        console.log(`[HOME DEBUG] Usuario ${currentUsername}:`);
-        console.log(`- hasPlace actual: ${currentHasPlace}`);
-        console.log(`- Buscando usuarios con hasPlace: ${targetHasPlace}`);
-
         let potentialMatches = await User.find({ 
             username: { $nin: excludedUsernames },
             'housingInfo.hasPlace': targetHasPlace
         });
 
-        console.log(`- Encontrados ${potentialMatches.length} usuarios potenciales`);
-
         // Filtrar por deal breakers y presupuesto
-        console.log('[HOME DEBUG] Aplicando filtros de deal breakers y presupuesto...');
         potentialMatches = potentialMatches.filter(user => {
             // Verificar deal breakers
             if (!checkDealBreakers(currentUser, user)) {
@@ -223,7 +216,6 @@ router.get('/', async (req, res) => {
 
             return true;
         });
-        console.log(`[HOME DEBUG] Después de filtros: ${potentialMatches.length} usuarios`);
 
         // Calcular compatibilidad para cada usuario
         const profilesWithCompatibility = potentialMatches.map(user => {
@@ -255,10 +247,7 @@ router.get('/', async (req, res) => {
         profilesWithCompatibility.sort((a, b) => b.compatibility - a.compatibility);
 
         // Retornar los mejores 20 perfiles
-        const response = profilesWithCompatibility.slice(0, 20);
-        console.log(`[HOME DEBUG] Enviando ${response.length} perfiles al frontend`);
-        console.log(`[HOME DEBUG] Usernames enviados: ${response.map(p => p.username).join(', ')}`);
-        res.status(200).json(response);
+        res.status(200).json(profilesWithCompatibility.slice(0, 20));
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Error del servidor' });

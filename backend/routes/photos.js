@@ -1,7 +1,7 @@
 // routes/photos.js - Rutas para manejo de múltiples fotos de perfil y hogar
 const express = require('express');
 const router = express.Router();
-const User = require('../models/user');
+const User = require('../models/User');
 const multer = require('multer');
 const { uploadImage, deleteImage } = require('../utils/cloudinary');
 const { verifyToken } = require('../middleware/auth');

@@ -109,7 +109,7 @@ if (process.env.NODE_ENV !== 'test') {
 
 // Configuración de Socket.IO
 const Chat = require('./models/chatModel');
-const User = require('./models/user');
+const User = require('./models/User');
 const { sendPushNotification } = require('./utils/firebase');
 
 // Mapa para rastrear usuarios conectados: userId -> socketId

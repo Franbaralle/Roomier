@@ -69,16 +69,9 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       final authService = AuthService();
       final profiles = await authService.fetchHomeProfiles();
 
-      print('[HOME DEBUG FRONTEND] Perfiles recibidos: ${profiles.length}');
-      if (profiles.isNotEmpty) {
-        print('[HOME DEBUG FRONTEND] Primer perfil: ${profiles[0]['username']}');
-      }
-
       setState(() {
         homeProfiles = profiles.cast<Map<String, dynamic>>();
       });
-      
-      print('[HOME DEBUG FRONTEND] homeProfiles asignados: ${homeProfiles.length}');
     } catch (error) {
       // Error fetching profiles
       print('Error al obtener perfiles: $error');
@@ -322,125 +315,135 @@ Future<void> _showMatchPopup(
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
-        children: [
-          Expanded(
+      body: homeProfiles.isEmpty 
+        ? Center(child: CircularProgressIndicator())
+        : Center(
             child: Stack(
               alignment: Alignment.center,
               children: homeProfiles.asMap().entries.map((entry) {
-                final index = entry.key;
-                final profile = entry.value;
-                return Positioned(
-                  top: index == _draggingIndex ? _imageOffset.dy : 0,
-                  left: index == _draggingIndex ? _imageOffset.dx : 0,
-                  child: Transform.rotate(
-                    angle: index == _draggingIndex ? _rotationAngle : 0,
-                    child: GestureDetector(
-                      onPanStart: (details) {
-                        if (index == 0) { // Solo la primera tarjeta es interactiva
-                          setState(() {
-                            _draggingIndex = index;
-                            _startPosition = details.globalPosition;
-                          });
-                        }
-                      },
-                      onPanUpdate: (details) {
-                        if (_draggingIndex == index && index == 0) {
-                          setState(() {
-                            _imageOffset += details.globalPosition - _startPosition;
-                            _startPosition = details.globalPosition;
-                            
-                            // Calcular rotación basada en el movimiento horizontal
-                            _rotationAngle = (_imageOffset.dx / 1000).clamp(-0.3, 0.3);
-                          });
-                        }
-                      },
-                      onPanEnd: (details) {
-                        if (_draggingIndex == index && index == 0) {
-                          final screenWidth = MediaQuery.of(context).size.width;
-                          final swipeThreshold = screenWidth * 0.3;
-                          
-                          if (_imageOffset.dx.abs() > swipeThreshold) {
-                            // Swipe detectado (izquierda = like, derecha = nope)
-                            final isLike = _imageOffset.dx < 0;
-                            _swipeCard(index, isLike);
-                          } else {
-                            // Volver a la posición original
+                  final index = entry.key;
+                  final profile = entry.value;
+                  
+                  final screenWidth = MediaQuery.of(context).size.width;
+                  final screenHeight = MediaQuery.of(context).size.height;
+                  final cardWidth = screenWidth * 0.9;
+                  final cardHeight = screenHeight * 0.65;
+                  
+                  // Calcular offset para apilar las tarjetas
+                  final double topOffset = index == _draggingIndex 
+                      ? _imageOffset.dy 
+                      : index * 10.0;
+                  final double leftOffset = index == _draggingIndex 
+                      ? _imageOffset.dx 
+                      : 0;
+                  
+                  return Transform.translate(
+                    offset: Offset(leftOffset, topOffset),
+                    child: Transform.rotate(
+                      angle: index == _draggingIndex ? _rotationAngle : 0,
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onPanStart: (details) {
+                          if (index == 0) {
                             setState(() {
-                              _draggingIndex = -1;
-                              _imageOffset = Offset.zero;
-                              _rotationAngle = 0.0;
+                              _draggingIndex = index;
+                              _startPosition = details.globalPosition;
                             });
                           }
-                        }
-                      },
-                      onTap: () {
-                        Navigator.pushNamed(
-                          context,
-                          profilePageRoute,
-                          arguments: {'username': profile['username']},
-                        );
-                      },
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(
-                        horizontal: 550,
-                        vertical: 20,
-                      ),
-                      width: 400,
-                      height: 500,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: Stack(
-                          children: [
-                            ImageUtils.getImageProvider(profile['profilePhoto']) != null
-                              ? Image(
-                                  image: ImageUtils.getImageProvider(profile['profilePhoto'])!,
-                                  width: double.infinity,
-                                  height: double.infinity,
-                                  fit: BoxFit.cover,
-                                )
-                              : Container(
-                                  width: double.infinity,
-                                  height: double.infinity,
-                                  color: Colors.grey[300],
-                                  child: Icon(Icons.person, size: 100),
-                                ),
-                            // Indicador de LIKE
-                            if (index == _draggingIndex && _imageOffset.dx > 50)
-                              Positioned(
-                                top: 50,
-                                left: 50,
-                                child: Transform.rotate(
-                                  angle: -0.3,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 20,
-                                      vertical: 10,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      border: Border.all(
-                                        color: Colors.red,
-                                        width: 4,
+                        },
+                        onPanUpdate: (details) {
+                          if (_draggingIndex == index && index == 0) {
+                            setState(() {
+                              _imageOffset += details.globalPosition - _startPosition;
+                              _startPosition = details.globalPosition;
+                              
+                              _rotationAngle = (_imageOffset.dx / 1000).clamp(-0.3, 0.3);
+                            });
+                          }
+                        },
+                        onPanEnd: (details) {
+                          if (_draggingIndex == index && index == 0) {
+                            final swipeThreshold = screenWidth * 0.3;
+                            
+                            if (_imageOffset.dx.abs() > swipeThreshold) {
+                              final isLike = _imageOffset.dx < 0;
+                              _swipeCard(index, isLike);
+                            } else {
+                              setState(() {
+                                _draggingIndex = -1;
+                                _imageOffset = Offset.zero;
+                                _rotationAngle = 0.0;
+                              });
+                            }
+                          }
+                        },
+                        onTap: () {
+                          Navigator.pushNamed(
+                            context,
+                            profilePageRoute,
+                            arguments: {'username': profile['username']},
+                          );
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 20,
+                          ),
+                          width: cardWidth,
+                          height: cardHeight,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: Stack(
+                                children: [
+                                  ImageUtils.getImageProvider(profile['profilePhoto']) != null
+                                    ? Image(
+                                        image: ImageUtils.getImageProvider(profile['profilePhoto'])!,
+                                        width: double.infinity,
+                                        height: double.infinity,
+                                        fit: BoxFit.cover,
+                                      )
+                                    : Container(
+                                        width: double.infinity,
+                                        height: double.infinity,
+                                        color: Colors.grey[300],
+                                        child: Icon(Icons.person, size: 100),
                                       ),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Text(
-                                      'NOPE',
-                                      style: TextStyle(
-                                        color: Colors.red,
-                                        fontSize: 32,
-                                        fontWeight: FontWeight.bold,
+                                  // Indicador de LIKE
+                                  if (index == _draggingIndex && _imageOffset.dx > 50)
+                                    Positioned(
+                                    top: 50,
+                                    left: 50,
+                                    child: Transform.rotate(
+                                      angle: -0.3,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 20,
+                                          vertical: 10,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          border: Border.all(
+                                            color: Colors.red,
+                                            width: 4,
+                                          ),
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: Text(
+                                          'NOPE',
+                                          style: TextStyle(
+                                            color: Colors.red,
+                                            fontSize: 32,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
-                              ),
-                            // Indicador de NOPE
-                            if (index == _draggingIndex && _imageOffset.dx < -50)
-                              Positioned(
+                                // Indicador de NOPE
+                                if (index == _draggingIndex && _imageOffset.dx < -50)
+                                  Positioned(
                                 top: 50,
                                 right: 50,
                                 child: Transform.rotate(
@@ -468,34 +471,34 @@ Future<void> _showMatchPopup(
                                   ),
                                 ),
                               ),
-                            Positioned.fill(
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: const BorderRadius.only(
-                                    bottomLeft: Radius.circular(10),
-                                    bottomRight: Radius.circular(10),
-                                  ),
-                                  gradient: LinearGradient(
-                                    begin: Alignment.bottomCenter,
-                                    end: Alignment.topCenter,
-                                    colors: [
-                                      Colors.black.withOpacity(0.3),
-                                      Colors.transparent,
-                                    ],
+                                Positioned.fill(
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      borderRadius: const BorderRadius.only(
+                                        bottomLeft: Radius.circular(10),
+                                        bottomRight: Radius.circular(10),
+                                      ),
+                                      gradient: LinearGradient(
+                                        begin: Alignment.bottomCenter,
+                                        end: Alignment.topCenter,
+                                        colors: [
+                                          Colors.black.withOpacity(0.3),
+                                          Colors.transparent,
+                                        ],
+                                      ),
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ),
-                            Positioned(
-                              bottom: 20.0,
-                              left: 0,
-                              right: 0,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  // Porcentaje de compatibilidad
-                                  if (profile['compatibility'] != null)
-                                    Container(
+                                Positioned(
+                                  bottom: 20.0,
+                                  left: 0,
+                                  right: 0,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    children: [
+                                      // Porcentaje de compatibilidad
+                                      if (profile['compatibility'] != null)
+                                        Container(
                                       margin: const EdgeInsets.only(bottom: 8),
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: 16,
@@ -532,193 +535,191 @@ Future<void> _showMatchPopup(
                                         ],
                                       ),
                                     ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 20,
-                                      vertical: 8,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.6),
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: Column(
-                                      children: [
-                                        Text(
-                                          profile['username'] ?? '',
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 28,
-                                            fontWeight: FontWeight.bold,
-                                            letterSpacing: 1.2,
-                                            shadows: [
-                                              Shadow(
-                                                offset: Offset(0, 2),
-                                                blurRadius: 4,
-                                                color: Colors.black45,
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        if (profile['housingInfo']?['city'] != null) ...[
-                                          const SizedBox(height: 4),
-                                          Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              const Icon(
-                                                Icons.location_on,
-                                                color: Colors.white70,
-                                                size: 16,
-                                              ),
-                                              const SizedBox(width: 4),
-                                              Text(
-                                                '${profile['housingInfo']['city']} - ${profile['housingInfo']['generalZone'] ?? ''}',
-                                                style: const TextStyle(
-                                                  color: Colors.white70,
-                                                  fontSize: 14,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(height: 20),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      // Botón de LIKE
                                       Container(
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: Colors.white,
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.green.withOpacity(0.3),
-                                              blurRadius: 15,
-                                              spreadRadius: 2,
-                                            ),
-                                          ],
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 20,
+                                          vertical: 8,
                                         ),
-                                        child: IconButton(
-                                          iconSize: 35,
-                                          onPressed: () {
-                                            if (index == 0) {
-                                              _swipeCard(index, true);
-                                            }
-                                          },
-                                          icon: const Icon(
-                                            Icons.check,
-                                            color: Colors.green,
-                                          ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withOpacity(0.6),
+                                          borderRadius: BorderRadius.circular(20),
+                                        ),
+                                        child: Column(
+                                          children: [
+                                            Text(
+                                              profile['username'] ?? '',
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 28,
+                                                fontWeight: FontWeight.bold,
+                                                letterSpacing: 1.2,
+                                                shadows: [
+                                                  Shadow(
+                                                    offset: Offset(0, 2),
+                                                    blurRadius: 4,
+                                                    color: Colors.black45,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            if (profile['housingInfo']?['city'] != null) ...[
+                                              const SizedBox(height: 4),
+                                              Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  const Icon(
+                                                    Icons.location_on,
+                                                    color: Colors.white70,
+                                                    size: 16,
+                                                  ),
+                                                  const SizedBox(width: 4),
+                                                  Text(
+                                                    '${profile['housingInfo']['city']} - ${profile['housingInfo']['generalZone'] ?? ''}',
+                                                    style: const TextStyle(
+                                                      color: Colors.white70,
+                                                      fontSize: 14,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ],
                                         ),
                                       ),
-                                      const SizedBox(width: 30),
-                                      // Botón de NOPE
-                                      Container(
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: Colors.white,
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.red.withOpacity(0.3),
-                                              blurRadius: 15,
-                                              spreadRadius: 2,
+                                      const SizedBox(height: 20),
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          // Botón de LIKE
+                                          Container(
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: Colors.white,
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.green.withOpacity(0.3),
+                                                  blurRadius: 15,
+                                                  spreadRadius: 2,
+                                                ),
+                                              ],
                                             ),
-                                          ],
-                                        ),
-                                        child: IconButton(
-                                          iconSize: 35,
-                                          onPressed: () {
-                                            if (index == 0) {
-                                              _swipeCard(index, false);
-                                            }
-                                          },
-                                          icon: const Icon(
-                                            Icons.close,
-                                            color: Colors.red,
+                                            child: IconButton(
+                                              iconSize: 35,
+                                              onPressed: () {
+                                                if (index == 0) {
+                                                  _swipeCard(index, true);
+                                                }
+                                              },
+                                              icon: const Icon(
+                                                Icons.check,
+                                                color: Colors.green,
+                                              ),
+                                            ),
                                           ),
-                                        ),
+                                          const SizedBox(width: 30),
+                                          // Botón de NOPE
+                                          Container(
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: Colors.white,
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.red.withOpacity(0.3),
+                                                  blurRadius: 15,
+                                                  spreadRadius: 2,
+                                                ),
+                                              ],
+                                            ),
+                                            child: IconButton(
+                                              iconSize: 35,
+                                              onPressed: () {
+                                                if (index == 0) {
+                                                  _swipeCard(index, false);
+                                                }
+                                              },
+                                              icon: const Icon(
+                                                Icons.close,
+                                                color: Colors.red,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ],
                                   ),
+                                ),
                                 ],
                               ),
                             ),
-                          ],
+                          ),
                         ),
                       ),
-                    ),
-                    ),
-                  ),
-                );
-              }).toList(),
+                    );
+                  }).toList().reversed.toList(),
             ),
           ),
-          BottomAppBar(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+      bottomNavigationBar: BottomAppBar(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            IconButton(
+              onPressed: () {
+                // Lógica para el botón del rayo
+              },
+              icon: const Icon(Icons.flash_on),
+            ),
+            Stack(
               children: [
                 IconButton(
                   onPressed: () {
-                    // Lógica para el botón del rayo
+                    Navigator.pushNamed(context, chatsListRoute).then((_) {
+                      // Recargar contador cuando vuelves de la lista de chats
+                      _loadUnreadMessagesCount();
+                    });
                   },
-                  icon: const Icon(Icons.flash_on),
+                  icon: const Icon(Icons.chat_bubble),
                 ),
-                Stack(
-                  children: [
-                    IconButton(
-                      onPressed: () {
-                        Navigator.pushNamed(context, chatsListRoute).then((_) {
-                          // Recargar contador cuando vuelves de la lista de chats
-                          _loadUnreadMessagesCount();
-                        });
-                      },
-                      icon: const Icon(Icons.chat_bubble),
-                    ),
-                    if (_unreadMessagesCount > 0)
-                      Positioned(
-                        right: 8,
-                        top: 8,
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: Colors.red,
-                            shape: BoxShape.circle,
-                          ),
-                          constraints: const BoxConstraints(
-                            minWidth: 16,
-                            minHeight: 16,
-                          ),
-                          child: Text(
-                            _unreadMessagesCount > 99
-                                ? '99+'
-                                : '$_unreadMessagesCount',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
+                if (_unreadMessagesCount > 0)
+                  Positioned(
+                    right: 8,
+                    top: 8,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
                       ),
-                  ],
-                ),
-                IconButton(
-                  onPressed: () {
-                    handleProfileButton(context);
-                  },
-                  icon: savedData != null
-                      ? CircleAvatar(
-                          backgroundImage: ImageUtils.getImageProvider(savedData),
-                        )
-                      : const Icon(Icons.person),
-                ),
+                      constraints: const BoxConstraints(
+                        minWidth: 16,
+                        minHeight: 16,
+                      ),
+                      child: Text(
+                        _unreadMessagesCount > 99
+                            ? '99+'
+                            : '$_unreadMessagesCount',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
               ],
             ),
-          ),
-        ],
+            IconButton(
+              onPressed: () {
+                handleProfileButton(context);
+              },
+              icon: savedData != null
+                  ? CircleAvatar(
+                      backgroundImage: ImageUtils.getImageProvider(savedData),
+                    )
+                  : const Icon(Icons.person),
+            ),
+          ],
+        ),
       ),
     );
   }

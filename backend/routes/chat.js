@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Chat = require('../models/chatModel');
-const User = require('../models/user');
+const User = require('../models/User');
 
 router.post('/create_chat', async (req, res) => {
     const { userA: usernameA, userB: usernameB } = req.body;

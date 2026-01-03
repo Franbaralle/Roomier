@@ -255,7 +255,10 @@ router.get('/', async (req, res) => {
         profilesWithCompatibility.sort((a, b) => b.compatibility - a.compatibility);
 
         // Retornar los mejores 20 perfiles
-        res.status(200).json(profilesWithCompatibility.slice(0, 20));
+        const response = profilesWithCompatibility.slice(0, 20);
+        console.log(`[HOME DEBUG] Enviando ${response.length} perfiles al frontend`);
+        console.log(`[HOME DEBUG] Usernames enviados: ${response.map(p => p.username).join(', ')}`);
+        res.status(200).json(response);
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Error del servidor' });

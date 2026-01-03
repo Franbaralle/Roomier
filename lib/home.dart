@@ -69,9 +69,16 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       final authService = AuthService();
       final profiles = await authService.fetchHomeProfiles();
 
+      print('[HOME DEBUG FRONTEND] Perfiles recibidos: ${profiles.length}');
+      if (profiles.isNotEmpty) {
+        print('[HOME DEBUG FRONTEND] Primer perfil: ${profiles[0]['username']}');
+      }
+
       setState(() {
         homeProfiles = profiles.cast<Map<String, dynamic>>();
       });
+      
+      print('[HOME DEBUG FRONTEND] homeProfiles asignados: ${homeProfiles.length}');
     } catch (error) {
       // Error fetching profiles
       print('Error al obtener perfiles: $error');

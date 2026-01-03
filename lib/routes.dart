@@ -16,3 +16,5 @@ const String termsRoute = '/terms';
 const String privacyRoute = '/privacy';
 const String adminPanelRoute = '/admin';
 const String editProfileRoute = '/edit-profile';
+const String manageProfilePhotosRoute = '/manage-profile-photos';
+const String manageHomePhotosRoute = '/manage-home-photos';

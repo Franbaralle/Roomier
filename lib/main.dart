@@ -20,6 +20,11 @@ import 'privacy_policy_page.dart';
 import 'admin_panel_page.dart';
 import 'edit_profile_page.dart';
 import 'notification_service.dart';
+import 'manage_profile_photos_page.dart';
+import 'manage_home_photos_page.dart';
+
+// NavigatorKey global para navegación desde notificaciones
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding
@@ -38,6 +43,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'Roomier',
       initialRoute: loginRoute,
       routes: {
@@ -141,6 +147,29 @@ class MyApp extends StatelessWidget {
           return EditProfilePage(
             username: arguments['username'] as String,
             currentUserData: arguments['userData'] as Map<String, dynamic>,
+          );
+        },
+        manageProfilePhotosRoute: (context) {
+          final Map<String, dynamic>? arguments = ModalRoute.of(context)!
+              .settings
+              .arguments as Map<String, dynamic>?;
+          if (arguments == null) {
+            return NotFoundPage();
+          }
+          return ManageProfilePhotosPage(
+            username: arguments['username'] as String,
+          );
+        },
+        manageHomePhotosRoute: (context) {
+          final Map<String, dynamic>? arguments = ModalRoute.of(context)!
+              .settings
+              .arguments as Map<String, dynamic>?;
+          if (arguments == null) {
+            return NotFoundPage();
+          }
+          return ManageHomePhotosPage(
+            username: arguments['username'] as String,
+            hasPlace: arguments['hasPlace'] as bool? ?? false,
           );
         },
         chatRoute: (context) {

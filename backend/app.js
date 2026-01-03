@@ -65,6 +65,7 @@ const adminRoute = require('./routes/admin');
 const editProfileRoute = require('./routes/editProfile');
 const analyticsRoute = require('./routes/analytics');
 const notificationsRoute = require('./routes/notifications');
+const photosRoute = require('./routes/photos');
 
 app.use('/api/auth', authController);
 app.use('/api/register', registerRoutes);
@@ -76,6 +77,7 @@ app.use('/api/admin', adminRoute);
 app.use('/api/edit-profile', editProfileRoute);
 app.use('/api/analytics', analyticsRoute);
 app.use('/api/notifications', notificationsRoute);
+app.use('/api/photos', photosRoute);
 
 // Rutas de salud y raíz
 app.get('/', (req, res) => {

@@ -196,6 +196,9 @@ class _ProfilePageState extends State<ProfilePage> {
       // Botón de Editar Perfil (solo para el propio usuario)
       if (isCurrentUserProfile) _buildEditProfileButton(),
       if (isCurrentUserProfile) const SizedBox(height: 10),
+      // Botones de gestión de fotos (solo para el propio usuario)
+      if (isCurrentUserProfile) _buildPhotoManagementButtons(),
+      if (isCurrentUserProfile) const SizedBox(height: 10),
       // Botón de Panel Admin (solo para admins)
       if (isCurrentUserProfile) _buildAdminButton(),
       const SizedBox(height: 20),
@@ -358,6 +361,127 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildPhotoManagementButtons() {
+    // Obtener si el usuario tiene lugar
+    final hasPlace = userInfo?['housingInfo']?['hasPlace'] ?? false;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Row(
+        children: [
+          // Botón de Fotos de Perfil
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.purple.shade400, Colors.purple.shade600],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.purple.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () {
+                    Navigator.pushNamed(
+                      context,
+                      '/manage-profile-photos',
+                      arguments: {'username': widget.username},
+                    );
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(14.0),
+                    child: Column(
+                      children: const [
+                        Icon(Icons.photo_library, color: Colors.white, size: 32),
+                        SizedBox(height: 8),
+                        Text(
+                          'Mis Fotos',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Botón de Fotos del Hogar
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: hasPlace 
+                      ? [Colors.teal.shade400, Colors.teal.shade600]
+                      : [Colors.grey.shade400, Colors.grey.shade600],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: (hasPlace ? Colors.teal : Colors.grey).withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () {
+                    Navigator.pushNamed(
+                      context,
+                      '/manage-home-photos',
+                      arguments: {
+                        'username': widget.username,
+                        'hasPlace': hasPlace,
+                      },
+                    );
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(14.0),
+                    child: Column(
+                      children: const [
+                        Icon(Icons.home_work, color: Colors.white, size: 32),
+                        SizedBox(height: 8),
+                        Text(
+                          'Mi Hogar',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

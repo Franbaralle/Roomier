@@ -1,10 +1,13 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'auth_service.dart';
 import 'firebase_options.dart';
+import 'main.dart' show navigatorKey;
+import 'chat_service.dart';
 
 /// Handler para notificaciones en background
 @pragma('vm:entry-point')
@@ -175,7 +178,7 @@ class NotificationService {
   }
 
   /// Manejar datos de la notificación
-  void _handleNotificationData(Map<String, dynamic> data) {
+  void _handleNotificationData(Map<String, dynamic> data) async {
     print('🔔 Procesando datos de notificación: $data');
 
     final type = data['type'];
@@ -186,7 +189,10 @@ class NotificationService {
         final chatId = data['chatId'];
         final sender = data['sender'];
         print('💬 Mensaje de chat de $sender (ID: $chatId)');
-        // Aquí podrías usar un NavigatorKey global para navegar
+        
+        if (chatId != null && sender != null) {
+          await _navigateToChat(chatId, sender);
+        }
         break;
         
       case 'new_match':
@@ -196,6 +202,69 @@ class NotificationService {
         
       default:
         print('ℹ️ Tipo de notificación desconocido: $type');
+    }
+  }
+  
+  /// Navegar al chat desde una notificación
+  Future<void> _navigateToChat(String chatId, String otherUsername) async {
+    try {
+      // Obtener el contexto del navegador
+      final context = navigatorKey.currentContext;
+      if (context == null) {
+        print('❌ No hay contexto de navegación disponible');
+        return;
+      }
+      
+      // Obtener información del perfil del otro usuario
+      final currentUser = await AuthService().loadUserData('username');
+      if (currentUser == null) {
+        print('❌ No hay usuario actual');
+        return;
+      }
+      
+      // Crear perfil básico con la información disponible
+      Map<String, dynamic> otherUserProfile = {
+        'username': otherUsername,
+      };
+      
+      // Intentar obtener información adicional del chat
+      try {
+        final chats = await ChatService.getUserChats(currentUser);
+        final chat = chats.firstWhere(
+          (c) => c['chatId'] == chatId,
+          orElse: () => <String, dynamic>{},
+        );
+        
+        if (chat.isNotEmpty && chat['users'] != null) {
+          final users = chat['users'] as List<dynamic>;
+          final foundProfile = users.firstWhere(
+            (u) => u['username'] != currentUser,
+            orElse: () => <String, dynamic>{},
+          );
+          
+          if (foundProfile.isNotEmpty) {
+            otherUserProfile = foundProfile;
+          }
+        }
+      } catch (e) {
+        print('⚠️ No se pudo obtener info adicional del chat: $e');
+        // Continuar con el perfil básico
+      }
+      
+      // Navegar al chat - esto siempre redirige correctamente
+      print('🚀 Navegando al chat con $otherUsername (ID: $chatId)');
+      
+      // Remover todas las rutas hasta llegar al home y luego navegar al chat
+      navigatorKey.currentState?.pushNamedAndRemoveUntil(
+        '/chat',
+        (route) => route.settings.name == '/home',
+        arguments: {
+          'profile': otherUserProfile,
+          'chatId': chatId,
+        },
+      );
+    } catch (e) {
+      print('❌ Error navegando al chat: $e');
     }
   }
 

@@ -14,7 +14,7 @@ class ChatPage extends StatefulWidget {
   _ChatPageState createState() => _ChatPageState();
 }
 
-class _ChatPageState extends State<ChatPage> {
+class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
   List<Map<String, dynamic>> _messages = [];
   TextEditingController _messageController = TextEditingController();
   String _currentUser = '';
@@ -30,8 +30,53 @@ class _ChatPageState extends State<ChatPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadCurrentUser();
     _setupSocketListeners();
+  }
+  
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _messageSubscription?.cancel();
+    _typingSubscription?.cancel();
+    _stopTypingSubscription?.cancel();
+    _typingTimer?.cancel();
+    _messageController.dispose();
+    super.dispose();
+  }
+  
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    
+    if (state == AppLifecycleState.resumed && _chatId != null) {
+      // La app volvió del background, recargar mensajes
+      print('🔄 App volvió del background, recargando mensajes...');
+      _refreshMessages();
+    }
+  }
+  
+  /// Recargar mensajes cuando la app vuelve del background
+  Future<void> _refreshMessages() async {
+    if (_chatId == null) return;
+    
+    try {
+      final messages = await ChatService.getChatMessages(_chatId!);
+      setState(() {
+        _messages = messages;
+        _isOtherUserTyping = false; // Limpiar indicador de escritura
+      });
+      
+      // Marcar como leído
+      if (_currentUser.isNotEmpty) {
+        _socketService.markAsRead(_chatId!, _currentUser);
+      }
+      
+      print('✅ Mensajes actualizados correctamente');
+    } catch (e) {
+      print('❌ Error recargando mensajes: $e');
+    }
   }
 
   void _setupSocketListeners() {
@@ -578,19 +623,5 @@ class _ChatPageState extends State<ChatPage> {
         );
       }
     }
-  }
-
-  @override
-  void dispose() {
-    // Notificar al backend que salimos del chat
-    if (_chatId != null && _currentUser.isNotEmpty) {
-      _socketService.emit('leave_chat', {'chatId': _chatId, 'username': _currentUser});
-    }
-    _messageController.dispose();
-    _messageSubscription?.cancel();
-    _typingSubscription?.cancel();
-    _stopTypingSubscription?.cancel();
-    _typingTimer?.cancel();
-    super.dispose();
   }
 }

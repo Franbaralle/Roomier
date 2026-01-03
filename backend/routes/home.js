@@ -209,6 +209,7 @@ router.get('/', async (req, res) => {
         console.log(`- Encontrados ${potentialMatches.length} usuarios potenciales`);
 
         // Filtrar por deal breakers y presupuesto
+        console.log('[HOME DEBUG] Aplicando filtros de deal breakers y presupuesto...');
         potentialMatches = potentialMatches.filter(user => {
             // Verificar deal breakers
             if (!checkDealBreakers(currentUser, user)) {
@@ -222,6 +223,7 @@ router.get('/', async (req, res) => {
 
             return true;
         });
+        console.log(`[HOME DEBUG] Después de filtros: ${potentialMatches.length} usuarios`);
 
         // Calcular compatibilidad para cada usuario
         const profilesWithCompatibility = potentialMatches.map(user => {

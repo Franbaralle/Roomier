@@ -112,7 +112,11 @@ router.post('/profile', verifyToken, upload.array('photos', 10), async (req, res
 router.delete('/profile/:publicId', verifyToken, async (req, res) => {
     try {
         const { publicId } = req.params;
-        const username = req.user.username; // Del middleware verifyToken
+        const username = req.user.username || req.username;
+
+        if (!username) {
+            return res.status(401).json({ message: 'Usuario no autenticado' });
+        }
 
         const user = await User.findOne({ username });
         if (!user) {
@@ -165,11 +169,26 @@ router.delete('/profile/:publicId', verifyToken, async (req, res) => {
 router.put('/profile/:publicId/primary', verifyToken, async (req, res) => {
     try {
         const { publicId } = req.params;
-        const username = req.user.username;
+        const username = req.user.username || req.username;
+        
+        console.log('=== SET PRIMARY PHOTO ===');
+        console.log('PublicId:', publicId);
+        console.log('Username from token:', username);
+
+        if (!username) {
+            return res.status(401).json({ message: 'Usuario no autenticado' });
+        }
 
         const user = await User.findOne({ username });
         if (!user) {
+            console.log('ERROR: Usuario no encontrado:', username);
             return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+
+        // Validar que el usuario tenga fotos
+        if (!user.profilePhotos || user.profilePhotos.length === 0) {
+            console.log('ERROR: Usuario no tiene fotos de perfil');
+            return res.status(404).json({ message: 'No tienes fotos de perfil' });
         }
 
         // Quitar isPrimary de todas las fotos
@@ -181,6 +200,8 @@ router.put('/profile/:publicId/primary', verifyToken, async (req, res) => {
         const newPrimaryPhoto = user.profilePhotos.find(p => p.publicId === publicId);
         
         if (!newPrimaryPhoto) {
+            console.log('ERROR: Foto no encontrada. PublicId:', publicId);
+            console.log('Fotos disponibles:', user.profilePhotos.map(p => p.publicId));
             return res.status(404).json({ message: 'Foto no encontrada' });
         }
 
@@ -191,6 +212,8 @@ router.put('/profile/:publicId/primary', verifyToken, async (req, res) => {
         user.profilePhotoPublicId = newPrimaryPhoto.publicId;
 
         await user.save();
+        
+        console.log('Foto principal actualizada exitosamente');
 
         return res.json({
             message: 'Foto principal actualizada exitosamente',
@@ -332,7 +355,11 @@ router.post('/home', verifyToken, upload.array('photos', 50), async (req, res) =
 router.delete('/home/:publicId', verifyToken, async (req, res) => {
     try {
         const { publicId } = req.params;
-        const username = req.user.username;
+        const username = req.user.username || req.username;
+
+        if (!username) {
+            return res.status(401).json({ message: 'Usuario no autenticado' });
+        }
 
         const user = await User.findOne({ username });
         if (!user) {
@@ -371,7 +398,11 @@ router.put('/home/:publicId/description', verifyToken, async (req, res) => {
     try {
         const { publicId } = req.params;
         const { description } = req.body;
-        const username = req.user.username;
+        const username = req.user.username || req.username;
+
+        if (!username) {
+            return res.status(401).json({ message: 'Usuario no autenticado' });
+        }
 
         const user = await User.findOne({ username });
         if (!user) {

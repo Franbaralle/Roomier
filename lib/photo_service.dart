@@ -81,8 +81,9 @@ class PhotoService {
         throw Exception('No hay token de autenticación');
       }
 
+      final encodedPublicId = Uri.encodeComponent(publicId);
       final response = await http.delete(
-        Uri.parse('$apiUrl/profile/$publicId'),
+        Uri.parse('$apiUrl/profile/$encodedPublicId'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -108,8 +109,9 @@ class PhotoService {
         throw Exception('No hay token de autenticación');
       }
 
+      final encodedPublicId = Uri.encodeComponent(publicId);
       final response = await http.put(
-        Uri.parse('$apiUrl/profile/$publicId/primary'),
+        Uri.parse('$apiUrl/profile/$encodedPublicId/primary'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -204,8 +206,9 @@ class PhotoService {
         throw Exception('No hay token de autenticación');
       }
 
+      final encodedPublicId = Uri.encodeComponent(publicId);
       final response = await http.delete(
-        Uri.parse('$apiUrl/home/$publicId'),
+        Uri.parse('$apiUrl/home/$encodedPublicId'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -231,8 +234,9 @@ class PhotoService {
         throw Exception('No hay token de autenticación');
       }
 
+      final encodedPublicId = Uri.encodeComponent(publicId);
       final response = await http.put(
-        Uri.parse('$apiUrl/home/$publicId/description'),
+        Uri.parse('$apiUrl/home/$encodedPublicId/description'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',

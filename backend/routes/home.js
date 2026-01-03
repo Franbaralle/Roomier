@@ -191,8 +191,14 @@ router.get('/', async (req, res) => {
         const blockedByUsernames = usersWhoBlockedMe.map(u => u.username);
         excludedUsernames.push(...blockedByUsernames);
 
+        // Filtrar por hasPlace: mostrar solo usuarios complementarios
+        // Si tengo lugar (true), mostrar solo usuarios sin lugar (false)
+        // Si no tengo lugar (false), mostrar solo usuarios con lugar (true)
+        const targetHasPlace = !currentUser.housingInfo?.hasPlace;
+
         let potentialMatches = await User.find({ 
-            username: { $nin: excludedUsernames } 
+            username: { $nin: excludedUsernames },
+            'housingInfo.hasPlace': targetHasPlace
         });
 
         // Filtrar por deal breakers y presupuesto

@@ -194,12 +194,19 @@ router.get('/', async (req, res) => {
         // Filtrar por hasPlace: mostrar solo usuarios complementarios
         // Si tengo lugar (true), mostrar solo usuarios sin lugar (false)
         // Si no tengo lugar (false), mostrar solo usuarios con lugar (true)
-        const targetHasPlace = !currentUser.housingInfo?.hasPlace;
+        const currentHasPlace = currentUser.housingInfo?.hasPlace || false;
+        const targetHasPlace = !currentHasPlace;
+
+        console.log(`[HOME DEBUG] Usuario ${currentUsername}:`);
+        console.log(`- hasPlace actual: ${currentHasPlace}`);
+        console.log(`- Buscando usuarios con hasPlace: ${targetHasPlace}`);
 
         let potentialMatches = await User.find({ 
             username: { $nin: excludedUsernames },
             'housingInfo.hasPlace': targetHasPlace
         });
+
+        console.log(`- Encontrados ${potentialMatches.length} usuarios potenciales`);
 
         // Filtrar por deal breakers y presupuesto
         potentialMatches = potentialMatches.filter(user => {

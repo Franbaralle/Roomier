@@ -13,7 +13,15 @@ class RegisterPage extends StatelessWidget {
         title: const Text('Crear Cuenta'),
         centerTitle: true,
         elevation: 0,
-        backgroundColor: Colors.blue.shade700,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF9AD9C7), Color(0xFFB7A7E3)],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            ),
+          ),
+        ),
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -61,10 +69,22 @@ class _RegisterFormState extends State<RegisterForm> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.person_add,
-                size: 64,
-                color: Colors.blue.shade700,
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF9AD9C7), Color(0xFFB7A7E3)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                padding: const EdgeInsets.all(12),
+                child: Image.asset(
+                  'assets/ChatGPT Image 5 ene 2026, 08_41_59.png',
+                  fit: BoxFit.contain,
+                ),
               ),
               const SizedBox(height: 16),
               const Text(
@@ -174,10 +194,10 @@ class _RegisterFormState extends State<RegisterForm> {
                                   onTap: () {
                                     Navigator.pushNamed(context, '/legal/terms');
                                   },
-                                  child: Text(
+                                  child: const Text(
                                     'Términos y Condiciones',
                                     style: TextStyle(
-                                      color: Colors.blue.shade700,
+                                      color: Color(0xFFB7A7E3),
                                       decoration: TextDecoration.underline,
                                       fontSize: 13,
                                     ),
@@ -190,10 +210,10 @@ class _RegisterFormState extends State<RegisterForm> {
                                   onTap: () {
                                     Navigator.pushNamed(context, '/legal/privacy');
                                   },
-                                  child: Text(
+                                  child: const Text(
                                     'Política de Privacidad',
                                     style: TextStyle(
-                                      color: Colors.blue.shade700,
+                                      color: Color(0xFFB7A7E3),
                                       decoration: TextDecoration.underline,
                                       fontSize: 13,
                                     ),
@@ -217,15 +237,31 @@ class _RegisterFormState extends State<RegisterForm> {
                     _registerWithAuthService();
                   } : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: acceptedTerms ? Colors.blue.shade700 : Colors.grey,
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    elevation: 2,
+                    padding: EdgeInsets.zero,
                   ),
-                  child: const Text(
-                    'Continuar',
-                    style: TextStyle(fontSize: 16, color: Colors.white),
+                  child: Ink(
+                    decoration: BoxDecoration(
+                      gradient: acceptedTerms ? const LinearGradient(
+                        colors: [Color(0xFF9AD9C7), Color(0xFFB7A7E3)],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                      ) : null,
+                      color: acceptedTerms ? null : Colors.grey,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Container(
+                      alignment: Alignment.center,
+                      constraints: const BoxConstraints(minHeight: 50),
+                      child: const Text(
+                        'Continuar',
+                        style: TextStyle(fontSize: 16, color: Colors.white),
+                      ),
+                    ),
                   ),
                 ),
               ),

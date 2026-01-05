@@ -40,7 +40,15 @@ class _LoginPageState extends State<LoginPage> {
         title: const Text('Iniciar Sesión'),
         centerTitle: true,
         elevation: 0,
-        backgroundColor: Colors.blue.shade700,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF9AD9C7), Color(0xFFB7A7E3)],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            ),
+          ),
+        ),
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -56,10 +64,21 @@ class _LoginPageState extends State<LoginPage> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    Icons.account_circle,
-                    size: 80,
-                    color: Colors.blue.shade700,
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      padding: const EdgeInsets.all(8),
+                      child: Image.asset(
+                        'assets/ChatGPT Image 5 ene 2026, 08_41_59.png',
+                        fit: BoxFit.contain,
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 24),
                   const Text(
@@ -135,15 +154,30 @@ class _LoginPageState extends State<LoginPage> {
                         );
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue.shade700,
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        elevation: 2,
+                        padding: EdgeInsets.zero,
                       ),
-                      child: const Text(
-                        'Iniciar Sesión',
-                        style: TextStyle(fontSize: 16, color: Colors.white),
+                      child: Ink(
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF9AD9C7), Color(0xFFB7A7E3)],
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Container(
+                          alignment: Alignment.center,
+                          constraints: const BoxConstraints(minHeight: 50),
+                          child: const Text(
+                            'Iniciar Sesión',
+                            style: TextStyle(fontSize: 16, color: Colors.white),
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -170,16 +204,16 @@ class _LoginPageState extends State<LoginPage> {
                         Navigator.pushNamed(context, registerDateRoute);
                       },
                       style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: Colors.blue.shade700, width: 2),
+                        side: const BorderSide(color: Color(0xFFB7A7E3), width: 2),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: Text(
+                      child: const Text(
                         'Crear Cuenta',
                         style: TextStyle(
                           fontSize: 16,
-                          color: Colors.blue.shade700,
+                          color: Color(0xFFB7A7E3),
                         ),
                       ),
                     ),

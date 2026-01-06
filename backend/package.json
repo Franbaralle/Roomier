@@ -13,7 +13,8 @@
     "pm2:logs": "pm2 logs roomier-api",
     "test": "jest --runInBand --detectOpenHandles",
     "test:watch": "jest --watch --runInBand",
-    "test:coverage": "jest --coverage --runInBand"
+    "test:coverage": "jest --coverage --runInBand",
+    "migrate:preferences": "node scripts/migratePreferences.js"
   },
   "jest": {
     "testEnvironment": "node",

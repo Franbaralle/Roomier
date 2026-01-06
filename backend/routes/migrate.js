@@ -150,4 +150,106 @@ router.get('/status', async (req, res) => {
     }
 });
 
+/**
+ * GET /api/migrate/fix-photos
+ * Reparar usuarios que tienen fotos en profilePhotos pero no en profilePhoto
+ */
+router.get('/fix-photos', async (req, res) => {
+    try {
+        // Seguridad básica: requiere clave secreta
+        const { secret } = req.query;
+        if (secret !== 'migrate2024') {
+            return res.status(403).json({ 
+                success: false, 
+                message: 'No autorizado' 
+            });
+        }
+
+        console.log('\n=== REPARANDO FOTOS DE PERFIL ===\n');
+
+        // Encontrar usuarios que tienen fotos en el array pero no en profilePhoto
+        const users = await User.find({
+            $or: [
+                { profilePhotos: { $exists: true, $ne: [] }, profilePhoto: { $exists: false } },
+                { profilePhotos: { $exists: true, $ne: [] }, profilePhoto: null },
+                { profilePhotos: { $exists: true, $ne: [] }, profilePhoto: undefined }
+            ]
+        });
+        
+        console.log(`Encontrados ${users.length} usuarios con fotos inconsistentes\n`);
+
+        const results = {
+            total: users.length,
+            fixed: 0,
+            errors: 0,
+            details: []
+        };
+
+        for (const user of users) {
+            try {
+                console.log(`Reparando usuario: ${user.username}`);
+                console.log(`  Fotos en array: ${user.profilePhotos.length}`);
+                
+                // Encontrar la foto principal o usar la primera
+                let primaryPhoto = user.profilePhotos.find(p => p.isPrimary);
+                if (!primaryPhoto && user.profilePhotos.length > 0) {
+                    primaryPhoto = user.profilePhotos[0];
+                    primaryPhoto.isPrimary = true;
+                }
+
+                if (primaryPhoto) {
+                    await User.updateOne(
+                        { _id: user._id },
+                        { 
+                            $set: { 
+                                profilePhoto: primaryPhoto.url,
+                                profilePhotoPublicId: primaryPhoto.publicId,
+                                'profilePhotos': user.profilePhotos // Actualizar el array con isPrimary
+                            }
+                        }
+                    );
+
+                    results.fixed++;
+                    results.details.push({
+                        username: user.username,
+                        status: 'success',
+                        photosCount: user.profilePhotos.length,
+                        primaryPhotoUrl: primaryPhoto.url
+                    });
+                    
+                    console.log(`  ✓ Usuario ${user.username} reparado exitosamente\n`);
+                }
+            } catch (error) {
+                results.errors++;
+                results.details.push({
+                    username: user.username,
+                    status: 'error',
+                    error: error.message
+                });
+                console.error(`  ✗ Error reparando usuario ${user.username}:`, error.message, '\n');
+            }
+        }
+
+        console.log('\n=== RESUMEN DE REPARACIÓN ===');
+        console.log(`Total usuarios procesados: ${results.total}`);
+        console.log(`Reparados exitosamente: ${results.fixed}`);
+        console.log(`Errores: ${results.errors}`);
+        console.log('============================\n');
+
+        return res.json({
+            success: true,
+            message: 'Reparación completada',
+            results
+        });
+
+    } catch (error) {
+        console.error('Error en la reparación:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Error en la reparación',
+            error: error.message
+        });
+    }
+});
+
 module.exports = router;

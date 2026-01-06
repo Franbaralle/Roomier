@@ -37,7 +37,7 @@ router.get('/preferences', async (req, res) => {
                 console.log(`Migrando usuario: ${user.username}`);
                 
                 // Guardar las preferencias antiguas en legacyPreferences
-                const oldPrefs = [...user.preferences];
+                const oldPrefs = Array.isArray(user.preferences) ? [...user.preferences] : [];
                 
                 // Convertir array de strings a objeto estructurado vacío
                 const newPreferences = {

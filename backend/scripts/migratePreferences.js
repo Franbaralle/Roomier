@@ -24,7 +24,7 @@ async function migratePreferences() {
                 console.log(`  Preferences antiguo:`, user.preferences);
 
                 // Guardar las preferencias antiguas en legacyPreferences
-                const oldPrefs = [...user.preferences];
+                const oldPrefs = Array.isArray(user.preferences) ? [...user.preferences] : [];
                 
                 // Convertir array de strings a objeto estructurado vacío
                 // Los usuarios tendrán que volver a seleccionar sus preferencias con el nuevo sistema

@@ -167,13 +167,9 @@ router.get('/fix-photos', async (req, res) => {
 
         console.log('\n=== REPARANDO FOTOS DE PERFIL ===\n');
 
-        // Encontrar usuarios que tienen fotos en el array pero no en profilePhoto
+        // Encontrar TODOS los usuarios que tienen fotos en profilePhotos
         const users = await User.find({
-            $or: [
-                { profilePhotos: { $exists: true, $ne: [] }, profilePhoto: { $exists: false } },
-                { profilePhotos: { $exists: true, $ne: [] }, profilePhoto: null },
-                { profilePhotos: { $exists: true, $ne: [] }, profilePhoto: undefined }
-            ]
+            profilePhotos: { $exists: true, $ne: [] }
         });
         
         console.log(`Encontrados ${users.length} usuarios con fotos inconsistentes\n`);
@@ -189,6 +185,7 @@ router.get('/fix-photos', async (req, res) => {
             try {
                 console.log(`Reparando usuario: ${user.username}`);
                 console.log(`  Fotos en array: ${user.profilePhotos.length}`);
+                console.log(`  profilePhoto actual: ${user.profilePhoto || 'null/undefined'}`);
                 
                 // Encontrar la foto principal o usar la primera
                 let primaryPhoto = user.profilePhotos.find(p => p.isPrimary);
@@ -198,26 +195,40 @@ router.get('/fix-photos', async (req, res) => {
                 }
 
                 if (primaryPhoto) {
-                    await User.updateOne(
-                        { _id: user._id },
-                        { 
-                            $set: { 
-                                profilePhoto: primaryPhoto.url,
-                                profilePhotoPublicId: primaryPhoto.publicId,
-                                'profilePhotos': user.profilePhotos // Actualizar el array con isPrimary
-                            }
-                        }
-                    );
-
-                    results.fixed++;
-                    results.details.push({
-                        username: user.username,
-                        status: 'success',
-                        photosCount: user.profilePhotos.length,
-                        primaryPhotoUrl: primaryPhoto.url
-                    });
+                    // Solo actualizar si profilePhoto es diferente o está vacío
+                    const needsUpdate = !user.profilePhoto || user.profilePhoto !== primaryPhoto.url;
                     
-                    console.log(`  ✓ Usuario ${user.username} reparado exitosamente\n`);
+                    if (needsUpdate) {
+                        await User.updateOne(
+                            { _id: user._id },
+                            { 
+                                $set: { 
+                                    profilePhoto: primaryPhoto.url,
+                                    profilePhotoPublicId: primaryPhoto.publicId,
+                                    'profilePhotos': user.profilePhotos
+                                }
+                            }
+                        );
+
+                        results.fixed++;
+                        results.details.push({
+                            username: user.username,
+                            status: 'fixed',
+                            photosCount: user.profilePhotos.length,
+                            oldProfilePhoto: user.profilePhoto,
+                            newProfilePhoto: primaryPhoto.url
+                        });
+                        
+                        console.log(`  ✓ Usuario ${user.username} reparado exitosamente\n`);
+                    } else {
+                        results.details.push({
+                            username: user.username,
+                            status: 'ok',
+                            photosCount: user.profilePhotos.length,
+                            profilePhoto: user.profilePhoto
+                        });
+                        console.log(`  ✓ Usuario ${user.username} ya estaba correcto\n`);
+                    }
                 }
             } catch (error) {
                 results.errors++;

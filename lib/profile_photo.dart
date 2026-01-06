@@ -143,43 +143,61 @@ class _ProfilePhotoPageState extends State<ProfilePhotoPage> {
   }
 
   Future<void> _getImage() async {
-    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
+    try {
+      final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
 
-    if (pickedFile != null) {
-      // Recortar la imagen
-      final croppedFile = await ImageCropper().cropImage(
-        sourcePath: pickedFile.path,
-        aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1), // Cuadrado 1:1
-        compressQuality: 90,
-        maxWidth: 800,
-        maxHeight: 800,
-        compressFormat: ImageCompressFormat.jpg,
-        uiSettings: [
-          AndroidUiSettings(
-            toolbarTitle: 'Recortar Foto',
-            toolbarColor: Colors.blue.shade700,
-            toolbarWidgetColor: Colors.white,
-            initAspectRatio: CropAspectRatioPreset.square,
-            lockAspectRatio: true, // Mantener proporción cuadrada
-            activeControlsWidgetColor: Colors.blue.shade700,
-            backgroundColor: Colors.black,
-            dimmedLayerColor: Colors.black.withOpacity(0.8),
-          ),
-          IOSUiSettings(
-            title: 'Recortar Foto',
-            aspectRatioLockEnabled: true,
-            resetAspectRatioEnabled: false,
-            aspectRatioPickerButtonHidden: true,
-          ),
-        ],
-      );
+      if (pickedFile != null) {
+        print('[PROFILE_PHOTO] Imagen seleccionada: ${pickedFile.path}');
+        
+        // Recortar la imagen
+        final croppedFile = await ImageCropper().cropImage(
+          sourcePath: pickedFile.path,
+          aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1), // Cuadrado 1:1
+          compressQuality: 90,
+          maxWidth: 800,
+          maxHeight: 800,
+          compressFormat: ImageCompressFormat.jpg,
+          uiSettings: [
+            AndroidUiSettings(
+              toolbarTitle: 'Recortar Foto',
+              toolbarColor: Colors.blue.shade700,
+              toolbarWidgetColor: Colors.white,
+              initAspectRatio: CropAspectRatioPreset.square,
+              lockAspectRatio: true, // Mantener proporción cuadrada
+              activeControlsWidgetColor: Colors.blue.shade700,
+              backgroundColor: Colors.black,
+              dimmedLayerColor: Colors.black.withOpacity(0.8),
+            ),
+            IOSUiSettings(
+              title: 'Recortar Foto',
+              aspectRatioLockEnabled: true,
+              resetAspectRatioEnabled: false,
+              aspectRatioPickerButtonHidden: true,
+            ),
+          ],
+        );
 
-      if (croppedFile != null) {
-        final imageData = await File(croppedFile.path).readAsBytes();
-        setState(() {
-          _imageData = imageData;
-        });
+        if (croppedFile != null) {
+          print('[PROFILE_PHOTO] Imagen recortada: ${croppedFile.path}');
+          final imageData = await File(croppedFile.path).readAsBytes();
+          setState(() {
+            _imageData = imageData;
+          });
+          print('[PROFILE_PHOTO] Imagen cargada exitosamente, tamaño: ${imageData.length} bytes');
+        } else {
+          print('[PROFILE_PHOTO] Usuario canceló el recorte');
+        }
+      } else {
+        print('[PROFILE_PHOTO] No se seleccionó ninguna imagen');
       }
+    } catch (error) {
+      print('[PROFILE_PHOTO] ERROR al seleccionar/recortar imagen: $error');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al procesar la imagen: $error'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 

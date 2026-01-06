@@ -195,7 +195,8 @@ class AuthService {
   // Método para completar el registro con todos los datos a la vez
   Future<Map<String, dynamic>> completeRegistration(Map<String, dynamic> registrationData) async {
     try {
-      final String completeRegisterUrl = '$apiUrl/register/complete';
+      // Usar ruta correcta para el endpoint de registro completo
+      final String completeRegisterUrl = 'https://roomier-production.up.railway.app/api/register/complete';
       final response = await http.post(
         Uri.parse(completeRegisterUrl),
         headers: {'Content-Type': 'application/json'},

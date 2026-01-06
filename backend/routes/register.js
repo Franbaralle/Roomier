@@ -398,7 +398,8 @@ router.post('/complete', async (req, res) => {
             try {
                 console.log('[REGISTRO COMPLETO] Subiendo foto de perfil a Cloudinary...');
                 const buffer = Buffer.from(profilePhoto, 'base64');
-                profilePhotoUrl = await uploadImage(buffer, username);
+                const uploadResult = await uploadImage(buffer, username);
+                profilePhotoUrl = uploadResult.secure_url; // Extraer solo la URL
                 console.log('[REGISTRO COMPLETO] Foto subida:', profilePhotoUrl);
             } catch (photoError) {
                 console.error('[REGISTRO COMPLETO] Error al subir foto:', photoError);

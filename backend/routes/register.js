@@ -1,4 +1,5 @@
 const express = require('express');
+const bcrypt = require('bcrypt');
 const { Resend } = require('resend');
 const multer = require('multer');
 const { uploadImage } = require('../utils/cloudinary');
@@ -392,6 +393,10 @@ router.post('/complete', async (req, res) => {
         // Generar código de verificación
         const verificationCode = generateVerificationCode();
 
+        // Hashear la contraseña
+        const hashedPassword = await bcrypt.hash(password, 10);
+        console.log('[REGISTRO COMPLETO] Contraseña hasheada');
+
         // Procesar foto de perfil si existe
         let profilePhotoUrl = null;
         if (profilePhoto) {
@@ -410,7 +415,7 @@ router.post('/complete', async (req, res) => {
         // Crear el nuevo usuario con todos los datos
         const newUser = new User({
             username,
-            password, // El modelo de User debe hashear la contraseña
+            password: hashedPassword,
             email,
             birthdate,
             verificationCode,

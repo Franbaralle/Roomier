@@ -26,14 +26,36 @@ class _ProfilePhotoPageState extends State<ProfilePhotoPage> {
   }
 
   Future<void> _updateProfilePhoto() async {
-  try {
-      await AuthService().updateProfilePhoto(widget.username, widget.email, _imageData);
-      Navigator.pushNamed(context, emailRoute, arguments: {'email': widget.email});
-
-  } catch (error) {
-    print('Error al actualizar la foto de perfil: $error');
+    try {
+      final response = await AuthService().updateProfilePhoto(widget.username, widget.email, _imageData);
+      
+      // Si el email no es el del administrador, ir directo al login
+      // (el backend ya marcó como verificado automáticamente)
+      if (widget.email != 'baralle2014@gmail.com') {
+        // Mostrar mensaje y redirigir al login
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Registro completado exitosamente'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        // Esperar un momento y ir al login
+        await Future.delayed(const Duration(seconds: 1));
+        Navigator.pushNamedAndRemoveUntil(context, loginRoute, (route) => false);
+      } else {
+        // Si es el email del admin, ir a verificación de código
+        Navigator.pushNamed(context, emailRoute, arguments: {'email': widget.email});
+      }
+    } catch (error) {
+      print('Error al actualizar la foto de perfil: $error');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $error'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
-}
 
   Future<void> _getImage() async {
     final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);

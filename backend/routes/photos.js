@@ -45,6 +45,9 @@ router.post('/profile', verifyToken, upload.array('photos', 10), async (req, res
             return res.status(404).json({ message: 'Usuario no encontrado' });
         }
 
+        console.log(`Usuario actual tiene ${user.profilePhotos ? user.profilePhotos.length : 0} fotos`);
+        console.log(`Fotos actuales:`, user.profilePhotos);
+
         // Verificar que no exceda el límite de 10 fotos
         const currentPhotosCount = user.profilePhotos ? user.profilePhotos.length : 0;
         const newPhotosCount = req.files.length;
@@ -60,8 +63,10 @@ router.post('/profile', verifyToken, upload.array('photos', 10), async (req, res
             user.profilePhotos = [];
         }
 
-        // Si es la primera foto, marcarla como principal
+        // Solo marcar como principal si NO hay fotos previas
         const isFirstPhoto = user.profilePhotos.length === 0;
+
+        console.log(`Es primera foto: ${isFirstPhoto}`);
 
         // Subir todas las imágenes a Cloudinary
         const uploadPromises = req.files.map(async (file, index) => {
@@ -74,25 +79,33 @@ router.post('/profile', verifyToken, upload.array('photos', 10), async (req, res
             return {
                 url: cloudinaryResult.secure_url,
                 publicId: cloudinaryResult.public_id,
-                isPrimary: isFirstPhoto && index === 0
+                isPrimary: isFirstPhoto && index === 0  // Solo la primera si no había fotos
             };
         });
 
         const uploadedPhotos = await Promise.all(uploadPromises);
         
+        console.log(`Fotos subidas:`, uploadedPhotos);
+
         // Agregar fotos al array del usuario
         user.profilePhotos.push(...uploadedPhotos);
 
-        // Mantener retrocompatibilidad: actualizar profilePhoto con la foto principal
+        console.log(`Total fotos después de agregar: ${user.profilePhotos.length}`);
+
+        // Solo actualizar profilePhoto si es la primera foto o no hay foto principal
         const primaryPhoto = user.profilePhotos.find(p => p.isPrimary);
-        if (primaryPhoto) {
+        if (primaryPhoto && (!user.profilePhoto || isFirstPhoto)) {
+            console.log(`Actualizando profilePhoto a: ${primaryPhoto.url}`);
             user.profilePhoto = primaryPhoto.url;
             user.profilePhotoPublicId = primaryPhoto.publicId;
+        } else {
+            console.log(`Manteniendo profilePhoto existente: ${user.profilePhoto}`);
         }
 
         await user.save();
 
         console.log(`Subidas ${uploadedPhotos.length} fotos exitosamente para ${username}`);
+        console.log(`=== FIN ADDING PROFILE PHOTOS ===\n`);
 
         return res.json({
             message: 'Fotos de perfil agregadas exitosamente',

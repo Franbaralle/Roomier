@@ -49,21 +49,59 @@ router.post('/login', loginLimiter, async (req, res) => {
   try {
     const { username, password } = req.body;
 
+    // Validar que se enviaron los campos requeridos
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Usuario y contraseña son requeridos' });
+    }
+
     // Buscar al usuario por nombre de usuario
     const user = await User.findOne({ username });
 
     if (!user) {
-      return res.status(401).json({ error: 'Usuario o contraseña inválidos' });
+      console.log(`Intento de login fallido: usuario "${username}" no encontrado`);
+      return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
+    }
+
+    // Verificar estado de la cuenta
+    if (user.accountStatus === 'suspended') {
+      const now = new Date();
+      if (user.suspendedUntil && user.suspendedUntil > now) {
+        return res.status(403).json({ 
+          error: 'Cuenta suspendida',
+          message: `Tu cuenta está suspendida hasta ${user.suspendedUntil.toLocaleDateString()}`,
+          suspendedUntil: user.suspendedUntil
+        });
+      } else {
+        // Si la suspensión expiró, reactivar cuenta
+        user.accountStatus = 'active';
+        user.suspendedUntil = null;
+        await user.save();
+      }
+    }
+
+    if (user.accountStatus === 'banned') {
+      return res.status(403).json({ 
+        error: 'Cuenta bloqueada',
+        message: 'Tu cuenta ha sido bloqueada permanentemente',
+        reason: user.banReason
+      });
     }
 
     // Verificar si la contraseña es válida
     const isValidPassword = await bcrypt.compare(password, user.password);
 
     if (!isValidPassword) {
-      return res.status(401).json({ error: 'Usuario o contraseña inválidos' });
+      console.log(`Intento de login fallido: contraseña incorrecta para usuario "${username}"`);
+      return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
     }
 
+    // Actualizar última actividad
+    user.lastActive = new Date();
+    await user.save();
+
     const token = jwt.sign({ username: user.username, userId: user._id }, jwtSecret, { expiresIn: jwtExpiration });
+
+    console.log(`Login exitoso: usuario "${username}"`);
 
     res.status(200).json({ 
       message: 'Inicio de sesión exitoso', 
@@ -73,7 +111,7 @@ router.post('/login', loginLimiter, async (req, res) => {
       isAdmin: user.isAdmin || false
     });
   } catch (error) {
-    console.error(error);
+    console.error('Error en login:', error);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });

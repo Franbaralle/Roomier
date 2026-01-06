@@ -178,4 +178,69 @@ router.post('/mark_as_read', async (req, res) => {
     }
 });
 
+// Obtener matches sin conversación iniciada
+router.get('/pending_matches/:username', async (req, res) => {
+    const { username } = req.params;
+
+    try {
+        const user = await User.findOne({ username });
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Obtener todos los matches del usuario
+        const matches = user.isMatch || [];
+
+        // Obtener todos los chats del usuario
+        const chats = await Chat.find({ users: user._id })
+            .populate('users', 'username');
+
+        // Crear un Set con los usernames de usuarios con los que ya tiene chat
+        const usersWithChat = new Set();
+        chats.forEach(chat => {
+            chat.users.forEach(u => {
+                if (u.username !== username) {
+                    usersWithChat.add(u.username);
+                }
+            });
+        });
+
+        // Filtrar matches que NO tienen chat iniciado
+        const pendingMatchUsernames = matches.filter(matchUsername => 
+            !usersWithChat.has(matchUsername)
+        );
+
+        // Obtener información de los usuarios pendientes
+        const pendingMatchUsers = await User.find(
+            { username: { $in: pendingMatchUsernames } },
+            'username profilePhoto'
+        );
+
+        // Formatear la respuesta
+        const formattedMatches = pendingMatchUsers.map(matchUser => {
+            let profilePhotoUrl = null;
+            if (matchUser.profilePhoto) {
+                if (typeof matchUser.profilePhoto === 'string') {
+                    // Es una URL de Cloudinary
+                    profilePhotoUrl = matchUser.profilePhoto;
+                } else if (Buffer.isBuffer(matchUser.profilePhoto)) {
+                    // Legacy: convertir Buffer a base64
+                    profilePhotoUrl = matchUser.profilePhoto.toString('base64');
+                }
+            }
+
+            return {
+                username: matchUser.username,
+                profilePhoto: profilePhotoUrl
+            };
+        });
+
+        res.status(200).json({ matches: formattedMatches });
+    } catch (error) {
+        console.error('Error fetching pending matches:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
 module.exports = router;

@@ -67,6 +67,11 @@ class AuthService {
           'username': username,
           'password': password,
         }),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw Exception('TIMEOUT: La conexión tardó demasiado. Verifica tu conexión a internet.');
+        },
       );
 
       if (response.statusCode == 200) {
@@ -74,7 +79,8 @@ class AuthService {
         currentUserUsername = username;
         final profileDataResponse = await http.get(
           Uri.parse('$api/profile/$username'),
-          // Puedes agregar encabezados u otros parámetros según sea necesario
+        ).timeout(
+          const Duration(seconds: 10),
         );
 
         // Almacenar el token en SharedPreferences
@@ -106,37 +112,108 @@ class AuthService {
         } else {
           print(
               'Error al obtener la información del perfil. Código de estado: ${profileDataResponse.statusCode}');
-          // Mostrar un mensaje de error al usuario
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Error al obtener la información del perfil.'),
-              duration: Duration(seconds: 3),
+              content: Text('Error al cargar el perfil. Intenta nuevamente.'),
+              duration: Duration(seconds: 4),
+              backgroundColor: Colors.orange,
             ),
           );
         }
-      } else {
-        print(
-            'Inicio de sesión fallido. Código de estado: ${response.statusCode}');
-        // Mostrar un mensaje de error al usuario
+      } else if (response.statusCode == 401) {
+        // Credenciales incorrectas
+        print('Credenciales incorrectas para usuario: $username');
+        final errorData = json.decode(response.body);
+        final errorMessage = errorData['error'] ?? 'Usuario o contraseña incorrectos';
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ $errorMessage'),
+            duration: const Duration(seconds: 4),
+            backgroundColor: Colors.red[700],
+          ),
+        );
+      } else if (response.statusCode == 429) {
+        // Demasiados intentos
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content:
-                Text('Inicio de sesión fallido. Verifica tus credenciales.'),
-            duration: Duration(seconds: 3),
+            content: Text('⏱️ Demasiados intentos. Espera un momento e intenta nuevamente.'),
+            duration: Duration(seconds: 5),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      } else if (response.statusCode >= 500) {
+        // Error del servidor
+        print('Error del servidor: ${response.statusCode}');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('🔧 El servidor está experimentando problemas. Intenta más tarde.'),
+            duration: Duration(seconds: 4),
+            backgroundColor: Colors.deepOrange,
+          ),
+        );
+      } else {
+        // Otro error
+        print('Inicio de sesión fallido. Código de estado: ${response.statusCode}');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error inesperado (${response.statusCode}). Intenta nuevamente.'),
+            duration: const Duration(seconds: 3),
+            backgroundColor: Colors.red,
           ),
         );
       }
-    } catch (error) {
-      print('Error durante el inicio de sesión: $error');
-      // Mostrar un mensaje de error al usuario
+    } on http.ClientException catch (error) {
+      // Error de conexión (DNS, red, etc.)
+      print('Error de conexión: $error');
+      String errorMessage = '📡 Sin conexión al servidor';
+      
+      if (error.toString().contains('Failed host lookup')) {
+        errorMessage = '🌐 No se pudo conectar al servidor.\n\nVerifica tu conexión a internet.';
+      } else if (error.toString().contains('Connection refused')) {
+        errorMessage = '🚫 El servidor no está disponible.';
+      } else if (error.toString().contains('Connection timed out')) {
+        errorMessage = '⏱️ Tiempo de espera agotado.\n\nVerifica tu conexión.';
+      }
+      
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content:
-              Text('Error durante el inicio de sesión. Inténtalo de nuevo.'),
-          duration: Duration(seconds: 3),
+        SnackBar(
+          content: Text(errorMessage),
+          duration: const Duration(seconds: 5),
+          backgroundColor: Colors.blue[900],
+          action: SnackBarAction(
+            label: 'Entendido',
+            textColor: Colors.white,
+            onPressed: () {},
+          ),
         ),
       );
-      // Puedes lanzar una excepción aquí si es necesario.
+    } on Exception catch (error) {
+      // Otros errores (timeout, etc.)
+      print('Error durante el inicio de sesión: $error');
+      String errorMessage = 'Error de conexión. Verifica tu internet.';
+      
+      if (error.toString().contains('TIMEOUT')) {
+        errorMessage = '⏱️ La conexión tardó demasiado.\n\nVerifica tu conexión a internet.';
+      }
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMessage),
+          duration: const Duration(seconds: 5),
+          backgroundColor: Colors.indigo[900],
+        ),
+      );
+    } catch (error) {
+      // Error genérico
+      print('Error inesperado durante el inicio de sesión: $error');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('❌ Error inesperado. Intenta nuevamente.'),
+          duration: Duration(seconds: 3),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 

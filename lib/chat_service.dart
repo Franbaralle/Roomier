@@ -131,4 +131,28 @@ static Future<String?> createChat(String userA, String userB) async {
       print('Error marking messages as read: $error');
     }
   }
+
+  // Método para obtener matches sin conversación iniciada
+  static Future<List<Map<String, dynamic>>> getPendingMatches(String username) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$apiUrl/pending_matches/$username'),
+        headers: <String, String>{
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        final List<dynamic> matches = responseData['matches'];
+        return matches.cast<Map<String, dynamic>>();
+      } else {
+        print('Error fetching pending matches: ${response.statusCode}');
+        return [];
+      }
+    } catch (error) {
+      print('Error fetching pending matches: $error');
+      return [];
+    }
+  }
 }

@@ -218,7 +218,7 @@ class AuthService {
   }
 
   Future<void> updatePreferences(
-      String username, List<String> preferences) async {
+      String username, Map<String, Map<String, List<String>>> preferences) async {
     try {
       final String updatePreferencesUrl = '$api/register/preferences';
       final response = await http.post(
@@ -241,6 +241,39 @@ class AuthService {
       }
     } catch (error) {
       print('Error al actualizar las preferencias: $error');
+    }
+  }
+
+  Future<void> updateRoommatePreferences(
+    String username,
+    String gender,
+    int ageMin,
+    int ageMax,
+  ) async {
+    try {
+      final String updateRoommatePreferencesUrl = '$api/register/roommate-preferences';
+      final response = await http.post(
+        Uri.parse(updateRoommatePreferencesUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'username': username,
+          'gender': gender,
+          'ageMin': ageMin,
+          'ageMax': ageMax,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        print('Preferencias de roommate actualizadas exitosamente');
+      } else if (response.statusCode == 404) {
+        print('Usuario no encontrado');
+      } else {
+        print(
+            'Error al actualizar las preferencias de roommate. Status code: ${response.statusCode}');
+        print('Response Body: ${response.body}');
+      }
+    } catch (error) {
+      print('Error al actualizar las preferencias de roommate: $error');
     }
   }
 

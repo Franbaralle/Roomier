@@ -5,9 +5,51 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true },
   email: { type: String, required: false },
   birthdate: { type: Date, required: false },
+  gender: { type: String, enum: ['male', 'female', 'other'], required: false }, // Género del usuario
   
-  // Intereses/hobbies (PÚBLICO)
-  preferences: [{type: String}],
+  // Intereses/hobbies (PÚBLICO) - Sistema categorizado
+  preferences: {
+    convivencia: {
+      hogar: [{ type: String }], // Plantas/Jardinería, Decoración, DIY, etc.
+      social: [{ type: String }], // Anfitrión de cenas, Salidas nocturnas, etc.
+      mascotas: [{ type: String }] // Dog lover, Cat lover, etc.
+    },
+    gastronomia: {
+      habitos: [{ type: String }], // Vegetariana, Vegana, etc.
+      bebidas: [{ type: String }], // Café de especialidad, etc.
+      habilidades: [{ type: String }] // Repostería, Parrillero, etc.
+    },
+    deporte: {
+      intensidad: [{ type: String }], // Gimnasio, Crossfit, etc.
+      menteCuerpo: [{ type: String }], // Yoga, Meditación, etc.
+      deportesPelota: [{ type: String }], // Fútbol, Básquet, etc.
+      aguaNaturaleza: [{ type: String }] // Trekking, Surf, etc.
+    },
+    entretenimiento: {
+      pantalla: [{ type: String }], // Cine independiente, etc.
+      musica: [{ type: String }], // Conciertos, Festivales, etc.
+      gaming: [{ type: String }] // Videojuegos competitivos, etc.
+    },
+    creatividad: {
+      artesPlasticas: [{ type: String }], // Dibujo/Pintura, etc.
+      tecnologia: [{ type: String }], // Programación, IA, etc.
+      moda: [{ type: String }] // Upcycling, Vintage, etc.
+    },
+    interesesSociales: {
+      causas: [{ type: String }], // Activismo ambiental, etc.
+      conocimiento: [{ type: String }] // Idiomas, Historia, etc.
+    }
+  },
+  
+  // Legacy preferences field para migración gradual
+  legacyPreferences: [{ type: String }],
+  
+  // Preferencias de roommate (PÚBLICO - para filtrado de matching)
+  roommatePreferences: {
+    gender: { type: String, enum: ['male', 'female', 'both'], default: 'both' }, // Género preferido
+    ageMin: { type: Number, min: 18, max: 100, required: false }, // Edad mínima
+    ageMax: { type: Number, min: 18, max: 100, required: false } // Edad máxima
+  },
   
   // Información personal básica (PÚBLICO excepto religión y política)
   personalInfo: {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'auth_service.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'preferences_data.dart';
 
 class EditProfilePage extends StatefulWidget {
   final String username;
@@ -21,8 +22,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
   final AuthService authService = AuthService();
   bool _isLoading = false;
 
-  // Controllers para intereses
-  List<TextEditingController> _interestControllers = List.generate(5, (_) => TextEditingController());
+  // Mapa para almacenar las preferencias seleccionadas por categoría y subcategoría
+  Map<String, Map<String, List<String>>> selectedPreferences = {};
+  
+  // Categoría actualmente expandida en la sección de intereses
+  String? expandedInterestCategory;
 
   // Variables para hábitos de convivencia
   String? _smoker;
@@ -47,6 +51,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
   @override
   void initState() {
     super.initState();
+    // Inicializar estructura vacía para preferencias
+    for (var mainCat in PreferencesData.categories.keys) {
+      selectedPreferences[mainCat] = {};
+      for (var subCat in PreferencesData.categories[mainCat]!.keys) {
+        selectedPreferences[mainCat]![subCat] = [];
+      }
+    }
     _loadCurrentData();
   }
 
@@ -60,17 +71,22 @@ class _EditProfilePageState extends State<EditProfilePage> {
     print('========================');
     
     try {
-      // Cargar intereses (preferences es un array directamente)
+      // Cargar preferencias estructuradas
       final preferencesData = widget.currentUserData['preferences'];
-      List<String> interests = [];
-      if (preferencesData != null && preferencesData is List) {
-        interests = preferencesData.map((e) => e?.toString() ?? '').where((s) => s.isNotEmpty).toList();
-      }
-      for (int i = 0; i < interests.length && i < 5; i++) {
-        _interestControllers[i].text = interests[i];
+      if (preferencesData != null && preferencesData is Map) {
+        preferencesData.forEach((mainCat, subCats) {
+          if (subCats is Map && selectedPreferences.containsKey(mainCat)) {
+            subCats.forEach((subCat, tags) {
+              if (tags is List && selectedPreferences[mainCat]!.containsKey(subCat)) {
+                selectedPreferences[mainCat]![subCat] = 
+                  tags.map((e) => e?.toString() ?? '').where((s) => s.isNotEmpty).toList();
+              }
+            });
+          }
+        });
       }
     } catch (e) {
-      print('Error loading personal info: $e');
+      print('Error loading preferences: $e');
     }
 
     try {
@@ -146,22 +162,56 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
 
 
+  // Contar total de tags seleccionados
+  int getTotalSelectedCount() {
+    int count = 0;
+    selectedPreferences.forEach((mainCat, subCats) {
+      subCats.forEach((subCat, tags) {
+        count += tags.length;
+      });
+    });
+    return count;
+  }
+
+  // Contar tags seleccionados en una subcategoría específica
+  int getSubcategoryCount(String mainCat, String subCat) {
+    return selectedPreferences[mainCat]?[subCat]?.length ?? 0;
+  }
+
+  // Toggle de un tag
+  void toggleTag(String mainCat, String subCat, String tag) {
+    setState(() {
+      final currentTags = selectedPreferences[mainCat]![subCat]!;
+      if (currentTags.contains(tag)) {
+        currentTags.remove(tag);
+      } else {
+        // Limitar a 5 por subcategoría
+        if (currentTags.length < 5) {
+          currentTags.add(tag);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Máximo 5 tags por subcategoría'),
+              duration: Duration(seconds: 2),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      }
+    });
+  }
+
   Future<void> _updateInterests() async {
     setState(() => _isLoading = true);
     try {
-      List<String> interests = _interestControllers
-          .map((c) => c.text.trim())
-          .where((text) => text.isNotEmpty)
-          .toList();
-
       final token = authService.loadUserData('accessToken');
       final response = await http.put(
-        Uri.parse('${AuthService.api}/edit-profile/interests'),
+        Uri.parse('${AuthService.api}/edit-profile/preferences'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
-        body: jsonEncode({'interests': interests}),
+        body: jsonEncode({'preferences': selectedPreferences}),
       );
 
       if (response.statusCode == 200) {
@@ -281,31 +331,184 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 
   Widget _buildInterestsSection() {
+    final totalSelected = getTotalSelectedCount();
+    
     return Card(
       elevation: 4,
       child: ExpansionTile(
-        title: const Text('Intereses (máx. 5)', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Row(
+          children: [
+            const Text('Tus Intereses', style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(width: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: totalSelected > 0 ? Colors.blue.shade100 : Colors.grey.shade200,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '$totalSelected tags',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: totalSelected > 0 ? Colors.blue.shade700 : Colors.grey[600],
+                ),
+              ),
+            ),
+          ],
+        ),
         children: [
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                for (int i = 0; i < 5; i++)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: TextField(
-                      controller: _interestControllers[i],
-                      decoration: InputDecoration(
-                        labelText: 'Interés ${i + 1}',
-                        border: const OutlineInputBorder(),
-                      ),
-                    ),
+                Text(
+                  'Selecciona hasta 5 tags por subcategoría',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[600],
                   ),
-                const SizedBox(height: 10),
-                ElevatedButton(
-                  onPressed: _updateInterests,
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple),
-                  child: const Text('Guardar Intereses'),
+                ),
+                const SizedBox(height: 16),
+                ...PreferencesData.categories.entries.map((mainCatEntry) {
+                  final mainCat = mainCatEntry.key;
+                  final subCategories = mainCatEntry.value;
+                  final isExpanded = expandedInterestCategory == mainCat;
+                  
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    elevation: 1,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      children: [
+                        InkWell(
+                          onTap: () {
+                            setState(() {
+                              expandedInterestCategory = isExpanded ? null : mainCat;
+                            });
+                          },
+                          borderRadius: BorderRadius.circular(8),
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    PreferencesData.categoryLabels[mainCat] ?? mainCat,
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.blue.shade700,
+                                    ),
+                                  ),
+                                ),
+                                Icon(
+                                  isExpanded ? Icons.expand_less : Icons.expand_more,
+                                  color: Colors.blue.shade700,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        if (isExpanded)
+                          ...subCategories.entries.map((subCatEntry) {
+                            final subCat = subCatEntry.key;
+                            final tags = subCatEntry.value;
+                            final selectedCount = getSubcategoryCount(mainCat, subCat);
+                            
+                            return Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                border: Border(
+                                  top: BorderSide(color: Colors.grey.shade200),
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Text(
+                                        PreferencesData.subcategoryLabels[subCat] ?? subCat,
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.grey[800],
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: selectedCount > 0
+                                              ? Colors.blue.shade100
+                                              : Colors.grey.shade200,
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                        child: Text(
+                                          '$selectedCount/5',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold,
+                                            color: selectedCount > 0
+                                                ? Colors.blue.shade700
+                                                : Colors.grey[600],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Wrap(
+                                    spacing: 6,
+                                    runSpacing: 6,
+                                    children: tags.map((tag) {
+                                      final isSelected = selectedPreferences[mainCat]![subCat]!.contains(tag);
+                                      
+                                      return FilterChip(
+                                        label: Text(
+                                          PreferencesData.tagLabels[tag] ?? tag,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: isSelected ? Colors.white : Colors.grey[800],
+                                          ),
+                                        ),
+                                        selected: isSelected,
+                                        onSelected: (_) => toggleTag(mainCat, subCat, tag),
+                                        selectedColor: Colors.blue.shade600,
+                                        checkmarkColor: Colors.white,
+                                        backgroundColor: Colors.grey[100],
+                                        elevation: isSelected ? 2 : 1,
+                                        pressElevation: 3,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 6,
+                                        ),
+                                      );
+                                    }).toList(),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                      ],
+                    ),
+                  );
+                }).toList(),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _updateInterests,
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple),
+                    child: const Text('Guardar Intereses'),
+                  ),
                 ),
               ],
             ),
@@ -449,9 +652,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   @override
   void dispose() {
-    for (var controller in _interestControllers) {
-      controller.dispose();
-    }
     _moveInDateController.dispose();
     _cityController.dispose();
     _budgetMinController.dispose();

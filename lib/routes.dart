@@ -2,6 +2,7 @@ const String loginRoute = '/login';
 const String registerDateRoute = '/register/date';
 const String registerRoute = '/register';
 const String registerPreferencesRoute = '/register/preferences';
+const String roommatePreferencesRoute = '/register/roommate-preferences';
 const String livingHabitsRoute = '/register/living_habits';
 const String housingInfoRoute = '/register/housing_info';
 const String registerPersonalInfoRoute = '/register/personal_info';

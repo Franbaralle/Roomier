@@ -85,10 +85,51 @@ function calculateCompatibility(userA, userB) {
     let interestsScore = 0;
     
     if (userA.preferences && userB.preferences) {
-        const commonInterests = userA.preferences.filter(pref => 
-            userB.preferences.includes(pref)
-        );
-        interestsScore = (commonInterests.length / Math.max(userA.preferences.length, userB.preferences.length, 1)) * 100;
+        let totalCommonInterests = 0;
+        let totalPossibleInterests = 0;
+        
+        // Función para contar tags en una estructura de preferencias
+        const countTags = (prefs) => {
+            let count = 0;
+            if (!prefs || typeof prefs !== 'object') return count;
+            
+            for (const mainCat in prefs) {
+                if (typeof prefs[mainCat] === 'object') {
+                    for (const subCat in prefs[mainCat]) {
+                        if (Array.isArray(prefs[mainCat][subCat])) {
+                            count += prefs[mainCat][subCat].length;
+                        }
+                    }
+                }
+            }
+            return count;
+        };
+        
+        // Función para obtener todos los tags de las preferencias
+        const getAllTags = (prefs) => {
+            const tags = [];
+            if (!prefs || typeof prefs !== 'object') return tags;
+            
+            for (const mainCat in prefs) {
+                if (typeof prefs[mainCat] === 'object') {
+                    for (const subCat in prefs[mainCat]) {
+                        if (Array.isArray(prefs[mainCat][subCat])) {
+                            tags.push(...prefs[mainCat][subCat]);
+                        }
+                    }
+                }
+            }
+            return tags;
+        };
+        
+        const tagsA = getAllTags(userA.preferences);
+        const tagsB = getAllTags(userB.preferences);
+        
+        // Contar intereses comunes
+        totalCommonInterests = tagsA.filter(tag => tagsB.includes(tag)).length;
+        totalPossibleInterests = Math.max(tagsA.length, tagsB.length, 1);
+        
+        interestsScore = (totalCommonInterests / totalPossibleInterests) * 100;
         score += interestsScore * (interestsWeight / 100);
         totalWeight += interestsWeight;
     }
@@ -142,6 +183,55 @@ function checkDealBreakers(userA, userB) {
     }
 
     return true;
+}
+
+// Función para verificar preferencias de roommate (género y edad)
+function checkRoommatePreferences(userA, userB) {
+    // Verificar preferencia de género de A hacia B
+    if (userA.roommatePreferences?.gender && userB.gender) {
+        if (userA.roommatePreferences.gender !== 'both' && 
+            userA.roommatePreferences.gender !== userB.gender) {
+            return false;
+        }
+    }
+
+    // Verificar preferencia de género de B hacia A
+    if (userB.roommatePreferences?.gender && userA.gender) {
+        if (userB.roommatePreferences.gender !== 'both' && 
+            userB.roommatePreferences.gender !== userA.gender) {
+            return false;
+        }
+    }
+
+    // Verificar rango de edad de A hacia B
+    if (userA.roommatePreferences?.ageMin && userA.roommatePreferences?.ageMax && userB.birthdate) {
+        const ageB = calculateAge(userB.birthdate);
+        if (ageB < userA.roommatePreferences.ageMin || ageB > userA.roommatePreferences.ageMax) {
+            return false;
+        }
+    }
+
+    // Verificar rango de edad de B hacia A
+    if (userB.roommatePreferences?.ageMin && userB.roommatePreferences?.ageMax && userA.birthdate) {
+        const ageA = calculateAge(userA.birthdate);
+        if (ageA < userB.roommatePreferences.ageMin || ageA > userB.roommatePreferences.ageMax) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+// Función auxiliar para calcular edad
+function calculateAge(birthdate) {
+    const today = new Date();
+    const birth = new Date(birthdate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+        age--;
+    }
+    return age;
 }
 
 // Función para verificar compatibilidad de presupuesto
@@ -202,10 +292,15 @@ router.get('/', async (req, res) => {
             'housingInfo.hasPlace': targetHasPlace
         });
 
-        // Filtrar por deal breakers y presupuesto
+        // Filtrar por deal breakers, presupuesto y preferencias de roommate
         potentialMatches = potentialMatches.filter(user => {
             // Verificar deal breakers
             if (!checkDealBreakers(currentUser, user)) {
+                return false;
+            }
+
+            // Verificar preferencias de roommate (género y edad)
+            if (!checkRoommatePreferences(currentUser, user)) {
                 return false;
             }
 

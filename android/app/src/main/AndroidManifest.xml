@@ -41,6 +41,16 @@
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="chat_messages" />
         
+        <!-- Icono de notificación (debe ser drawable monocromo) -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_notification" />
+        
+        <!-- Color del icono de notificación -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/notification_color" />
+        
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

@@ -62,11 +62,38 @@ router.post('/preferences', async (req, res) => {
             return res.status(404).json({ message: 'Usuario no encontrado' });
         }
 
-        if (!Array.isArray(preferences)) {
-            return res.status(400).json({ message: 'Las preferencias deben ser proporcionadas como un array' });
+        // Validar estructura de preferencias categorizadas
+        if (!preferences || typeof preferences !== 'object') {
+            return res.status(400).json({ message: 'Las preferencias deben ser un objeto con categorías' });
         }
 
-        user.preferences = preferences;
+        // Validar que cada categoría tenga subcategorías válidas
+        const validStructure = {
+            convivencia: ['hogar', 'social', 'mascotas'],
+            gastronomia: ['habitos', 'bebidas', 'habilidades'],
+            deporte: ['intensidad', 'menteCuerpo', 'deportesPelota', 'aguaNaturaleza'],
+            entretenimiento: ['pantalla', 'musica', 'gaming'],
+            creatividad: ['artesPlasticas', 'tecnologia', 'moda'],
+            interesesSociales: ['causas', 'conocimiento']
+        };
+
+        // Validar y limpiar preferencias
+        const cleanedPreferences = {};
+        for (const [mainCat, subCats] of Object.entries(validStructure)) {
+            if (preferences[mainCat]) {
+                cleanedPreferences[mainCat] = {};
+                for (const subCat of subCats) {
+                    if (preferences[mainCat][subCat] && Array.isArray(preferences[mainCat][subCat])) {
+                        // Limitar a 5 tags por subcategoría
+                        cleanedPreferences[mainCat][subCat] = preferences[mainCat][subCat].slice(0, 5);
+                    } else {
+                        cleanedPreferences[mainCat][subCat] = [];
+                    }
+                }
+            }
+        }
+
+        user.preferences = cleanedPreferences;
         await user.save();
 
         return res.json({ message: 'Preferencias actualizadas exitosamente durante el registro' });
@@ -77,6 +104,58 @@ router.post('/preferences', async (req, res) => {
             return res.status(400).json({ message: 'Error de duplicado. Ya existen preferencias para este usuario.' });
         }
 
+        return res.status(500).json({ message: 'Error interno del servidor' });
+    }
+});
+
+// POST /api/register/roommate-preferences
+// Actualizar preferencias de roommate durante el registro
+router.post('/roommate-preferences', async (req, res) => {
+    const { username, gender, ageMin, ageMax } = req.body;
+
+    try {
+        const user = await User.findOne({ username });
+
+        if (!user) {
+            return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+
+        // Validaciones
+        if (!gender || !['male', 'female', 'both'].includes(gender)) {
+            return res.status(400).json({ message: 'Género inválido. Debe ser: male, female o both' });
+        }
+
+        if (ageMin !== undefined && ageMin !== null) {
+            if (ageMin < 18 || ageMin > 100) {
+                return res.status(400).json({ message: 'Edad mínima debe estar entre 18 y 100' });
+            }
+        }
+
+        if (ageMax !== undefined && ageMax !== null) {
+            if (ageMax < 18 || ageMax > 100) {
+                return res.status(400).json({ message: 'Edad máxima debe estar entre 18 y 100' });
+            }
+        }
+
+        if (ageMin && ageMax && ageMin > ageMax) {
+            return res.status(400).json({ message: 'La edad mínima no puede ser mayor que la máxima' });
+        }
+
+        // Actualizar preferencias de roommate
+        user.roommatePreferences = {
+            gender: gender,
+            ageMin: ageMin || 18,
+            ageMax: ageMax || 100
+        };
+
+        await user.save();
+
+        return res.json({ 
+            message: 'Preferencias de roommate actualizadas exitosamente',
+            roommatePreferences: user.roommatePreferences
+        });
+    } catch (error) {
+        console.error('Error al actualizar preferencias de roommate:', error);
         return res.status(500).json({ message: 'Error interno del servidor' });
     }
 });

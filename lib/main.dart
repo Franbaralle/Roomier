@@ -5,6 +5,7 @@ import 'routes.dart';
 import 'date.dart';
 import 'register.dart';
 import 'preferences.dart';
+import 'roommate_preferences_page.dart';
 import 'living_habits_page.dart';
 import 'housing_info_page.dart';
 import 'personal_info.dart';
@@ -60,6 +61,17 @@ class MyApp extends StatelessWidget {
                 email: email?.toString() ?? '');
           }
           return PreferencesPage(username: '', email: '');
+        },
+        roommatePreferencesRoute: (context) {
+          final arguments = ModalRoute.of(context)!.settings.arguments;
+          if (arguments != null && arguments is Map<String, dynamic>) {
+            dynamic username = arguments['username'];
+            dynamic email = arguments['email'];
+            return RoommatePreferencesPage(
+                username: username?.toString() ?? '',
+                email: email?.toString() ?? '');
+          }
+          return RoommatePreferencesPage(username: '', email: '');
         },
         livingHabitsRoute: (context) {
           final arguments = ModalRoute.of(context)!.settings.arguments;

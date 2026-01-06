@@ -359,4 +359,100 @@ router.post('/verify', async (req, res) => {
     }
 });
 
+// Endpoint para registro completo con todos los datos a la vez
+router.post('/complete', async (req, res) => {
+    try {
+        const {
+            username,
+            password,
+            email,
+            birthdate,
+            preferences,
+            roommatePreferences,
+            livingHabits,
+            dealBreakers,
+            housingInfo,
+            personalInfo,
+            profilePhoto
+        } = req.body;
+
+        console.log('[REGISTRO COMPLETO] Iniciando registro para:', username);
+
+        // Validar datos requeridos
+        if (!username || !password || !email || !birthdate) {
+            return res.status(400).json({ message: 'Faltan datos requeridos (username, password, email, birthdate)' });
+        }
+
+        // Verificar si el usuario ya existe
+        const existingUser = await User.findOne({ $or: [{ username }, { email }] });
+        if (existingUser) {
+            return res.status(400).json({ message: 'El usuario o email ya existe' });
+        }
+
+        // Generar código de verificación
+        const verificationCode = generateVerificationCode();
+
+        // Procesar foto de perfil si existe
+        let profilePhotoUrl = null;
+        if (profilePhoto) {
+            try {
+                console.log('[REGISTRO COMPLETO] Subiendo foto de perfil a Cloudinary...');
+                const buffer = Buffer.from(profilePhoto, 'base64');
+                profilePhotoUrl = await uploadImage(buffer, username);
+                console.log('[REGISTRO COMPLETO] Foto subida:', profilePhotoUrl);
+            } catch (photoError) {
+                console.error('[REGISTRO COMPLETO] Error al subir foto:', photoError);
+                // No bloquear el registro por error en foto
+            }
+        }
+
+        // Crear el nuevo usuario con todos los datos
+        const newUser = new User({
+            username,
+            password, // El modelo de User debe hashear la contraseña
+            email,
+            birthdate,
+            verificationCode,
+            isVerified: false, // Se marcará como true si el email no es el del admin
+            profilePhoto: profilePhotoUrl,
+            preferences: preferences || {},
+            roommatePreferences: roommatePreferences || { gender: 'both', minAge: 18, maxAge: 65 },
+            livingHabits: livingHabits || {},
+            dealBreakers: dealBreakers || {},
+            housingInfo: housingInfo || {},
+            job: personalInfo?.job || '',
+            religion: personalInfo?.religion || '',
+            politicPreferences: personalInfo?.politicPreferences || '',
+            aboutMe: personalInfo?.aboutMe || ''
+        });
+
+        // Intentar enviar email de verificación
+        try {
+            console.log('[REGISTRO COMPLETO] Intentando enviar email de verificación a:', email);
+            await sendVerificationEmail(email, verificationCode);
+            console.log('[REGISTRO COMPLETO] Email enviado exitosamente');
+        } catch (emailError) {
+            console.error('[REGISTRO COMPLETO] Error al enviar email, auto-verificando:', emailError);
+            // Si falla el envío (no es el email del admin), auto-verificar
+            if (email !== 'baralle2014@gmail.com') {
+                newUser.isVerified = true;
+                console.log('[REGISTRO COMPLETO] Usuario auto-verificado');
+            }
+        }
+
+        await newUser.save();
+        console.log('[REGISTRO COMPLETO] Usuario creado exitosamente:', username);
+
+        return res.status(201).json({ 
+            message: 'Registro completado exitosamente',
+            username,
+            isVerified: newUser.isVerified
+        });
+
+    } catch (error) {
+        console.error('[REGISTRO COMPLETO] Error:', error);
+        return res.status(500).json({ message: 'Error interno del servidor', error: error.message });
+    }
+});
+
 module.exports = router;

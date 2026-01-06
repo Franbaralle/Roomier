@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:typed_data';
+import 'dart:io';
 import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:rommier/routes.dart';
 import 'auth_service.dart';
 
@@ -34,14 +36,43 @@ class _ProfilePhotoPageState extends State<ProfilePhotoPage> {
 }
 
   Future<void> _getImage() async {
-    final pickedFile =
-        await ImagePicker().pickImage(source: ImageSource.gallery);
+    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
-      final imageData = await pickedFile.readAsBytes();
-      setState(() {
-        _imageData = imageData;
-      });
+      // Recortar la imagen
+      final croppedFile = await ImageCropper().cropImage(
+        sourcePath: pickedFile.path,
+        aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1), // Cuadrado 1:1
+        compressQuality: 90,
+        maxWidth: 800,
+        maxHeight: 800,
+        compressFormat: ImageCompressFormat.jpg,
+        uiSettings: [
+          AndroidUiSettings(
+            toolbarTitle: 'Recortar Foto',
+            toolbarColor: Colors.blue.shade700,
+            toolbarWidgetColor: Colors.white,
+            initAspectRatio: CropAspectRatioPreset.square,
+            lockAspectRatio: true, // Mantener proporción cuadrada
+            activeControlsWidgetColor: Colors.blue.shade700,
+            backgroundColor: Colors.black,
+            dimmedLayerColor: Colors.black.withOpacity(0.8),
+          ),
+          IOSUiSettings(
+            title: 'Recortar Foto',
+            aspectRatioLockEnabled: true,
+            resetAspectRatioEnabled: false,
+            aspectRatioPickerButtonHidden: true,
+          ),
+        ],
+      );
+
+      if (croppedFile != null) {
+        final imageData = await File(croppedFile.path).readAsBytes();
+        setState(() {
+          _imageData = imageData;
+        });
+      }
     }
   }
 

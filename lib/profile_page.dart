@@ -869,21 +869,83 @@ class _ProfilePageState extends State<ProfilePage> {
       }
     }
 
+    // Cuando no hay foto de perfil, mostrar un placeholder completo
     return Container(
       margin: const EdgeInsets.all(16),
-      width: 100,
-      height: 100,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: Colors.grey[300],
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
+      child: Stack(
+        alignment: Alignment.bottomRight,
+        children: [
+          Container(
+            width: 400,
+            height: 500,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(24.0),
+              color: Colors.grey[300],
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(24.0),
+              child: Center(
+                child: Icon(
+                  Icons.account_circle,
+                  size: 150,
+                  color: Colors.grey[400],
+                ),
+              ),
+            ),
+          ),
+          Container(
+            width: 400,
+            height: 120,
+            decoration: BoxDecoration(
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(24.0),
+                bottomRight: Radius.circular(24.0),
+              ),
+              gradient: LinearGradient(
+                begin: Alignment.bottomCenter,
+                end: Alignment.topCenter,
+                colors: [
+                  Colors.black.withOpacity(0.7),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            left: 20.0,
+            bottom: 20.0,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  userInfo?['username'] ?? '',
+                  style: const TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    shadows: [
+                      Shadow(
+                        offset: Offset(0, 2),
+                        blurRadius: 8,
+                        color: Colors.black45,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                _buildVerificationBadges(),
+              ],
+            ),
           ),
         ],
       ),
-      child: const Icon(Icons.account_circle, size: 100, color: Colors.white),
     );
   }
 

@@ -192,6 +192,29 @@ class AuthService {
     }
   }
 
+  // Método para completar el registro con todos los datos a la vez
+  Future<Map<String, dynamic>> completeRegistration(Map<String, dynamic> registrationData) async {
+    try {
+      final String completeRegisterUrl = '$apiUrl/register/complete';
+      final response = await http.post(
+        Uri.parse(completeRegisterUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(registrationData),
+      );
+
+      if (response.statusCode == 201) {
+        print('Registro completo exitoso');
+        return json.decode(response.body);
+      } else {
+        print('Error en el registro completo. Status code: ${response.statusCode}');
+        throw Exception('Error en el registro: ${response.body}');
+      }
+    } catch (error) {
+      print('Error durante el registro completo: $error');
+      rethrow;
+    }
+  }
+
   Future<void> resetPassword(String username, String newPassword) async {
     try {
       final String resetPasswordUrl = '$apiUrl/update-password/$username';

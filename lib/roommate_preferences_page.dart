@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'routes.dart';
 import 'auth_service.dart';
 
@@ -203,12 +204,12 @@ class _RoommatePreferencesPageState extends State<RoommatePreferencesPage> {
                     child: ElevatedButton(
                       onPressed: _canContinue()
                           ? () async {
-                              await AuthService().updateRoommatePreferences(
-                                widget.username,
-                                selectedGender!,
-                                minAge.round(),
-                                maxAge.round(),
-                              );
+                              // Guardar temporalmente en SharedPreferences
+                              final prefs = await SharedPreferences.getInstance();
+                              await prefs.setString('temp_register_roommate_gender', selectedGender!);
+                              await prefs.setInt('temp_register_roommate_min_age', minAge.round());
+                              await prefs.setInt('temp_register_roommate_max_age', maxAge.round());
+                              
                               Navigator.pushNamed(
                                 context,
                                 livingHabitsRoute,

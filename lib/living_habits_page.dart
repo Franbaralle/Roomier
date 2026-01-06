@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'auth_service.dart';
 import 'routes.dart';
 
@@ -255,11 +257,10 @@ class _LivingHabitsPageState extends State<LivingHabitsPage> {
         'noChildren': noChildren,
       };
 
-      await AuthService().updateLivingHabits(
-        widget.username,
-        livingHabitsData,
-        dealBreakersData,
-      );
+      // Guardar temporalmente en SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('temp_register_living_habits', json.encode(livingHabitsData));
+      await prefs.setString('temp_register_deal_breakers', json.encode(dealBreakersData));
 
       // Navegar a la página de información de vivienda
       Navigator.pushNamed(

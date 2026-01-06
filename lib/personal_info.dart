@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'auth_service.dart';
 import 'routes.dart';
 
@@ -142,13 +143,13 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
                     height: 50,
                     child: ElevatedButton(
                       onPressed: () async {
-                        await AuthService().updatePersonalInfo(
-                          widget.username,
-                          jobController.text,
-                          religionController.text,
-                          politicPreferencesController.text,
-                          aboutMeController.text,
-                        );
+                        // Guardar temporalmente en SharedPreferences
+                        final prefs = await SharedPreferences.getInstance();
+                        await prefs.setString('temp_register_job', jobController.text);
+                        await prefs.setString('temp_register_religion', religionController.text);
+                        await prefs.setString('temp_register_politic_preferences', politicPreferencesController.text);
+                        await prefs.setString('temp_register_about_me', aboutMeController.text);
+                        
                         Navigator.pushNamed(context, registerProfilePhotoRoute,
                             arguments: {
                               'username': widget.username,

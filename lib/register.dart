@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'routes.dart';
 import 'auth_service.dart';
 
@@ -328,9 +329,16 @@ class _RegisterFormState extends State<RegisterForm> {
           return;
         }
 
-        await widget.authService.register(
-            username, password, email, birthdate, context);
-        Navigator.pushNamed(context, registerPreferencesRoute, arguments: {'username': usernameController.text, 'email': emailController.text});
+        // NUEVO: Guardar datos temporalmente en SharedPreferences
+        // Ya NO crear el usuario en el backend
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('temp_register_username', username);
+        await prefs.setString('temp_register_password', password);
+        await prefs.setString('temp_register_email', email);
+        await prefs.setString('temp_register_birthdate', birthdate.toIso8601String());
+
+        // Continuar al siguiente paso
+        Navigator.pushNamed(context, registerPreferencesRoute, arguments: {'username': username, 'email': email});
       } catch (error) {
         print('Error durante el registro: $error');
         ScaffoldMessenger.of(context).showSnackBar(

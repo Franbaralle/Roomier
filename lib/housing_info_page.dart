@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'auth_service.dart';
 import 'routes.dart';
 
@@ -347,10 +349,9 @@ class _HousingInfoPageState extends State<HousingInfoPage> {
         'generalZone': generalZone,
       };
 
-      await AuthService().updateHousingInfo(
-        widget.username,
-        housingInfoData,
-      );
+      // Guardar temporalmente en SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('temp_register_housing_info', json.encode(housingInfoData));
 
       // Continuar con el flujo normal (personal info o profile photo)
       Navigator.pushNamed(

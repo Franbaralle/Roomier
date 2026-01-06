@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'routes.dart';
 import 'auth_service.dart';
 import 'preferences_data.dart';
@@ -287,10 +289,10 @@ class _PreferencesPageState extends State<PreferencesPage> {
                 child: ElevatedButton(
                   onPressed: totalSelected > 0
                       ? () async {
-                          await AuthService().updatePreferences(
-                            widget.username,
-                            selectedPreferences,
-                          );
+                          // Guardar preferencias temporalmente
+                          final prefs = await SharedPreferences.getInstance();
+                          await prefs.setString('temp_register_preferences', json.encode(selectedPreferences));
+                          
                           Navigator.pushNamed(
                             context,
                             roommatePreferencesRoute,

@@ -52,6 +52,15 @@ class _ProfilePageState extends State<ProfilePage> {
       final authService = AuthService();
       final user = await authService.getUserInfo(widget.username);
 
+      print('=== DEBUG PROFILE PAGE ===');
+      print('Username: ${widget.username}');
+      print('User data received: ${user != null}');
+      if (user != null) {
+        print('profilePhoto: ${user['profilePhoto']}');
+        print('profilePhoto type: ${user['profilePhoto'].runtimeType}');
+      }
+      print('=========================');
+
       if (user != null) {
         setState(() {
           userInfo = {
@@ -70,12 +79,16 @@ class _ProfilePageState extends State<ProfilePage> {
       }
 
       if (userInfo?['profilePhoto'] != null) {
+        print('Processing profilePhoto: ${userInfo?['profilePhoto']}');
         final imageProvider = ImageUtils.getImageProvider(userInfo?['profilePhoto']);
+        print('ImageProvider created: ${imageProvider != null}');
         if (imageProvider != null) {
           setState(() {
             profilePhoto = Image(image: imageProvider);
           });
         }
+      } else {
+        print('No profilePhoto in userInfo');
       }
     } catch (error) {
       print('Error loading user information: $error');
@@ -523,7 +536,7 @@ class _ProfilePageState extends State<ProfilePage> {
           _buildInfoCard(
             icon: Icons.favorite,
             title: 'Lo que me gusta',
-            content: _formatList(userInfo?['preferences']),
+            content: _formatPreferences(userInfo?['preferences']),
             color: Colors.pink,
             isEditable: false,
           ),
@@ -953,6 +966,40 @@ class _ProfilePageState extends State<ProfilePage> {
     if (items != null && items.isNotEmpty) {
       return items.join(', ');
     }
+    return 'No especificado';
+  }
+
+  String _formatPreferences(dynamic preferences) {
+    if (preferences == null) {
+      return 'No especificado';
+    }
+
+    // Si es una lista (formato antiguo), usar formatList
+    if (preferences is List) {
+      return _formatList(preferences);
+    }
+
+    // Si es un objeto (formato nuevo con categorías)
+    if (preferences is Map) {
+      List<String> allTags = [];
+      
+      preferences.forEach((mainCat, subCats) {
+        if (subCats is Map) {
+          subCats.forEach((subCat, tags) {
+            if (tags is List && tags.isNotEmpty) {
+              allTags.addAll(tags.map((t) => t.toString()));
+            }
+          });
+        }
+      });
+
+      if (allTags.isEmpty) {
+        return 'No especificado';
+      }
+
+      return allTags.join(', ');
+    }
+
     return 'No especificado';
   }
 

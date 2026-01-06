@@ -334,19 +334,26 @@ class _ChatsListPageState extends State<ChatsListPage> {
       },
       onDismissed: (direction) async {
         final username = otherUser['username'];
+        
+        // Remover de la lista inmediatamente para evitar el error de Dismissible
+        setState(() {
+          _chats.removeWhere((c) => c['chatId'] == chat['chatId']);
+        });
+        
         final success = await AuthService().unmatchProfile(
           username,
           _currentUsername,
         );
 
         if (success) {
-          _loadChats(); // Recargar para actualizar la lista
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Match con $username deshecho'),
               duration: const Duration(seconds: 2),
             ),
           );
+          // Recargar para sincronizar con el servidor
+          _loadChats();
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -354,7 +361,8 @@ class _ChatsListPageState extends State<ChatsListPage> {
               duration: Duration(seconds: 2),
             ),
           );
-          _loadChats(); // Recargar si falla
+          // Recargar si falla para restaurar el estado correcto
+          _loadChats();
         }
       },
       child: ListTile(

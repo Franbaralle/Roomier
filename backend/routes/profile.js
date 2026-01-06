@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/user');
+const Chat = require('../models/chatModel');
 const { verifyToken } = require('../middleware/auth');
 const logger = require('../utils/logger');
 
@@ -147,6 +148,23 @@ router.post('/unmatch/:username', async (req, res) => {
     const { currentUserUsername } = req.body;
 
     try {
+        // Buscar los usuarios
+        const user1 = await User.findOne({ username: username });
+        const user2 = await User.findOne({ username: currentUserUsername });
+
+        if (!user1 || !user2) {
+            return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+
+        // Buscar y eliminar el chat entre ambos usuarios
+        const deletedChat = await Chat.findOneAndDelete({ 
+            users: { $all: [user1._id, user2._id] } 
+        });
+
+        if (deletedChat) {
+            logger.info(`Chat eliminado entre ${username} y ${currentUserUsername}`);
+        }
+
         // Eliminar el match en ambas direcciones de isMatch y notMatch
         await User.findOneAndUpdate(
             { username: username },
@@ -168,7 +186,10 @@ router.post('/unmatch/:username', async (req, res) => {
             }
         );
 
-        res.status(200).json({ message: 'Match deshecho correctamente' });
+        res.status(200).json({ 
+            message: 'Match deshecho correctamente',
+            chatDeleted: !!deletedChat
+        });
     } catch (error) {
         console.error('Error al deshacer el match:', error);
         res.status(500).json({ message: 'Error interno del servidor' });

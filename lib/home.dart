@@ -16,6 +16,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   late SharedPreferences _prefs;
   String? savedData;
   int _unreadMessagesCount = 0;
+  bool _isInitialLoad = true;
 
   Offset _imageOffset = Offset.zero;
   Offset _startPosition = Offset.zero;
@@ -71,10 +72,14 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
 
       setState(() {
         homeProfiles = profiles.cast<Map<String, dynamic>>();
+        _isInitialLoad = false;
       });
     } catch (error) {
       // Error fetching profiles
       print('Error al obtener perfiles: $error');
+      setState(() {
+        _isInitialLoad = false;
+      });
     }
   }
 
@@ -315,9 +320,44 @@ Future<void> _showMatchPopup(
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: homeProfiles.isEmpty 
+      body: _isInitialLoad
         ? Center(child: CircularProgressIndicator())
-        : Center(
+        : homeProfiles.isEmpty
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.search_off,
+                      size: 80,
+                      color: Colors.grey[400],
+                    ),
+                    SizedBox(height: 24),
+                    Text(
+                      '¡Ya viste todo por ahora!',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey[800],
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: 16),
+                    Text(
+                      'Cambia tus parámetros de búsqueda o espera que haya alguien que pueda coincidir con tu perfil',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey[600],
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            )
+          : Center(
             child: Stack(
               alignment: Alignment.center,
               children: homeProfiles.asMap().entries.map((entry) {

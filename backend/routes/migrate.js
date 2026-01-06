@@ -252,4 +252,51 @@ router.get('/fix-photos', async (req, res) => {
     }
 });
 
+/**
+ * GET /api/migrate/diagnose/:username
+ * Diagnosticar el estado de un usuario específico
+ */
+router.get('/diagnose/:username', async (req, res) => {
+    try {
+        // Seguridad básica: requiere clave secreta
+        const { secret } = req.query;
+        if (secret !== 'migrate2024') {
+            return res.status(403).json({ 
+                success: false, 
+                message: 'No autorizado' 
+            });
+        }
+
+        const { username } = req.params;
+        const user = await User.findOne({ username });
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'Usuario no encontrado'
+            });
+        }
+
+        return res.json({
+            success: true,
+            username: user.username,
+            diagnosis: {
+                hasProfilePhoto: !!user.profilePhoto,
+                profilePhotoValue: user.profilePhoto,
+                hasProfilePhotos: !!user.profilePhotos,
+                profilePhotosCount: user.profilePhotos ? user.profilePhotos.length : 0,
+                profilePhotosArray: user.profilePhotos || [],
+                preferencesType: Array.isArray(user.preferences) ? 'array' : typeof user.preferences,
+                preferencesValue: user.preferences
+            }
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
 module.exports = router;

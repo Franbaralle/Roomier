@@ -123,9 +123,16 @@ router.post('/send_message', async (req, res) => {
 
         // Si es firstStep y no hay match, solo el que inició puede enviar y solo 1 mensaje
         if (chat.isFirstStep && !chat.isMatch) {
+            console.log('[FIRST STEP] Validando mensaje en firstStep chat');
+            console.log('[FIRST STEP] Chat ID:', chatId);
+            console.log('[FIRST STEP] firstStepBy:', chat.firstStepBy.toString());
+            console.log('[FIRST STEP] sender ID:', user._id.toString());
+            console.log('[FIRST STEP] isMatch:', chat.isMatch);
+            
             // Verificar si el sender es quien dio el primer paso
             if (chat.firstStepBy.toString() !== user._id.toString()) {
                 // El otro usuario NO puede responder hasta que haya match
+                console.log('[FIRST STEP] BLOQUEADO: El receptor no puede responder');
                 return res.status(403).json({ 
                     message: 'Cannot send message. Match required to respond.' 
                 });
@@ -136,11 +143,17 @@ router.post('/send_message', async (req, res) => {
                 msg => msg.sender.toString() === user._id.toString()
             );
             
+            console.log('[FIRST STEP] Mensajes del sender:', senderMessages.length);
+            console.log('[FIRST STEP] Total mensajes en chat:', chat.messages.length);
+            
             if (senderMessages.length >= 1) {
+                console.log('[FIRST STEP] BLOQUEADO: Ya envió 1 mensaje, esperando match');
                 return res.status(403).json({ 
                     message: 'First step limit reached. Wait for match to continue.' 
                 });
             }
+            
+            console.log('[FIRST STEP] PERMITIDO: Enviando primer mensaje');
         }
 
         // Agregar el mensaje al chat con el _id del usuario como remitente

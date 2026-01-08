@@ -57,10 +57,18 @@ router.post('/create_chat', async (req, res) => {
                 isMatch: !isFirstStep // Si no es firstStep, es match
             });
             
-            // Si es firstStep, decrementar el contador
+            // Si es firstStep, decrementar el contador Y agregar el like
             if (isFirstStep) {
                 foundUserA.firstStepsRemaining -= 1;
                 foundUserA.firstStepsUsedThisWeek += 1;
+                
+                // IMPORTANTE: Agregar al usuario B en el array de likes de A
+                // Esto hace que B aparezca en "Likes recibidos" de B
+                if (!foundUserA.isMatch.includes(usernameB)) {
+                    foundUserA.isMatch.push(usernameB);
+                    console.log(`[FIRST STEP] ${usernameA} agregó like a ${usernameB}`);
+                }
+                
                 await foundUserA.save();
             }
             

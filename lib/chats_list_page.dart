@@ -494,10 +494,4 @@ class _ChatsListPageState extends State<ChatsListPage> {
       ),
     );
   }
-
-  @override
-  void dispose() {
-    _messageSubscription?.cancel();
-    super.dispose();
-  }
 }

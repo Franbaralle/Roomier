@@ -187,7 +187,7 @@ class _ReceivedLikesPageState extends State<ReceivedLikesPage> {
                     child: ImageFiltered(
                       imageFilter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                       child: Image(
-                        image: ImageUtils.getImageProvider(photoUrl),
+                        image: ImageUtils.getImageProvider(photoUrl)!,
                         fit: BoxFit.cover,
                       ),
                     ),

@@ -335,6 +335,122 @@ Future<void> _showMatchPopup(
     }
   }
 
+  // Método para mostrar el diálogo de "Da el primer paso"
+  Future<void> _showFirstStepDialog(Map<String, dynamic> profile) async {
+    final TextEditingController _messageController = TextEditingController();
+    final String? currentUsername = await AuthService().loadUserData('username');
+    
+    if (currentUsername == null) return;
+
+    return showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.chat_bubble, color: Colors.purple),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Da el primer paso',
+                  style: TextStyle(color: Colors.purple),
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Envia un mensaje a ${profile['username']}',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Podrás enviar solo un mensaje. Si les interesas, te responderán.',
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              ),
+              SizedBox(height: 16),
+              TextField(
+                controller: _messageController,
+                maxLength: 200,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  hintText: 'Escribe tu mensaje...',
+                  border: OutlineInputBorder(),
+                  counterText: '',
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Cancelar'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.purple,
+              ),
+              onPressed: () async {
+                final message = _messageController.text.trim();
+                
+                if (message.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Escribe un mensaje primero')),
+                  );
+                  return;
+                }
+
+                if (message.length < 10) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('El mensaje debe tener al menos 10 caracteres')),
+                  );
+                  return;
+                }
+
+                Navigator.of(context).pop(); // Cerrar el diálogo
+                
+                // Crear el chat con firstStep
+                final chatId = await ChatService.createChat(
+                  currentUsername,
+                  profile['username'],
+                  isFirstStep: true,
+                  firstMessage: message,
+                );
+                
+                if (chatId != null) {
+                  // Remover el perfil de la lista
+                  setState(() {
+                    homeProfiles.removeWhere((p) => p['username'] == profile['username']);
+                  });
+                  
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('¡Mensaje enviado! Espera su respuesta'),
+                      backgroundColor: Colors.purple,
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error al enviar el mensaje'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
+              child: Text('Enviar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -415,18 +531,37 @@ Future<void> _showMatchPopup(
                               _imageOffset += details.globalPosition - _startPosition;
                               _startPosition = details.globalPosition;
                               
-                              _rotationAngle = (_imageOffset.dx / 1000).clamp(-0.3, 0.3);
+                              // Solo rotar si es swipe horizontal
+                              if (_imageOffset.dx.abs() > _imageOffset.dy.abs()) {
+                                _rotationAngle = (_imageOffset.dx / 1000).clamp(-0.3, 0.3);
+                              } else {
+                                _rotationAngle = 0;
+                              }
                             });
                           }
                         },
                         onPanEnd: (details) {
                           if (_draggingIndex == index && index == 0) {
                             final swipeThreshold = screenWidth * 0.3;
+                            final verticalThreshold = screenHeight * 0.15;
                             
-                            if (_imageOffset.dx.abs() > swipeThreshold) {
+                            // Detectar swipe hacia arriba ("Da el primer paso")
+                            if (_imageOffset.dy < -verticalThreshold && 
+                                _imageOffset.dx.abs() < swipeThreshold) {
+                              _showFirstStepDialog(profile);
+                              setState(() {
+                                _draggingIndex = -1;
+                                _imageOffset = Offset.zero;
+                                _rotationAngle = 0.0;
+                              });
+                            }
+                            // Swipe horizontal (like/nope)
+                            else if (_imageOffset.dx.abs() > swipeThreshold) {
                               final isLike = _imageOffset.dx < 0;
                               _swipeCard(index, isLike);
-                            } else {
+                            } 
+                            // Resetear si no cumple ningún threshold
+                            else {
                               setState(() {
                                 _draggingIndex = -1;
                                 _imageOffset = Offset.zero;
@@ -529,6 +664,48 @@ Future<void> _showMatchPopup(
                                   ),
                                 ),
                               ),
+                                // Indicador de PRIMER PASO (swipe arriba)
+                                if (index == _draggingIndex && _imageOffset.dy < -50)
+                                  Positioned(
+                                    top: 50,
+                                    left: 0,
+                                    right: 0,
+                                    child: Center(
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 20,
+                                          vertical: 10,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          border: Border.all(
+                                            color: Colors.purple,
+                                            width: 4,
+                                          ),
+                                          borderRadius: BorderRadius.circular(8),
+                                          color: Colors.purple.withOpacity(0.1),
+                                        ),
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.arrow_upward,
+                                              color: Colors.purple,
+                                              size: 40,
+                                            ),
+                                            SizedBox(height: 8),
+                                            Text(
+                                              'DA EL PRIMER PASO',
+                                              style: TextStyle(
+                                                color: Colors.purple,
+                                                fontSize: 24,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
                                 Positioned.fill(
                                   child: Container(
                                     decoration: BoxDecoration(

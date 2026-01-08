@@ -24,7 +24,7 @@ const upload = multer({
 });
 
 router.post('/create_chat', async (req, res) => {
-    const { userA: usernameA, userB: usernameB } = req.body;
+    const { userA: usernameA, userB: usernameB, isFirstStep, firstMessage } = req.body;
     try {
         // Obtener ObjectIds de usuario basados en los nombres de usuario
         const foundUserA = await User.findOne({ username: usernameA });
@@ -40,7 +40,39 @@ router.post('/create_chat', async (req, res) => {
 
         // Si no existe, crear un nuevo chat
         if (!chat) {
-            chat = await Chat.create({ users: [foundUserA._id, foundUserB._id] });
+            chat = await Chat.create({ 
+                users: [foundUserA._id, foundUserB._id],
+                isFirstStep: isFirstStep || false,
+                firstStepBy: isFirstStep ? foundUserA._id : null,
+                isMatch: !isFirstStep // Si no es firstStep, es match
+            });
+            
+            // Si es firstStep y hay un primer mensaje, agregarlo
+            if (isFirstStep && firstMessage) {
+                chat.messages.push({
+                    sender: foundUserA._id,
+                    content: firstMessage,
+                    read: false
+                });
+                await chat.save();
+            }
+        } else {
+            // Si el chat ya existía, verificar si hay match mutuo ahora
+            // (esto ocurre cuando B da like a A después de que A dio firstStep)
+            if (chat.isFirstStep && !chat.isMatch) {
+                // Verificar si ambos usuarios tienen match mutuo
+                const userAData = await User.findById(foundUserA._id);
+                const userBData = await User.findById(foundUserB._id);
+                
+                const aLikesB = userAData.isMatch.includes(usernameB);
+                const bLikesA = userBData.isMatch.includes(usernameA);
+                
+                if (aLikesB && bLikesA) {
+                    chat.isMatch = true;
+                    chat.isFirstStep = false;
+                    await chat.save();
+                }
+            }
         }
 
         res.status(200).json({ chatId: chat._id });
@@ -67,6 +99,28 @@ router.post('/send_message', async (req, res) => {
 
         if (!user) {
             return res.status(404).json({ message: 'Sender user not found' });
+        }
+
+        // Si es firstStep y no hay match, solo el que inició puede enviar y solo 1 mensaje
+        if (chat.isFirstStep && !chat.isMatch) {
+            // Verificar si el sender es quien dio el primer paso
+            if (chat.firstStepBy.toString() !== user._id.toString()) {
+                // El otro usuario NO puede responder hasta que haya match
+                return res.status(403).json({ 
+                    message: 'Cannot send message. Match required to respond.' 
+                });
+            }
+            
+            // Verificar si ya envió un mensaje
+            const senderMessages = chat.messages.filter(
+                msg => msg.sender.toString() === user._id.toString()
+            );
+            
+            if (senderMessages.length >= 1) {
+                return res.status(403).json({ 
+                    message: 'First step limit reached. Wait for match to continue.' 
+                });
+            }
         }
 
         // Agregar el mensaje al chat con el _id del usuario como remitente
@@ -137,7 +191,9 @@ router.get('/user_chats/:username', async (req, res) => {
                     sender: lastMessage.sender.username,
                     timestamp: lastMessage.timestamp
                 } : null,
-                unreadCount: unreadCount
+                unreadCount: unreadCount,
+                isMatch: chat.isMatch || false,
+                isFirstStep: chat.isFirstStep || false
             };
         });
 
@@ -212,8 +268,11 @@ router.get('/pending_matches/:username', async (req, res) => {
         // Obtener todos los matches del usuario
         const matches = user.isMatch || [];
 
-        // Obtener todos los chats del usuario
-        const chats = await Chat.find({ users: user._id })
+        // Obtener todos los chats del usuario donde isMatch = true
+        const chats = await Chat.find({ 
+            users: user._id,
+            isMatch: true // Solo matches confirmados
+        })
             .populate('users', 'username');
 
         // Crear un Set con los usernames de usuarios con los que ya tiene chat

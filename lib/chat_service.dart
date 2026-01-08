@@ -1,14 +1,15 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 
 class ChatService {
   static const String apiUrl = 'https://roomier-production.up.railway.app/api/chat';
 
   // Método para crear un nuevo chat entre dos usuarios
-static Future<String?> createChat(String userA, String userB) async {
+static Future<String?> createChat(String userA, String userB, {bool isFirstStep = false, String? firstMessage}) async {
   try {
-    print('Creating chat between $userA and $userB');
+    print('Creating chat between $userA and $userB (firstStep: $isFirstStep)');
     final response = await http.post(
       Uri.parse('$apiUrl/create_chat'),
       headers: <String, String>{
@@ -17,6 +18,8 @@ static Future<String?> createChat(String userA, String userB) async {
       body: jsonEncode({
         'userA': userA,
         'userB': userB,
+        'isFirstStep': isFirstStep,
+        'firstMessage': firstMessage,
       }),
     );
 
@@ -172,11 +175,31 @@ static Future<String?> createChat(String userA, String userB) async {
       // Agregar el archivo de imagen
       var stream = http.ByteStream(imageFile.openRead());
       var length = await imageFile.length();
+      
+      // Determinar el tipo MIME basado en la extensión del archivo
+      String filename = imageFile.path.split('/').last;
+      String extension = filename.split('.').last.toLowerCase();
+      MediaType? contentType;
+      
+      if (extension == 'jpg' || extension == 'jpeg') {
+        contentType = MediaType('image', 'jpeg');
+      } else if (extension == 'png') {
+        contentType = MediaType('image', 'png');
+      } else if (extension == 'gif') {
+        contentType = MediaType('image', 'gif');
+      } else if (extension == 'webp') {
+        contentType = MediaType('image', 'webp');
+      } else {
+        // Por defecto, usar jpeg
+        contentType = MediaType('image', 'jpeg');
+      }
+      
       var multipartFile = http.MultipartFile(
         'image',
         stream,
         length,
-        filename: imageFile.path.split('/').last,
+        filename: filename,
+        contentType: contentType,
       );
       request.files.add(multipartFile);
 

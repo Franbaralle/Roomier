@@ -412,24 +412,37 @@ router.post('/complete', async (req, res) => {
             }
         }
 
+        // Mapear roommatePreferences (frontend usa minAge/maxAge, backend usa ageMin/ageMax)
+        const mappedRoommatePreferences = roommatePreferences ? {
+            gender: roommatePreferences.gender || 'both',
+            ageMin: roommatePreferences.minAge !== undefined ? roommatePreferences.minAge : (roommatePreferences.ageMin !== undefined ? roommatePreferences.ageMin : 18),
+            ageMax: roommatePreferences.maxAge !== undefined ? roommatePreferences.maxAge : (roommatePreferences.ageMax !== undefined ? roommatePreferences.ageMax : 99)
+        } : { gender: 'both', ageMin: 18, ageMax: 99 };
+        
+        console.log('[REGISTRO] roommatePreferences recibidas:', roommatePreferences);
+        console.log('[REGISTRO] roommatePreferences mapeadas:', mappedRoommatePreferences);
+
         // Crear el nuevo usuario con todos los datos
         const newUser = new User({
             username,
             password: hashedPassword,
             email,
             birthdate,
+            gender: req.body.gender || undefined, // Género del usuario
             verificationCode,
             isVerified: false, // Se marcará como true si el email no es el del admin
             profilePhoto: profilePhotoUrl,
             preferences: preferences || {},
-            roommatePreferences: roommatePreferences || { gender: 'both', minAge: 18, maxAge: 65 },
+            roommatePreferences: mappedRoommatePreferences,
             livingHabits: livingHabits || {},
             dealBreakers: dealBreakers || {},
             housingInfo: housingInfo || {},
-            job: personalInfo?.job || '',
-            religion: personalInfo?.religion || '',
-            politicPreferences: personalInfo?.politicPreferences || '',
-            aboutMe: personalInfo?.aboutMe || ''
+            personalInfo: {
+                job: personalInfo?.job || '',
+                religion: personalInfo?.religion || '',
+                politicPreference: personalInfo?.politicPreferences || '',
+                aboutMe: personalInfo?.aboutMe || ''
+            }
         });
 
         // Intentar enviar email de verificación

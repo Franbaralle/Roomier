@@ -35,6 +35,16 @@ router.post('/create_chat', async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
+        // Si es firstStep, validar que el usuario tenga "primeros pasos" disponibles
+        if (isFirstStep) {
+            if (foundUserA.firstStepsRemaining <= 0) {
+                return res.status(403).json({ 
+                    message: 'No first steps remaining',
+                    requiresPremium: true 
+                });
+            }
+        }
+
         // Verificar si ya existe un chat entre los dos usuarios
         let chat = await Chat.findOne({ users: { $all: [foundUserA._id, foundUserB._id] } });
 
@@ -46,6 +56,13 @@ router.post('/create_chat', async (req, res) => {
                 firstStepBy: isFirstStep ? foundUserA._id : null,
                 isMatch: !isFirstStep // Si no es firstStep, es match
             });
+            
+            // Si es firstStep, decrementar el contador
+            if (isFirstStep) {
+                foundUserA.firstStepsRemaining -= 1;
+                foundUserA.firstStepsUsedThisWeek += 1;
+                await foundUserA.save();
+            }
             
             // Si es firstStep y hay un primer mensaje, agregarlo
             if (isFirstStep && firstMessage) {
@@ -75,7 +92,10 @@ router.post('/create_chat', async (req, res) => {
             }
         }
 
-        res.status(200).json({ chatId: chat._id });
+        res.status(200).json({ 
+            chatId: chat._id,
+            firstStepsRemaining: foundUserA.firstStepsRemaining
+        });
     } catch (error) {
         console.error('Error al crear el chat:', error);
         res.status(500).json({ message: 'Error interno del servidor' });
@@ -385,6 +405,27 @@ router.post('/send_image', upload.single('image'), async (req, res) => {
         });
     } catch (error) {
         console.error('Error sending image:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// Obtener firstSteps disponibles de un usuario
+router.get('/first_steps_remaining/:username', async (req, res) => {
+    const { username } = req.params;
+
+    try {
+        const user = await User.findOne({ username });
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        res.status(200).json({ 
+            firstStepsRemaining: user.firstStepsRemaining,
+            isPremium: user.isPremium || false
+        });
+    } catch (error) {
+        console.error('Error fetching first steps:', error);
         res.status(500).json({ message: 'Internal server error' });
     }
 });

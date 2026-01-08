@@ -144,6 +144,13 @@ const userSchema = new mongoose.Schema({
   suspensionReason: { type: String, required: false },
   banReason: { type: String, required: false },
   chatId: { type: mongoose.Schema.Types.ObjectId, ref: 'Chat', required: false },
+  
+  // Sistema de "Primeros Pasos" (FirstStep)
+  firstStepsRemaining: { type: Number, default: 5, min: 0 }, // Límite de primeros pasos
+  firstStepsUsedThisWeek: { type: Number, default: 0 }, // Contador semanal
+  firstStepsResetDate: { type: Date, default: Date.now }, // Fecha del último reset
+  isPremium: { type: Boolean, default: false }, // Usuario premium
+  
   createdAt: { type: Date, default: Date.now },
   lastActive: { type: Date, default: Date.now }
 });

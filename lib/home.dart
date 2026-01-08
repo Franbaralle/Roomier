@@ -25,6 +25,10 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   int _draggingIndex = -1;
   double _rotationAngle = 0.0;
   late AnimationController _animationController;
+  
+  // Sistema de FirstSteps
+  int _firstStepsRemaining = 5;
+  bool _isPremium = false;
 
   @override
   void initState() {
@@ -38,6 +42,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     _fetchHomeProfiles();
     _loadUnreadMessagesCount();
     _loadReceivedLikesCount();
+    _loadFirstStepsRemaining();
   }
 
   @override
@@ -116,6 +121,21 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     } catch (error) {
       // Error loading received likes count
       print('Error al cargar contador de likes recibidos: $error');
+    }
+  }
+
+  Future<void> _loadFirstStepsRemaining() async {
+    try {
+      final username = await AuthService().loadUserData('username');
+      if (username != null) {
+        final data = await ChatService.getFirstStepsRemaining(username);
+        setState(() {
+          _firstStepsRemaining = data['firstStepsRemaining'] ?? 5;
+          _isPremium = data['isPremium'] ?? false;
+        });
+      }
+    } catch (error) {
+      print('Error al cargar firstSteps: $error');
     }
   }
 
@@ -451,6 +471,109 @@ Future<void> _showMatchPopup(
     );
   }
 
+  // Mostrar popup cuando se acaban los firstSteps
+  Future<void> _showPremiumDialog() async {
+    return showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.star, color: Colors.amber, size: 30),
+              SizedBox(width: 10),
+              Text(
+                'Sin primeros pasos',
+                style: TextStyle(color: Colors.amber.shade800),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '¡Te quedaste sin primeros pasos!',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 12),
+              Text(
+                'Suscribite a Premium y conseguí:',
+                style: TextStyle(fontSize: 14),
+              ),
+              SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.green, size: 20),
+                  SizedBox(width: 8),
+                  Text('5 primeros pasos por semana'),
+                ],
+              ),
+              SizedBox(height: 4),
+              Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.green, size: 20),
+                  SizedBox(width: 8),
+                  Text('Ver quién te dio like'),
+                ],
+              ),
+              SizedBox(height: 4),
+              Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.green, size: 20),
+                  SizedBox(width: 8),
+                  Text('Match ilimitado'),
+                ],
+              ),
+              SizedBox(height: 16),
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.amber.shade200),
+                ),
+                child: Text(
+                  '💎 Solo \$9.99/mes',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.amber.shade900,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Ahora no'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.amber,
+                foregroundColor: Colors.black,
+              ),
+              onPressed: () {
+                Navigator.of(context).pop();
+                // TODO: Ir a página de suscripción premium
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Próximamente: Suscripción Premium'),
+                    backgroundColor: Colors.amber.shade700,
+                  ),
+                );
+              },
+              child: Text('Suscribirme', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -548,7 +671,15 @@ Future<void> _showMatchPopup(
                             // Detectar swipe hacia arriba ("Da el primer paso")
                             if (_imageOffset.dy < -verticalThreshold && 
                                 _imageOffset.dx.abs() < swipeThreshold) {
-                              _showFirstStepDialog(profile);
+                              // Validar si tiene firstSteps disponibles
+                              if (_firstStepsRemaining > 0) {
+                                _showFirstStepDialog(profile).then((_) {
+                                  // Recargar contador después del modal
+                                  _loadFirstStepsRemaining();
+                                });
+                              } else {
+                                _showPremiumDialog();
+                              }
                               setState(() {
                                 _draggingIndex = -1;
                                 _imageOffset = Offset.zero;
@@ -897,11 +1028,53 @@ Future<void> _showMatchPopup(
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            IconButton(
-              onPressed: () {
-                // Lógica para el botón del rayo
-              },
-              icon: const Icon(Icons.flash_on),
+            Stack(
+              children: [
+                IconButton(
+                  onPressed: () {
+                    // Mostrar info de firstSteps
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Deslizá hacia arriba para dar el primer paso\n$_firstStepsRemaining primeros pasos disponibles',
+                          textAlign: TextAlign.center,
+                        ),
+                        backgroundColor: Colors.purple,
+                        duration: Duration(seconds: 3),
+                      ),
+                    );
+                  },
+                  icon: Icon(
+                    Icons.arrow_upward,
+                    color: _firstStepsRemaining > 0 ? Colors.purple : Colors.grey,
+                  ),
+                ),
+                // Mostrar contador de firstSteps
+                Positioned(
+                  right: 8,
+                  bottom: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: _firstStepsRemaining > 0 ? Colors.purple : Colors.grey,
+                      shape: BoxShape.circle,
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 16,
+                      minHeight: 16,
+                    ),
+                    child: Text(
+                      '$_firstStepsRemaining',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+              ],
             ),
             Stack(
               children: [

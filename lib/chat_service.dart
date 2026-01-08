@@ -219,4 +219,30 @@ static Future<String?> createChat(String userA, String userB, {bool isFirstStep 
       return false;
     }
   }
+
+  // Obtener firstSteps disponibles de un usuario
+  static Future<Map<String, dynamic>> getFirstStepsRemaining(String username) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$apiUrl/first_steps_remaining/$username'),
+        headers: <String, String>{
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        return {
+          'firstStepsRemaining': data['firstStepsRemaining'] ?? 5,
+          'isPremium': data['isPremium'] ?? false
+        };
+      } else {
+        print('Error fetching first steps: ${response.statusCode}');
+        return {'firstStepsRemaining': 5, 'isPremium': false};
+      }
+    } catch (error) {
+      print('Error fetching first steps: $error');
+      return {'firstStepsRemaining': 5, 'isPremium': false};
+    }
+  }
 }

@@ -2,6 +2,8 @@
 
 API REST para la aplicación Roomier - Match de Roommates
 
+🔄 Última actualización: 8 de Enero de 2026
+
 ## 🚀 Deploy Rápido en Railway
 
 **Sigue la guía completa:** [RAILWAY_DEPLOY.md](../RAILWAY_DEPLOY.md)

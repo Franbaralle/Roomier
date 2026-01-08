@@ -14,7 +14,6 @@ class ChatsListPage extends StatefulWidget {
 
 class _ChatsListPageState extends State<ChatsListPage> {
   List<Map<String, dynamic>> _chats = [];
-  List<Map<String, dynamic>> _pendingMatches = [];
   bool _isLoading = true;
   String _currentUsername = '';
   String? _savedProfilePhoto;
@@ -80,11 +79,9 @@ class _ChatsListPageState extends State<ChatsListPage> {
         });
 
         final chats = await ChatService.getUserChats(username);
-        final matches = await ChatService.getPendingMatches(username);
         
         setState(() {
           _chats = chats;
-          _pendingMatches = matches;
           _isLoading = false;
         });
       }
@@ -101,7 +98,7 @@ class _ChatsListPageState extends State<ChatsListPage> {
     return Scaffold(
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : _chats.isEmpty && _pendingMatches.isEmpty
+          : _chats.isEmpty
               ? const Center(
                   child: Text(
                     'No tienes chats aún.\n¡Haz match con alguien para empezar!',
@@ -113,49 +110,7 @@ class _ChatsListPageState extends State<ChatsListPage> {
                   onRefresh: _loadChats,
                   child: ListView(
                     children: [
-                      // Sección de matches pendientes
-                      if (_pendingMatches.isNotEmpty) ...[
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          color: Colors.grey[100],
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Nuevos Matches',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.deepPurple,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              const Text(
-                                'Inicia una conversación con tus nuevos matches',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              SizedBox(
-                                height: 100,
-                                child: ListView.builder(
-                                  scrollDirection: Axis.horizontal,
-                                  itemCount: _pendingMatches.length,
-                                  itemBuilder: (context, index) {
-                                    final match = _pendingMatches[index];
-                                    return _buildMatchCard(match);
-                                  },
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Divider(height: 1, thickness: 2),
-                      ],
-                      
-                      // Sección de conversaciones activas
+                      // Conversaciones
                       if (_chats.isNotEmpty) ...[
                         const Padding(
                           padding: EdgeInsets.all(16),
@@ -233,86 +188,6 @@ class _ChatsListPageState extends State<ChatsListPage> {
     } catch (e) {
       return '';
     }
-  }
-
-  Widget _buildMatchCard(Map<String, dynamic> match) {
-    return GestureDetector(
-      onTap: () async {
-        // Crear chat y navegar a la página de chat
-        final chatId = await ChatService.createChat(_currentUsername, match['username']);
-        
-        if (chatId != null) {
-          Navigator.pushNamed(
-            context,
-            chatRoute,
-            arguments: {
-              'profile': {
-                'username': match['username'],
-                'profilePhoto': match['profilePhoto'],
-              },
-              'chatId': chatId,
-            },
-          ).then((_) {
-            // Recargar chats cuando vuelves
-            _loadChats();
-          });
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Error al iniciar conversación'),
-              duration: Duration(seconds: 2),
-            ),
-          );
-        }
-      },
-      child: Container(
-        width: 80,
-        margin: const EdgeInsets.only(right: 12),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Stack(
-              children: [
-                CircleAvatar(
-                  radius: 32,
-                  backgroundImage: ImageUtils.getImageProvider(match['profilePhoto']),
-                  child: ImageUtils.getImageProvider(match['profilePhoto']) == null
-                      ? const Icon(Icons.person, size: 32)
-                      : null,
-                ),
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: Colors.green,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.favorite,
-                      color: Colors.white,
-                      size: 16,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              match['username'] ?? '',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   Widget _buildChatTile(Map<String, dynamic> chat) {

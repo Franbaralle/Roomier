@@ -14,10 +14,11 @@ const upload = multer({
     },
     fileFilter: (req, file, cb) => {
         // Solo aceptar imágenes
+        console.log('Multer fileFilter - mimetype:', file.mimetype);
         if (file.mimetype.startsWith('image/')) {
             cb(null, true);
         } else {
-            cb(new Error('Solo se permiten imágenes'), false);
+            cb(null, false); // Rechazar pero no lanzar error
         }
     }
 });
@@ -267,8 +268,12 @@ router.post('/send_image', upload.single('image'), async (req, res) => {
     const { chatId, sender } = req.body;
     const imageFile = req.file;
 
+    console.log('send_image - chatId:', chatId, 'sender:', sender, 'file:', imageFile ? 'presente' : 'ausente');
+
     if (!imageFile) {
-        return res.status(400).json({ message: 'No se proporcionó imagen' });
+        return res.status(400).json({ 
+            message: 'No se proporcionó imagen o el formato no es válido. Solo se permiten imágenes (JPG, PNG, GIF, etc.)' 
+        });
     }
 
     try {

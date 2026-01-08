@@ -1,4 +1,6 @@
 const String loginRoute = '/login';
+const String genderSelectionRoute = '/gender-selection';
+const String dateRoute = '/register/date';
 const String registerDateRoute = '/register/date';
 const String registerRoute = '/register';
 const String registerPreferencesRoute = '/register/preferences';

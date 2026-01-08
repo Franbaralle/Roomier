@@ -65,6 +65,8 @@ class _ProfilePageState extends State<ProfilePage> {
         setState(() {
           userInfo = {
             'username': user['username'],
+            'birthdate': user['birthdate'], // Agregar fecha de nacimiento
+            'gender': user['gender'], // Agregar género
             'preferences': user['preferences'],
             'personalInfo': user['personalInfo'],
             'livingHabits': user['livingHabits'],
@@ -99,6 +101,42 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> getCurrentUser() async {
     final authService = AuthService();
     currentUser = await authService.loadUserData('username');
+  }
+
+  // Calcular edad desde fecha de nacimiento
+  int? _calculateAge(String? birthdateString) {
+    if (birthdateString == null || birthdateString.isEmpty) return null;
+    
+    try {
+      final birthdate = DateTime.parse(birthdateString);
+      final today = DateTime.now();
+      int age = today.year - birthdate.year;
+      
+      // Ajustar si aún no ha cumplido años este año
+      if (today.month < birthdate.month ||
+          (today.month == birthdate.month && today.day < birthdate.day)) {
+        age--;
+      }
+      
+      return age;
+    } catch (e) {
+      print('Error calculando edad: $e');
+      return null;
+    }
+  }
+
+  // Obtener traducción de género
+  String _getGenderText(String? gender) {
+    switch (gender) {
+      case 'male':
+        return 'Hombre';
+      case 'female':
+        return 'Mujer';
+      case 'other':
+        return 'Otro';
+      default:
+        return '';
+    }
   }
 
   @override
@@ -856,21 +894,77 @@ class _ProfilePageState extends State<ProfilePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      userInfo?['username'] ?? '',
-                      style: const TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        shadows: [
-                          Shadow(
-                            offset: Offset(0, 2),
-                            blurRadius: 8,
-                            color: Colors.black45,
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        Text(
+                          userInfo?['username'] ?? '',
+                          style: const TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            shadows: [
+                              Shadow(
+                                offset: Offset(0, 2),
+                                blurRadius: 8,
+                                color: Colors.black45,
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (_calculateAge(userInfo?['birthdate']) != null) ...[
+                          const SizedBox(width: 8),
+                          Text(
+                            ', ${_calculateAge(userInfo?['birthdate'])}',
+                            style: const TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white,
+                              shadows: [
+                                Shadow(
+                                  offset: Offset(0, 2),
+                                  blurRadius: 8,
+                                  color: Colors.black45,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    if (userInfo?['gender'] != null && userInfo?['gender'] != '') ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(
+                            userInfo?['gender'] == 'male'
+                                ? Icons.man
+                                : userInfo?['gender'] == 'female'
+                                    ? Icons.woman
+                                    : Icons.person,
+                            size: 18,
+                            color: Colors.white.withOpacity(0.9),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            _getGenderText(userInfo?['gender']),
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white.withOpacity(0.9),
+                              shadows: const [
+                                Shadow(
+                                  offset: Offset(0, 1),
+                                  blurRadius: 4,
+                                  color: Colors.black45,
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
-                    ),
+                    ],
                     const SizedBox(height: 8),
                     _buildVerificationBadges(),
                   ],
@@ -937,21 +1031,77 @@ class _ProfilePageState extends State<ProfilePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  userInfo?['username'] ?? '',
-                  style: const TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    shadows: [
-                      Shadow(
-                        offset: Offset(0, 2),
-                        blurRadius: 8,
-                        color: Colors.black45,
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(
+                      userInfo?['username'] ?? '',
+                      style: const TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        shadows: [
+                          Shadow(
+                            offset: Offset(0, 2),
+                            blurRadius: 8,
+                            color: Colors.black45,
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (_calculateAge(userInfo?['birthdate']) != null) ...[
+                      const SizedBox(width: 8),
+                      Text(
+                        ', ${_calculateAge(userInfo?['birthdate'])}',
+                        style: const TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white,
+                          shadows: [
+                            Shadow(
+                              offset: Offset(0, 2),
+                              blurRadius: 8,
+                              color: Colors.black45,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                if (userInfo?['gender'] != null && userInfo?['gender'] != '') ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        userInfo?['gender'] == 'male'
+                            ? Icons.man
+                            : userInfo?['gender'] == 'female'
+                                ? Icons.woman
+                                : Icons.person,
+                        size: 18,
+                        color: Colors.white.withOpacity(0.9),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        _getGenderText(userInfo?['gender']),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white.withOpacity(0.9),
+                          shadows: const [
+                            Shadow(
+                              offset: Offset(0, 1),
+                              blurRadius: 4,
+                              color: Colors.black45,
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
-                ),
+                ],
                 const SizedBox(height: 8),
                 _buildVerificationBadges(),
               ],
@@ -1345,24 +1495,118 @@ class _ProfilePageState extends State<ProfilePage> {
 
   void _logout() async {
     try {
+      final authService = AuthService();
+      
+      // Mostrar diálogo de confirmación
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            title: Row(
+              children: const [
+                Icon(Icons.logout, color: Colors.red),
+                SizedBox(width: 12),
+                Text('Cerrar Sesión'),
+              ],
+            ),
+            content: const Text(
+              '¿Estás seguro que deseas cerrar sesión?',
+              style: TextStyle(fontSize: 16),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancelar'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Cerrar Sesión'),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (confirm != true) return;
+
+      // Mostrar indicador de carga
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                ),
+                SizedBox(width: 16),
+                Text('Cerrando sesión...'),
+              ],
+            ),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+
+      // Llamar al logout del servicio (revoca el token en el servidor)
+      final success = await authService.logout(context);
+
+      // Limpiar estado local
       setState(() {
         userInfo = null;
         profilePhoto = null;
       });
 
-      // Muestra un mensaje al usuario
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Cierre de sesión exitoso.'),
-          duration: Duration(seconds: 3),
-        ),
-      );
+      if (mounted) {
+        // Mostrar mensaje de éxito
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(
+                  success ? Icons.check_circle : Icons.info,
+                  color: Colors.white,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  success 
+                    ? 'Sesión cerrada exitosamente' 
+                    : 'Sesión cerrada localmente',
+                ),
+              ],
+            ),
+            backgroundColor: success ? Colors.green : Colors.orange,
+            duration: const Duration(seconds: 2),
+          ),
+        );
 
-      // Navega a la página de inicio de sesión
-      Navigator.pushReplacementNamed(context, loginRoute);
+        // Navegar a login
+        Navigator.pushReplacementNamed(context, loginRoute);
+      }
     } catch (error) {
       print('Error durante el cierre de sesión: $error');
-      // Puedes manejar el error de alguna manera (mostrar un mensaje al usuario, por ejemplo)
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error al cerrar sesión, pero se limpió la sesión local'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        Navigator.pushReplacementNamed(context, loginRoute);
+      }
     }
   }
 }

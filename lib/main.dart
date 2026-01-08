@@ -3,6 +3,7 @@ import 'package:rommier/home.dart';
 import 'login_page.dart';
 import 'routes.dart';
 import 'date.dart';
+import 'gender_selection_page.dart';
 import 'register.dart';
 import 'preferences.dart';
 import 'roommate_preferences_page.dart';
@@ -49,6 +50,8 @@ class MyApp extends StatelessWidget {
       initialRoute: loginRoute,
       routes: {
         loginRoute: (context) => LoginPage(),
+        genderSelectionRoute: (context) => GenderSelectionPage(),
+        dateRoute: (context) => DatePage(),
         registerDateRoute: (context) => DatePage(),
         registerRoute: (context) => RegisterPage(),
         registerPreferencesRoute: (context) {

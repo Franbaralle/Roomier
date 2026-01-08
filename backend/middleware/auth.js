@@ -1,9 +1,10 @@
 // Middleware para verificar JWT tokens
 const jwt = require('jsonwebtoken');
 const { jwtSecret } = require('../config/security');
+const TokenBlacklist = require('../models/TokenBlacklist');
 
 // Middleware para verificar token en rutas protegidas
-const verifyToken = (req, res, next) => {
+const verifyToken = async (req, res, next) => {
     try {
         // Obtener token del header Authorization
         const authHeader = req.headers['authorization'];
@@ -27,12 +28,26 @@ const verifyToken = (req, res, next) => {
             });
         }
 
+        // Verificar si el token está en la blacklist
+        const blacklistedToken = await TokenBlacklist.findOne({ 
+            token,
+            expiresAt: { $gt: new Date() } // Solo verificar tokens que no han expirado
+        });
+
+        if (blacklistedToken) {
+            return res.status(401).json({ 
+                error: 'Token revocado',
+                message: 'Este token ha sido revocado. Por favor, inicia sesión nuevamente.' 
+            });
+        }
+
         // Verificar y decodificar el token
         const decoded = jwt.verify(token, jwtSecret);
         
         // Agregar información del usuario al request
         req.user = decoded;
         req.username = decoded.username;
+        req.token = token; // Guardar el token para uso en logout
         
         // Continuar con la siguiente función
         next();

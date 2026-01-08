@@ -201,7 +201,7 @@ class _LoginPageState extends State<LoginPage> {
                     height: 50,
                     child: OutlinedButton(
                       onPressed: () {
-                        Navigator.pushNamed(context, registerDateRoute);
+                        Navigator.pushNamed(context, genderSelectionRoute);
                       },
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: Color(0xFFB7A7E3), width: 2),

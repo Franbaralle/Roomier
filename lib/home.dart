@@ -5,6 +5,7 @@ import 'routes.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'chat_service.dart'; // Importamos el servicio de chat
 import 'image_utils.dart';
+import 'received_likes_page.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -16,6 +17,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   late SharedPreferences _prefs;
   String? savedData;
   int _unreadMessagesCount = 0;
+  int _receivedLikesCount = 0;
   bool _isInitialLoad = true;
 
   Offset _imageOffset = Offset.zero;
@@ -35,6 +37,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     loadData();
     _fetchHomeProfiles();
     _loadUnreadMessagesCount();
+    _loadReceivedLikesCount();
   }
 
   @override
@@ -98,6 +101,21 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       }
     } catch (error) {
       // Error loading unread messages count
+    }
+  }
+
+  Future<void> _loadReceivedLikesCount() async {
+    try {
+      final username = await AuthService().loadUserData('username');
+      if (username != null) {
+        final likes = await AuthService().fetchReceivedLikes(username);
+        setState(() {
+          _receivedLikesCount = likes.length;
+        });
+      }
+    } catch (error) {
+      // Error loading received likes count
+      print('Error al cargar contador de likes recibidos: $error');
     }
   }
 
@@ -707,6 +725,51 @@ Future<void> _showMatchPopup(
                 // Lógica para el botón del rayo
               },
               icon: const Icon(Icons.flash_on),
+            ),
+            Stack(
+              children: [
+                IconButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ReceivedLikesPage(),
+                      ),
+                    ).then((_) {
+                      // Recargar contador cuando vuelves
+                      _loadReceivedLikesCount();
+                    });
+                  },
+                  icon: const Icon(Icons.favorite),
+                ),
+                if (_receivedLikesCount > 0)
+                  Positioned(
+                    right: 8,
+                    top: 8,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 16,
+                        minHeight: 16,
+                      ),
+                      child: Text(
+                        _receivedLikesCount > 99
+                            ? '99+'
+                            : '$_receivedLikesCount',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+              ],
             ),
             Stack(
               children: [

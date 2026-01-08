@@ -296,8 +296,30 @@ io.on('connection', (socket) => {
 
       if (chat && user) {
         // Marcar todos los mensajes del otro usuario como leídos
+        let updated = false;
         chat.messages.forEach(msg => {
-          if (msg.sender.toString() !== user._id.toString()) {
+          if (msg.sender.toString() !== user._id.toString() && !msg.read) {
+            msg.read = true;
+            updated = true;
+          }
+        });
+
+        if (updated) {
+          await chat.save();
+          
+          // Emitir evento para notificar al otro usuario que sus mensajes fueron leídos
+          socket.to(chatId).emit('messages_read', {
+            chatId,
+            reader: username
+          });
+          
+          logger.info(`Mensajes marcados como leídos en chat ${chatId} por ${username}`);
+        }
+      }
+    } catch (error) {
+      logger.error(`Error marcando mensajes como leídos: ${error.message}`);
+    }
+  });
             msg.read = true;
           }
         });

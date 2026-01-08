@@ -20,6 +20,11 @@ class _ChatsListPageState extends State<ChatsListPage> {
   String? _savedProfilePhoto;
   final SocketService _socketService = SocketService();
   StreamSubscription? _messageSubscription;
+  StreamSubscription? _typingSubscription;
+  StreamSubscription? _stopTypingSubscription;
+  
+  // Mapa para trackear quién está escribiendo en cada chat
+  Map<String, bool> _typingStatus = {};
 
   @override
   void initState() {
@@ -35,6 +40,28 @@ class _ChatsListPageState extends State<ChatsListPage> {
       // Recargar la lista de chats cuando llega un mensaje nuevo
       _loadChats();
     });
+    
+    // Escuchar indicador de escritura
+    _typingSubscription = _socketService.onUserTyping.listen((data) {
+      setState(() {
+        _typingStatus[data['chatId']] = true;
+      });
+    });
+    
+    // Escuchar cuando dejan de escribir
+    _stopTypingSubscription = _socketService.onUserStopTyping.listen((data) {
+      setState(() {
+        _typingStatus[data['chatId']] = false;
+      });
+    });
+  }
+  
+  @override
+  void dispose() {
+    _messageSubscription?.cancel();
+    _typingSubscription?.cancel();
+    _stopTypingSubscription?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadProfilePhoto() async {
@@ -410,17 +437,26 @@ class _ChatsListPageState extends State<ChatsListPage> {
                 : FontWeight.normal,
           ),
         ),
-        subtitle: lastMessage != null
+        subtitle: _typingStatus[chat['chatId']] == true
             ? Text(
-                '${(lastMessage['sender'] is String && lastMessage['sender'] == _currentUsername) || (lastMessage['sender'] is Map && lastMessage['sender']['username'] == _currentUsername) ? 'Tú: ' : ''}${lastMessage['content']}',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                'escribiendo...',
                 style: TextStyle(
-                  color: unreadCount > 0
-                      ? Colors.black87
-                      : Colors.grey,
-                  fontWeight: unreadCount > 0
-                      ? FontWeight.w500
+                  color: Colors.blue,
+                  fontStyle: FontStyle.italic,
+                  fontWeight: FontWeight.w500,
+                ),
+              )
+            : lastMessage != null
+                ? Text(
+                    '${(lastMessage['sender'] is String && lastMessage['sender'] == _currentUsername) || (lastMessage['sender'] is Map && lastMessage['sender']['username'] == _currentUsername) ? 'Tú: ' : ''}${lastMessage['content']}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: unreadCount > 0
+                          ? Colors.black87
+                          : Colors.grey,
+                      fontWeight: unreadCount > 0
+                          ? FontWeight.w500
                       : FontWeight.normal,
                 ),
               )

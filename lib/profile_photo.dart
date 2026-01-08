@@ -37,6 +37,7 @@ class _ProfilePhotoPageState extends State<ProfilePhotoPage> {
       final password = prefs.getString('temp_register_password') ?? '';
       final email = prefs.getString('temp_register_email') ?? widget.email;
       final birthdate = prefs.getString('temp_register_birthdate') ?? '';
+      final gender = prefs.getString('temp_register_gender') ?? 'other'; // Género del usuario
       
       // Preferencias
       final preferencesJson = prefs.getString('temp_register_preferences');
@@ -76,6 +77,7 @@ class _ProfilePhotoPageState extends State<ProfilePhotoPage> {
         'password': password,
         'email': email,
         'birthdate': birthdate,
+        'gender': gender, // Agregar género del usuario
         'preferences': preferences,
         'roommatePreferences': {
           'gender': roommateGender,
@@ -101,6 +103,7 @@ class _ProfilePhotoPageState extends State<ProfilePhotoPage> {
       await prefs.remove('temp_register_username');
       await prefs.remove('temp_register_password');
       await prefs.remove('temp_register_email');
+      await prefs.remove('temp_register_gender');
       await prefs.remove('temp_register_birthdate');
       await prefs.remove('temp_register_preferences');
       await prefs.remove('temp_register_roommate_gender');

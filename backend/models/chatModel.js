@@ -5,6 +5,7 @@ const chatSchema = new mongoose.Schema({
     messages: [{
         sender: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
         content: String,
+        type: { type: String, enum: ['text', 'image'], default: 'text' },
         timestamp: { type: Date, default: Date.now },
         read: { type: Boolean, default: false }
     }],

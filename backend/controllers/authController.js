@@ -2,10 +2,12 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/user');
+const TokenBlacklist = require('../models/TokenBlacklist');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { jwtSecret, jwtExpiration, bcryptSaltRounds } = require('../config/security');
 const { loginLimiter, registerLimiter, passwordResetLimiter } = require('../middleware/rateLimiter');
+const { verifyToken } = require('../middleware/auth');
 
 // Ruta para el registro de usuarios
 router.post('/register', registerLimiter, async (req, res) => {
@@ -139,6 +141,43 @@ router.put('/update-password/:username', passwordResetLimiter, async (req, res) 
   } catch (error) {
     console.error('Error al restablecer la contraseña:', error);
     return res.status(500).json({ message: 'Error interno del servidor' });
+  }
+});
+
+// Ruta para cerrar sesión (logout) - agregar token a blacklist
+router.post('/logout', verifyToken, async (req, res) => {
+  try {
+    const token = req.token;
+    const username = req.username;
+
+    // Decodificar el token para obtener la fecha de expiración
+    const decoded = jwt.decode(token);
+    const expiresAt = new Date(decoded.exp * 1000);
+
+    // Agregar el token a la blacklist
+    await TokenBlacklist.create({
+      token,
+      username,
+      reason: 'logout',
+      expiresAt
+    });
+
+    console.log(`Logout exitoso: usuario "${username}" - token agregado a blacklist`);
+
+    res.status(200).json({ 
+      message: 'Sesión cerrada exitosamente',
+      success: true
+    });
+  } catch (error) {
+    console.error('Error en logout:', error);
+    // Si ya existe en blacklist (por ejemplo, doble logout), es OK
+    if (error.code === 11000) {
+      return res.status(200).json({ 
+        message: 'Sesión ya cerrada',
+        success: true
+      });
+    }
+    res.status(500).json({ error: 'Error al cerrar sesión' });
   }
 });
 

@@ -217,6 +217,54 @@ class AuthService {
     }
   }
 
+  // Logout: Cierra la sesión y revoca el token en el servidor
+  Future<bool> logout(BuildContext context) async {
+    try {
+      final String? accessToken = _prefs.getString('accessToken');
+      
+      if (accessToken != null) {
+        // Llamar al endpoint de logout para agregar el token a la blacklist
+        final String logoutUrl = '$apiUrl/logout';
+        try {
+          final response = await http.post(
+            Uri.parse(logoutUrl),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $accessToken',
+            },
+          ).timeout(
+            const Duration(seconds: 10),
+            onTimeout: () {
+              throw Exception('TIMEOUT');
+            },
+          );
+
+          if (response.statusCode == 200) {
+            print('Token agregado a blacklist exitosamente');
+          } else {
+            print('Error al revocar token en servidor: ${response.statusCode}');
+            // Continuar con logout local aunque falle el servidor
+          }
+        } catch (e) {
+          print('Error al contactar servidor para logout: $e');
+          // Continuar con logout local aunque falle el servidor
+        }
+      }
+
+      // Limpiar datos locales
+      await _prefs.remove('accessToken');
+      await _prefs.remove('username');
+      await _prefs.remove('isAdmin');
+      await _prefs.remove('profilePhoto');
+      currentUserUsername = null;
+
+      return true;
+    } catch (error) {
+      print('Error durante el logout: $error');
+      return false;
+    }
+  }
+
   Future<Map<String, dynamic>?> getUserInfoFromToken(
       String accessToken, String username) async {
     try {
@@ -577,6 +625,24 @@ class AuthService {
       }
     } catch (error) {
       print('Error fetching profiles: $error');
+      return [];
+    }
+  }
+
+  Future<List<dynamic>> fetchReceivedLikes(String username) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$api/home/received-likes?currentUser=$username')
+      );
+      
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        print('Failed to fetch received likes: ${response.statusCode}');
+        return [];
+      }
+    } catch (error) {
+      print('Error fetching received likes: $error');
       return [];
     }
   }

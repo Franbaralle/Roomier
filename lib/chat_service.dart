@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 
 class ChatService {
@@ -153,6 +154,46 @@ static Future<String?> createChat(String userA, String userB) async {
     } catch (error) {
       print('Error fetching pending matches: $error');
       return [];
+    }
+  }
+
+  // Método para enviar una imagen en un chat
+  static Future<bool> sendImage(String chatId, String sender, File imageFile) async {
+    try {
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$apiUrl/send_image'),
+      );
+
+      // Agregar los campos del formulario
+      request.fields['chatId'] = chatId;
+      request.fields['sender'] = sender;
+
+      // Agregar el archivo de imagen
+      var stream = http.ByteStream(imageFile.openRead());
+      var length = await imageFile.length();
+      var multipartFile = http.MultipartFile(
+        'image',
+        stream,
+        length,
+        filename: imageFile.path.split('/').last,
+      );
+      request.files.add(multipartFile);
+
+      print('Sending image to chat $chatId');
+      var response = await request.send();
+      var responseBody = await response.stream.bytesToString();
+
+      if (response.statusCode == 200) {
+        print('Image sent successfully: $responseBody');
+        return true;
+      } else {
+        print('Error sending image: ${response.statusCode} - $responseBody');
+        return false;
+      }
+    } catch (error) {
+      print('Error sending image: $error');
+      return false;
     }
   }
 }

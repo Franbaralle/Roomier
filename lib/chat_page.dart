@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 import 'chat_service.dart';
 import 'auth_service.dart';
 import 'reveal_info_widget.dart';
@@ -24,6 +26,7 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
   StreamSubscription? _messageSubscription;
   StreamSubscription? _typingSubscription;
   StreamSubscription? _stopTypingSubscription;
+  StreamSubscription? _messagesReadSubscription;
   bool _isOtherUserTyping = false;
   Timer? _typingTimer;
 
@@ -41,6 +44,7 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
     _messageSubscription?.cancel();
     _typingSubscription?.cancel();
     _stopTypingSubscription?.cancel();
+    _messagesReadSubscription?.cancel();
     _typingTimer?.cancel();
     _messageController.dispose();
     super.dispose();
@@ -124,6 +128,21 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
       if (data['chatId'] == _chatId) {
         setState(() {
           _isOtherUserTyping = false;
+        });
+      }
+    });
+    
+    // Escuchar cuando marcan mensajes como leídos
+    _messagesReadSubscription = _socketService.onMessagesRead.listen((data) {
+      if (data['chatId'] == _chatId) {
+        setState(() {
+          // Actualizar estado de lectura de mis mensajes
+          for (var msg in _messages) {
+            if (msg['sender'] == _currentUser || 
+                (msg['sender'] is Map && msg['sender']['username'] == _currentUser)) {
+              msg['read'] = true;
+            }
+          }
         });
       }
     });
@@ -292,6 +311,8 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
                       }
                       
                       final isMine = senderUsername == _currentUser;
+                      final messageType = message['type'] ?? 'text';
+                      final content = message['content'] ?? '';
 
                       return Align(
                         alignment: isMine
@@ -315,17 +336,74 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                message['content'] ?? '',
-                                style: const TextStyle(fontSize: 16),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                _formatTimestamp(message['timestamp']),
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  color: Colors.grey,
+                              // Mostrar imagen o texto dependiendo del tipo
+                              if (messageType == 'image')
+                                GestureDetector(
+                                  onTap: () => _showFullScreenImage(content),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Image.network(
+                                      content,
+                                      width: MediaQuery.of(context).size.width * 0.6,
+                                      fit: BoxFit.cover,
+                                      loadingBuilder: (context, child, loadingProgress) {
+                                        if (loadingProgress == null) return child;
+                                        return Container(
+                                          width: MediaQuery.of(context).size.width * 0.6,
+                                          height: 200,
+                                          child: Center(
+                                            child: CircularProgressIndicator(
+                                              value: loadingProgress.expectedTotalBytes != null
+                                                  ? loadingProgress.cumulativeBytesLoaded /
+                                                      loadingProgress.expectedTotalBytes!
+                                                  : null,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      errorBuilder: (context, error, stackTrace) {
+                                        return Container(
+                                          width: MediaQuery.of(context).size.width * 0.6,
+                                          height: 200,
+                                          color: Colors.grey[400],
+                                          child: const Icon(
+                                            Icons.error,
+                                            color: Colors.red,
+                                            size: 40,
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                )
+                              else
+                                Text(
+                                  content,
+                                  style: const TextStyle(fontSize: 16),
                                 ),
+                              const SizedBox(height: 4),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    _formatTimestamp(message['timestamp']),
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                  // Mostrar check marks solo para mensajes enviados por el usuario actual
+                                  if (isMine) ...[
+                                    const SizedBox(width: 4),
+                                    Icon(
+                                      Icons.done_all,
+                                      size: 14,
+                                      color: message['read'] == true 
+                                          ? Colors.blue 
+                                          : Colors.grey,
+                                    ),
+                                  ],
+                                ],
                               ),
                             ],
                           ),
@@ -357,6 +435,12 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
                   padding: const EdgeInsets.all(8.0),
                   child: Row(
                     children: [
+                      // Botón para seleccionar imagen
+                      IconButton(
+                        onPressed: _pickAndSendImage,
+                        icon: const Icon(Icons.image),
+                        color: Colors.blue,
+                      ),
                       Expanded(
                         child: TextField(
                           controller: _messageController,
@@ -623,5 +707,129 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
         );
       }
     }
+  }
+
+  // Método para seleccionar y enviar imagen
+  Future<void> _pickAndSendImage() async {
+    if (_chatId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('El chat no está disponible'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1920,
+        maxHeight: 1920,
+        imageQuality: 85,
+      );
+
+      if (image != null) {
+        // Mostrar indicador de carga
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const Center(
+            child: CircularProgressIndicator(),
+          ),
+        );
+
+        final File imageFile = File(image.path);
+        final success = await ChatService.sendImage(
+          _chatId!,
+          _currentUser,
+          imageFile,
+        );
+
+        // Cerrar indicador de carga
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
+
+        if (success) {
+          // La imagen se enviará en tiempo real via socket,
+          // y se actualizará automáticamente en el chat
+          print('✅ Imagen enviada correctamente');
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Error al enviar la imagen'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      }
+    } catch (error) {
+      print('❌ Error seleccionando imagen: $error');
+      if (mounted) {
+        // Cerrar indicador de carga si está abierto
+        Navigator.of(context).pop();
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error al seleccionar la imagen'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // Método para mostrar imagen en pantalla completa
+  void _showFullScreenImage(String imageUrl) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(
+            backgroundColor: Colors.black,
+            iconTheme: const IconThemeData(color: Colors.white),
+          ),
+          body: Center(
+            child: InteractiveViewer(
+              child: Image.network(
+                imageUrl,
+                fit: BoxFit.contain,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Center(
+                    child: CircularProgressIndicator(
+                      value: loadingProgress.expectedTotalBytes != null
+                          ? loadingProgress.cumulativeBytesLoaded /
+                              loadingProgress.expectedTotalBytes!
+                          : null,
+                      color: Colors.white,
+                    ),
+                  );
+                },
+                errorBuilder: (context, error, stackTrace) {
+                  return const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.error, color: Colors.red, size: 60),
+                        SizedBox(height: 16),
+                        Text(
+                          'Error al cargar la imagen',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

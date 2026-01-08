@@ -349,4 +349,58 @@ router.get('/', async (req, res) => {
     }
 });
 
+// Endpoint para obtener usuarios que te dieron like
+router.get('/received-likes', async (req, res) => {
+    try {
+        const currentUsername = req.query.currentUser;
+
+        if (!currentUsername) {
+            return res.status(400).json({ message: 'Se requiere el usuario actual' });
+        }
+
+        // Obtener el usuario actual
+        const currentUser = await User.findOne({ username: currentUsername });
+        
+        if (!currentUser) {
+            return res.status(404).json({ message: 'Usuario actual no encontrado' });
+        }
+
+        // Encontrar usuarios que tienen a currentUsername en su lista isMatch
+        // pero currentUsername no los tiene en su isMatch (no son match mutuo)
+        const usersWhoLikedMe = await User.find({
+            isMatch: currentUsername,
+            username: { $nin: currentUser.isMatch || [] } // No son match mutuo
+        });
+
+        // Formatear la respuesta con información básica
+        const receivedLikes = usersWhoLikedMe.map(user => {
+            const userObj = user.toObject();
+            
+            // Calcular edad
+            let age = null;
+            if (userObj.birthdate) {
+                age = calculateAge(userObj.birthdate);
+            }
+
+            // Retornar solo información básica
+            return {
+                username: userObj.username,
+                age: age,
+                gender: userObj.gender,
+                profilePhotos: userObj.profilePhotos,
+                profilePhoto: userObj.profilePhoto, // Legacy
+                personalInfo: {
+                    job: userObj.personalInfo?.job,
+                    aboutMe: userObj.personalInfo?.aboutMe
+                }
+            };
+        });
+
+        res.status(200).json(receivedLikes);
+    } catch (error) {
+        console.error('Error al obtener likes recibidos:', error);
+        res.status(500).json({ message: 'Error del servidor' });
+    }
+});
+
 module.exports = router;

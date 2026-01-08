@@ -2,6 +2,25 @@ const express = require('express');
 const router = express.Router();
 const Chat = require('../models/chatModel');
 const User = require('../models/user');
+const multer = require('multer');
+const { uploadImage } = require('../utils/cloudinary');
+
+// Configurar multer para recibir imágenes
+const storage = multer.memoryStorage();
+const upload = multer({
+    storage: storage,
+    limits: {
+        fileSize: 10 * 1024 * 1024, // 10 MB máximo
+    },
+    fileFilter: (req, file, cb) => {
+        // Solo aceptar imágenes
+        if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Solo se permiten imágenes'), false);
+        }
+    }
+});
 
 router.post('/create_chat', async (req, res) => {
     const { userA: usernameA, userB: usernameB } = req.body;
@@ -239,6 +258,69 @@ router.get('/pending_matches/:username', async (req, res) => {
         res.status(200).json({ matches: formattedMatches });
     } catch (error) {
         console.error('Error fetching pending matches:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// Enviar imagen en chat
+router.post('/send_image', upload.single('image'), async (req, res) => {
+    const { chatId, sender } = req.body;
+    const imageFile = req.file;
+
+    if (!imageFile) {
+        return res.status(400).json({ message: 'No se proporcionó imagen' });
+    }
+
+    try {
+        // Buscar el chat por su ID
+        const chat = await Chat.findById(chatId);
+
+        if (!chat) {
+            return res.status(404).json({ message: 'Chat not found' });
+        }
+
+        // Buscar el usuario por su nombre de usuario
+        const user = await User.findOne({ username: sender });
+
+        if (!user) {
+            return res.status(404).json({ message: 'Sender user not found' });
+        }
+
+        // Subir imagen a Cloudinary
+        const result = await uploadImage(imageFile.buffer, {
+            folder: 'roomier/chat_images',
+            transformation: {
+                width: 800,
+                height: 800,
+                crop: 'limit',
+                quality: 'auto:good',
+                fetch_format: 'auto'
+            }
+        });
+
+        // Agregar mensaje de tipo imagen al chat
+        const newMessage = {
+            sender: user._id,
+            content: result.secure_url,
+            type: 'image',
+            read: false,
+            timestamp: new Date()
+        };
+
+        chat.messages.push(newMessage);
+        chat.lastMessage = new Date();
+        await chat.save();
+
+        res.status(200).json({ 
+            message: 'Image sent successfully',
+            imageUrl: result.secure_url,
+            messageData: {
+                ...newMessage,
+                sender: { username: sender, _id: user._id }
+            }
+        });
+    } catch (error) {
+        console.error('Error sending image:', error);
         res.status(500).json({ message: 'Internal server error' });
     }
 });

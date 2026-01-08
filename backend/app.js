@@ -320,18 +320,6 @@ io.on('connection', (socket) => {
       logger.error(`Error marcando mensajes como leídos: ${error.message}`);
     }
   });
-            msg.read = true;
-          }
-        });
-        await chat.save();
-
-        // Notificar al otro usuario que sus mensajes fueron leídos
-        io.to(chatId).emit('messages_read', { chatId, username });
-      }
-    } catch (error) {
-      logger.error(`Error marcando mensajes como leídos: ${error.message}`);
-    }
-  });
 
   // Desconexión
   socket.on('disconnect', () => {

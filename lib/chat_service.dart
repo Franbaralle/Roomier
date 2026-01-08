@@ -88,6 +88,29 @@ static Future<String?> createChat(String userA, String userB, {bool isFirstStep 
     }
   }
 
+  // Método para obtener el estado del chat (isFirstStep, isMatch, firstStepBy)
+  static Future<Map<String, dynamic>?> getChatStatus(String chatId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$apiUrl/status/$chatId'),
+        headers: <String, String>{
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        return responseData;
+      } else {
+        print('Error fetching chat status: ${response.statusCode}');
+        return null;
+      }
+    } catch (error) {
+      print('Error fetching chat status: $error');
+      return null;
+    }
+  }
+
   // Método para obtener los mensajes de un chat específico
   static Future<List<Map<String, dynamic>>> getChatMessages(String chatId) async {
     try {

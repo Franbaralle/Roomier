@@ -264,6 +264,29 @@ router.get('/messages/:chatId', async (req, res) => {
     }
 });
 
+// Obtener estado del chat (isFirstStep, isMatch, firstStepBy)
+router.get('/status/:chatId', async (req, res) => {
+    const { chatId } = req.params;
+
+    try {
+        const chat = await Chat.findById(chatId)
+            .populate('firstStepBy', 'username');
+
+        if (!chat) {
+            return res.status(404).json({ message: 'Chat not found' });
+        }
+
+        res.status(200).json({ 
+            isFirstStep: chat.isFirstStep || false,
+            isMatch: chat.isMatch || false,
+            firstStepBy: chat.firstStepBy ? chat.firstStepBy.username : null
+        });
+    } catch (error) {
+        console.error('Error fetching chat status:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
 // Marcar mensajes como leídos
 router.post('/mark_as_read', async (req, res) => {
     const { chatId, username } = req.body;

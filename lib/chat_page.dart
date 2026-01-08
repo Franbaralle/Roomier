@@ -29,6 +29,11 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
   StreamSubscription? _messagesReadSubscription;
   bool _isOtherUserTyping = false;
   Timer? _typingTimer;
+  
+  // Estado del chat (First Step)
+  bool _isFirstStep = false;
+  bool _isMatch = false;
+  String? _firstStepBy;
 
   @override
   void initState() {
@@ -216,11 +221,23 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
 
   Future<void> _loadMessages(String chatId) async {
     try {
+      // Cargar mensajes
       final messages = await ChatService.getChatMessages(chatId);
+      
+      // Cargar estado del chat (isFirstStep, isMatch, firstStepBy)
+      final chatStatus = await ChatService.getChatStatus(chatId);
+      
       setState(() {
         _messages = messages;
         _isLoading = false;
         _isOtherUserTyping = false; // Limpiar indicador de escritura al cargar
+        
+        // Actualizar estado del chat
+        if (chatStatus != null) {
+          _isFirstStep = chatStatus['isFirstStep'] ?? false;
+          _isMatch = chatStatus['isMatch'] ?? false;
+          _firstStepBy = chatStatus['firstStepBy'];
+        }
       });
     } catch (error) {
       print('Error loading messages: $error');
@@ -431,59 +448,85 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
                     ),
                   ),
                 // Campo de texto y botón enviar
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Row(
-                    children: [
-                      // Botón para seleccionar imagen
-                      IconButton(
-                        onPressed: _pickAndSendImage,
-                        icon: const Icon(Icons.image),
-                        color: Colors.blue,
-                      ),
-                      Expanded(
-                        child: TextField(
-                          controller: _messageController,
-                          decoration: const InputDecoration(
-                            hintText: 'Escribe tu mensaje...',
-                            border: OutlineInputBorder(),
-                          ),
-                          onChanged: (text) {
-                            // Indicador de escritura
-                            if (_chatId != null && text.isNotEmpty) {
-                              _socketService.typing(_chatId!, _currentUser);
-                              
-                              // Cancelar el timer anterior
-                              _typingTimer?.cancel();
-                              
-                              // Crear nuevo timer para detener el indicador después de 2 segundos
-                              _typingTimer = Timer(const Duration(seconds: 2), () {
-                                _socketService.stopTyping(_chatId!, _currentUser);
-                              });
-                            }
-                          },
+                // Bloquear si es First Step sin match y yo soy quien dio el first step
+                _isFirstStep && !_isMatch && _firstStepBy == _currentUser
+                    ? Container(
+                        padding: const EdgeInsets.all(16.0),
+                        margin: const EdgeInsets.all(8.0),
+                        decoration: BoxDecoration(
+                          color: Colors.orange[50],
+                          border: Border.all(color: Colors.orange),
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.lock, color: Colors.orange[700]),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                '⏳ Esperá a que ${widget.profile['username']} te responda o te dé like para seguir conversando',
+                                style: TextStyle(
+                                  color: Colors.orange[900],
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Row(
+                          children: [
+                            // Botón para seleccionar imagen
+                            IconButton(
+                              onPressed: _pickAndSendImage,
+                              icon: const Icon(Icons.image),
+                              color: Colors.blue,
+                            ),
+                            Expanded(
+                              child: TextField(
+                                controller: _messageController,
+                                decoration: const InputDecoration(
+                                  hintText: 'Escribe tu mensaje...',
+                                  border: OutlineInputBorder(),
+                                ),
+                                onChanged: (text) {
+                                  // Indicador de escritura
+                                  if (_chatId != null && text.isNotEmpty) {
+                                    _socketService.typing(_chatId!, _currentUser);
+                                    
+                                    // Cancelar el timer anterior
+                                    _typingTimer?.cancel();
+                                    
+                                    // Crear nuevo timer para detener el indicador después de 2 segundos
+                                    _typingTimer = Timer(const Duration(seconds: 2), () {
+                                      _socketService.stopTyping(_chatId!, _currentUser);
+                                    });
+                                  }
+                                },
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () {
+                                if (_chatId != null &&
+                                    _messageController.text.isNotEmpty) {
+                                  _sendMessage(_chatId!, _messageController.text);
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                          'No se pudo enviar el mensaje. El chat no está disponible.'),
+                                      duration: Duration(seconds: 3),
+                                    ),
+                                  );
+                                }
+                              },
+                              icon: const Icon(Icons.send),
+                            ),
+                          ],
                         ),
                       ),
-                      IconButton(
-                        onPressed: () {
-                          if (_chatId != null &&
-                              _messageController.text.isNotEmpty) {
-                            _sendMessage(_chatId!, _messageController.text);
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                    'No se pudo enviar el mensaje. El chat no está disponible.'),
-                                duration: Duration(seconds: 3),
-                              ),
-                            );
-                          }
-                        },
-                        icon: const Icon(Icons.send),
-                      ),
-                    ],
-                  ),
-                ),
               ],
             ),
     );

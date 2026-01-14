@@ -206,7 +206,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     try {
       final token = authService.loadUserData('accessToken');
       final response = await http.put(
-        Uri.parse('${AuthService.api}/edit-profile/preferences'),
+        Uri.parse('${AuthService.api}/edit-profile/tags'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',

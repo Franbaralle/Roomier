@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'auth_service.dart';
 import 'dart:typed_data';
 import 'dart:convert';
 import 'routes.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'image_utils.dart';
+import 'review_service.dart';
+import 'dart:ui';
+import 'preferences_data.dart';
 
 class ProfilePage extends StatefulWidget {
   final String username;
@@ -22,6 +26,15 @@ class _ProfilePageState extends State<ProfilePage> {
   String? savedData;
   late String username;
   late String currentUser; // Usuario actualmente autenticado
+  
+  // Variables para reviews
+  List<dynamic> _reviews = [];
+  bool _canViewReviews = false;
+  int _reviewCount = 0;
+  double _averageRating = 0.0;
+  Map<String, double> _categoryAverages = {};
+  bool _loadingReviews = true;
+  bool _canLeaveReview = false;
 
   @override
   void didChangeDependencies() {
@@ -101,6 +114,69 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> getCurrentUser() async {
     final authService = AuthService();
     currentUser = await authService.loadUserData('username');
+    
+    // Cargar reviews después de tener el currentUser
+    if (currentUser.isNotEmpty) {
+      _loadReviews();
+      _checkCanLeaveReview();
+    }
+  }
+
+  // Cargar reviews del usuario
+  Future<void> _loadReviews() async {
+    // Solo cargar reviews si el usuario tiene lugar
+    if (userInfo?['housingInfo']?['hasPlace'] != true) {
+      setState(() {
+        _loadingReviews = false;
+      });
+      return;
+    }
+
+    try {
+      // Obtener reviews
+      final reviewsData = await ReviewService.getReviewsForUser(
+        username: widget.username,
+        requesterUsername: currentUser,
+      );
+
+      // Obtener estadísticas
+      final statsData = await ReviewService.getReviewStats(widget.username);
+
+      setState(() {
+        _reviews = reviewsData['reviews'] ?? [];
+        _canViewReviews = reviewsData['canViewReviews'] ?? false;
+        _reviewCount = reviewsData['reviewCount'] ?? 0;
+        _averageRating = statsData['averageRating'] ?? 0.0;
+        _categoryAverages = statsData['categoryAverages'] ?? {};
+        _loadingReviews = false;
+      });
+    } catch (error) {
+      print('Error loading reviews: $error');
+      setState(() {
+        _loadingReviews = false;
+      });
+    }
+  }
+
+  // Verificar si el usuario actual puede dejar una review
+  Future<void> _checkCanLeaveReview() async {
+    if (currentUser == widget.username) {
+      // No puedes dejarte review a ti mismo
+      return;
+    }
+
+    try {
+      final result = await ReviewService.canLeaveReview(
+        reviewer: currentUser,
+        reviewed: widget.username,
+      );
+
+      setState(() {
+        _canLeaveReview = result['canLeave'] ?? false;
+      });
+    } catch (error) {
+      print('Error checking review permissions: $error');
+    }
   }
 
   // Calcular edad desde fecha de nacimiento
@@ -247,11 +323,17 @@ class _ProfilePageState extends State<ProfilePage> {
       // Botón de Editar Perfil (solo para el propio usuario)
       if (isCurrentUserProfile) _buildEditProfileButton(),
       if (isCurrentUserProfile) const SizedBox(height: 10),
+      // Botón de Exportar Datos (solo para el propio usuario)
+      if (isCurrentUserProfile) _buildExportDataButton(),
+      if (isCurrentUserProfile) const SizedBox(height: 10),
       // Botones de gestión de fotos (solo para el propio usuario)
       if (isCurrentUserProfile) _buildPhotoManagementButtons(),
       if (isCurrentUserProfile) const SizedBox(height: 10),
       // Botón de Panel Admin (solo para admins)
       if (isCurrentUserProfile) _buildAdminButton(),
+      if (isCurrentUserProfile) const SizedBox(height: 10),
+      // Botón de Eliminar Cuenta (solo para el propio usuario)
+      if (isCurrentUserProfile) _buildDeleteAccountButton(),
       const SizedBox(height: 20),
       _buildAdditionalImages(),
       const SizedBox(height: 20),
@@ -414,6 +496,215 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
       ),
     );
+  }
+
+  Widget _buildExportDataButton() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 0),
+      child: OutlinedButton.icon(
+        onPressed: _exportUserData,
+        icon: const Icon(Icons.download, size: 20),
+        label: const Text('Exportar mis datos'),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: Colors.blue[700],
+          side: BorderSide(color: Colors.blue[300]!),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Exportar datos del usuario (Ley 25.326 Art. 14)
+  void _exportUserData() async {
+    try {
+      final username = userInfo?['username'];
+      
+      // Diálogo informativo
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            title: Row(
+              children: const [
+                Icon(Icons.info_outline, color: Colors.blue),
+                SizedBox(width: 12),
+                Text('Exportar Datos'),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                Text(
+                  'Se descargará un archivo JSON con toda tu información:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 12),
+                Text('• Datos de perfil'),
+                Text('• Intereses y hábitos'),
+                Text('• Información de vivienda'),
+                Text('• Matches y estadísticas'),
+                Text('• Enlaces a tus fotos'),
+                SizedBox(height: 12),
+                Text(
+                  'Esto cumple con tu derecho de acceso a datos personales (Ley 25.326).',
+                  style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancelar'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Exportar'),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (confirm != true) return;
+
+      // Mostrar indicador de carga
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                ),
+                SizedBox(width: 16),
+                Text('Exportando datos...'),
+              ],
+            ),
+            duration: Duration(seconds: 10),
+          ),
+        );
+      }
+
+      // Llamar al endpoint de exportación
+      final authService = AuthService();
+      final token = _prefs.getString('accessToken');
+      
+      final response = await http.get(
+        Uri.parse('${AuthService.api}/export/$username'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        // Datos exportados exitosamente
+        final exportData = jsonDecode(response.body);
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          
+          // Mostrar diálogo con preview de los datos
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                title: Row(
+                  children: const [
+                    Icon(Icons.check_circle, color: Colors.green),
+                    SizedBox(width: 12),
+                    Text('Datos Exportados'),
+                  ],
+                ),
+                content: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Tus datos han sido exportados exitosamente.',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text('Vista previa (primeros campos):'),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          JsonEncoder.withIndent('  ').convert(exportData).substring(0, 300) + '...',
+                          style: const TextStyle(
+                            fontFamily: 'monospace',
+                            fontSize: 11,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'En una aplicación web, esto se descargaría automáticamente. En la app móvil, puedes copiar y guardar esta información.',
+                        style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+                      ),
+                    ],
+                  ),
+                ),
+                actions: [
+                  ElevatedButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Cerrar'),
+                  ),
+                ],
+              );
+            },
+          );
+        }
+      } else {
+        throw Exception('Error al exportar datos: ${response.statusCode}');
+      }
+    } catch (error) {
+      print('Error exportando datos: $error');
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: const [
+                Icon(Icons.error, color: Colors.white),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text('Error al exportar datos. Intenta nuevamente.'),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildPhotoManagementButtons() {
@@ -620,6 +911,12 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           const SizedBox(height: 20),
           _buildHousingInfoSection(),
+          
+          // Sección de Reviews (solo si el usuario tiene lugar)
+          if (userInfo?['housingInfo']?['hasPlace'] == true) ...[
+            const SizedBox(height: 24),
+            _buildReviewsSection(),
+          ],
           
           if (currentUser == widget.username) ...[
             const SizedBox(height: 24),
@@ -965,6 +1262,34 @@ class _ProfilePageState extends State<ProfilePage> {
                         ],
                       ),
                     ],
+                    // Mostrar rating si tiene lugar y reviews
+                    if (userInfo?['housingInfo']?['hasPlace'] == true && 
+                        _reviewCount > 0 && 
+                        !_loadingReviews) ...[
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.star, color: Colors.white, size: 16),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${_averageRating.toStringAsFixed(1)} ($_reviewCount reviews)',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 8),
                     _buildVerificationBadges(),
                   ],
@@ -1137,7 +1462,11 @@ class _ProfilePageState extends State<ProfilePage> {
         if (subCats is Map) {
           subCats.forEach((subCat, tags) {
             if (tags is List && tags.isNotEmpty) {
-              allTags.addAll(tags.map((t) => t.toString()));
+              // Convertir cada tag al formato legible usando PreferencesData
+              allTags.addAll(tags.map((t) {
+                final tagKey = t.toString();
+                return PreferencesData.tagLabels[tagKey] ?? tagKey;
+              }));
             }
           });
         }
@@ -1608,5 +1937,835 @@ class _ProfilePageState extends State<ProfilePage> {
         Navigator.pushReplacementNamed(context, loginRoute);
       }
     }
+  }
+
+  // Botón de eliminar cuenta (Cumplimiento Ley 25.326 Art. 16)
+  Widget _buildDeleteAccountButton() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: OutlinedButton.icon(
+        onPressed: _deleteAccount,
+        icon: const Icon(Icons.delete_forever, size: 20),
+        label: const Text('Eliminar mi cuenta'),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: Colors.red[900],
+          side: BorderSide(color: Colors.red[900]!, width: 2),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Eliminar cuenta permanentemente (Ley 25.326 - Derecho al Olvido)
+  void _deleteAccount() async {
+    try {
+      final username = userInfo?['username'];
+      
+      // Primer diálogo de advertencia
+      final confirm1 = await showDialog<bool>(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            title: Row(
+              children: const [
+                Icon(Icons.warning, color: Colors.red, size: 32),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    '⚠️ Eliminar Cuenta',
+                    style: TextStyle(fontSize: 20),
+                  ),
+                ),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                Text(
+                  'Esta acción es PERMANENTE e IRREVERSIBLE.',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.red,
+                  ),
+                ),
+                SizedBox(height: 12),
+                Text(
+                  'Se eliminarán:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 8),
+                Text('• Tu perfil completo'),
+                Text('• Todas tus fotos'),
+                Text('• Tus matches y chats'),
+                Text('• Toda tu información personal'),
+                SizedBox(height: 12),
+                Text(
+                  '¿Estás seguro que deseas continuar?',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancelar'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Continuar'),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (confirm1 != true) return;
+
+      // Segundo diálogo de confirmación final
+      final confirm2 = await showDialog<bool>(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            title: const Text(
+              'Confirmación Final',
+              style: TextStyle(color: Colors.red),
+            ),
+            content: const Text(
+              '¿Realmente deseas eliminar tu cuenta de forma permanente?\n\nEsta es tu última oportunidad para cancelar.',
+              style: TextStyle(fontSize: 16),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('No, mantener mi cuenta'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red[900],
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Sí, eliminar definitivamente'),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (confirm2 != true) return;
+
+      // Mostrar indicador de carga
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                ),
+                SizedBox(width: 16),
+                Text('Eliminando cuenta...'),
+              ],
+            ),
+            duration: Duration(seconds: 30),
+          ),
+        );
+      }
+
+      // Llamar al endpoint de eliminación
+      final authService = AuthService();
+      final token = _prefs.getString('accessToken');
+      
+      final response = await http.delete(
+        Uri.parse('${AuthService.api}/delete/$username'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        // Limpiar datos locales
+        await authService.logout(context);
+        await _prefs.clear();
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.white),
+                  SizedBox(width: 12),
+                  Text('Cuenta eliminada exitosamente'),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 3),
+            ),
+          );
+
+          // Navegar a login después de 2 segundos
+          await Future.delayed(const Duration(seconds: 2));
+          Navigator.pushNamedAndRemoveUntil(context, loginRoute, (route) => false);
+        }
+      } else {
+        throw Exception('Error al eliminar cuenta: ${response.statusCode}');
+      }
+    } catch (error) {
+      print('Error eliminando cuenta: $error');
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: const [
+                Icon(Icons.error, color: Colors.white),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text('Error al eliminar cuenta. Intenta nuevamente.'),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    }
+  }
+
+  // ========== SECCIÓN DE REVIEWS ==========
+
+  Widget _buildReviewsSection() {
+    if (_loadingReviews) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(20.0),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        // Título con rating promedio
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text(
+              'Reviews',
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            if (_reviewCount > 0) ...[
+              const SizedBox(width: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.amber,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.star, color: Colors.white, size: 20),
+                    const SizedBox(width: 4),
+                    Text(
+                      _averageRating.toStringAsFixed(1),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '($_reviewCount)',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 20),
+
+        // Botón de dejar review
+        if (_canLeaveReview)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10),
+            child: ElevatedButton.icon(
+              onPressed: _showCreateReviewDialog,
+              icon: const Icon(Icons.rate_review),
+              label: const Text('Dejar una Review'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+
+        // Mostrar reviews o mensaje
+        if (_reviewCount == 0)
+          Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Text(
+              'Este usuario aún no tiene reviews',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[600],
+              ),
+              textAlign: TextAlign.center,
+            ),
+          )
+        else
+          _buildReviewsList(),
+      ],
+    );
+  }
+
+  Widget _buildReviewsList() {
+    return Column(
+      children: [
+        // Promedios por categoría (solo si puede ver)
+        if (_canViewReviews && _categoryAverages.isNotEmpty)
+          _buildCategoryAverages(),
+
+        const SizedBox(height: 20),
+
+        // Lista de reviews
+        ..._reviews.take(3).map((review) => _buildReviewCard(review)).toList(),
+
+        // Botón ver más o upgrade premium
+        if (_reviewCount > 3)
+          Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: ElevatedButton(
+              onPressed: _canViewReviews
+                  ? () {
+                      // TODO: Mostrar todas las reviews en una página separada
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Funcionalidad en desarrollo'),
+                        ),
+                      );
+                    }
+                  : _showPremiumDialog,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _canViewReviews ? Colors.blue : Colors.purple,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Text(
+                _canViewReviews
+                    ? 'Ver todas las reviews ($_reviewCount)'
+                    : '⭐ Hazte Premium para ver todas',
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildCategoryAverages() {
+    final categories = {
+      'cleanliness': {'label': 'Limpieza', 'icon': Icons.cleaning_services},
+      'communication': {'label': 'Comunicación', 'icon': Icons.chat},
+      'accuracy': {'label': 'Precisión', 'icon': Icons.check_circle},
+      'location': {'label': 'Ubicación', 'icon': Icons.location_on},
+    };
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: categories.entries.map((entry) {
+          final rating = _categoryAverages[entry.key] ?? 0.0;
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            child: Row(
+              children: [
+                Icon(entry.value['icon'] as IconData, size: 20, color: Colors.grey[600]),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    entry.value['label'] as String,
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                ),
+                _buildStarRating(rating),
+                const SizedBox(width: 8),
+                Text(
+                  rating.toStringAsFixed(1),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildReviewCard(Map<String, dynamic> review) {
+    final rating = (review['rating'] ?? 0).toDouble();
+    final comment = review['comment'] ?? '';
+    final reviewer = review['reviewer'] ?? 'Usuario';
+    final timestamp = review['createdAt'] ?? '';
+    
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      child: Stack(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header con reviewer y rating
+                Row(
+                  children: [
+                    CircleAvatar(
+                      backgroundColor: Colors.blue[100],
+                      child: Text(
+                        reviewer[0].toUpperCase(),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            reviewer,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          if (timestamp.isNotEmpty)
+                            Text(
+                              _formatReviewDate(timestamp),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    _buildStarRating(rating),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                // Comentario
+                Text(
+                  comment,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[800],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Blur si no puede ver
+          if (!_canViewReviews)
+            Positioned.fill(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                  child: Container(
+                    color: Colors.black.withOpacity(0.1),
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.lock,
+                            color: Colors.white,
+                            size: 40,
+                          ),
+                          const SizedBox(height: 8),
+                          ElevatedButton(
+                            onPressed: _showPremiumDialog,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.purple,
+                              foregroundColor: Colors.white,
+                            ),
+                            child: const Text('Desbloquear con Premium'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStarRating(double rating) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(5, (index) {
+        return Icon(
+          index < rating.floor()
+              ? Icons.star
+              : index < rating
+                  ? Icons.star_half
+                  : Icons.star_border,
+          color: Colors.amber,
+          size: 16,
+        );
+      }),
+    );
+  }
+
+  String _formatReviewDate(String timestamp) {
+    try {
+      final date = DateTime.parse(timestamp);
+      final now = DateTime.now();
+      final difference = now.difference(date);
+
+      if (difference.inDays == 0) {
+        return 'Hoy';
+      } else if (difference.inDays == 1) {
+        return 'Ayer';
+      } else if (difference.inDays < 30) {
+        return 'Hace ${difference.inDays} días';
+      } else if (difference.inDays < 365) {
+        final months = (difference.inDays / 30).floor();
+        return 'Hace $months ${months == 1 ? 'mes' : 'meses'}';
+      } else {
+        final years = (difference.inDays / 365).floor();
+        return 'Hace $years ${years == 1 ? 'año' : 'años'}';
+      }
+    } catch (e) {
+      return '';
+    }
+  }
+
+  void _showPremiumDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.star, color: Colors.purple, size: 28),
+            SizedBox(width: 8),
+            Text('Premium'),
+          ],
+        ),
+        content: const Text(
+          'Hazte Premium para:\n\n'
+          '⭐ Ver todas las reviews completas\n'
+          '👀 Ver quién te dio like\n'
+          '💬 Enviar mensajes sin esperar match\n'
+          '🚀 Y mucho más...',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Más tarde'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // TODO: Navegar a página de suscripción
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Sistema de pagos próximamente'),
+                  backgroundColor: Colors.purple,
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.purple,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Suscribirme'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showCreateReviewDialog() {
+    double rating = 5.0;
+    double cleanliness = 5.0;
+    double communication = 5.0;
+    double accuracy = 5.0;
+    double location = 5.0;
+    final commentController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text('Dejar una Review'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Rating General', style: TextStyle(fontWeight: FontWeight.bold)),
+                  Slider(
+                    value: rating,
+                    min: 1,
+                    max: 5,
+                    divisions: 4,
+                    label: rating.toString(),
+                    onChanged: (value) => setState(() => rating = value),
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(5, (index) {
+                      return Icon(
+                        index < rating ? Icons.star : Icons.star_border,
+                        color: Colors.amber,
+                        size: 32,
+                      );
+                    }),
+                  ),
+                  const SizedBox(height: 16),
+                  const Divider(),
+                  
+                  // Limpieza
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Icon(Icons.cleaning_services, size: 20),
+                      const SizedBox(width: 8),
+                      const Text('Limpieza'),
+                      const Spacer(),
+                      Text(cleanliness.toStringAsFixed(1)),
+                    ],
+                  ),
+                  Slider(
+                    value: cleanliness,
+                    min: 1,
+                    max: 5,
+                    divisions: 4,
+                    onChanged: (value) => setState(() => cleanliness = value),
+                  ),
+                  
+                  // Comunicación
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Icon(Icons.chat, size: 20),
+                      const SizedBox(width: 8),
+                      const Text('Comunicación'),
+                      const Spacer(),
+                      Text(communication.toStringAsFixed(1)),
+                    ],
+                  ),
+                  Slider(
+                    value: communication,
+                    min: 1,
+                    max: 5,
+                    divisions: 4,
+                    onChanged: (value) => setState(() => communication = value),
+                  ),
+                  
+                  // Precisión
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Icon(Icons.check_circle, size: 20),
+                      const SizedBox(width: 8),
+                      const Text('Precisión'),
+                      const Spacer(),
+                      Text(accuracy.toStringAsFixed(1)),
+                    ],
+                  ),
+                  Slider(
+                    value: accuracy,
+                    min: 1,
+                    max: 5,
+                    divisions: 4,
+                    onChanged: (value) => setState(() => accuracy = value),
+                  ),
+                  
+                  // Ubicación
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Icon(Icons.location_on, size: 20),
+                      const SizedBox(width: 8),
+                      const Text('Ubicación'),
+                      const Spacer(),
+                      Text(location.toStringAsFixed(1)),
+                    ],
+                  ),
+                  Slider(
+                    value: location,
+                    min: 1,
+                    max: 5,
+                    divisions: 4,
+                    onChanged: (value) => setState(() => location = value),
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  const Divider(),
+                  const SizedBox(height: 8),
+                  
+                  // Comentario
+                  const Text('Comentario', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: commentController,
+                    maxLines: 4,
+                    maxLength: 1000,
+                    decoration: const InputDecoration(
+                      hintText: 'Comparte tu experiencia...',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancelar'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  if (commentController.text.trim().isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Por favor escribe un comentario'),
+                        backgroundColor: Colors.orange,
+                      ),
+                    );
+                    return;
+                  }
+
+                  Navigator.pop(context);
+
+                  // Mostrar loading
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (context) => const Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                  );
+
+                  final result = await ReviewService.createReview(
+                    reviewer: currentUser,
+                    reviewed: widget.username,
+                    rating: rating,
+                    categories: {
+                      'cleanliness': cleanliness,
+                      'communication': communication,
+                      'accuracy': accuracy,
+                      'location': location,
+                    },
+                    comment: commentController.text.trim(),
+                  );
+
+                  // Cerrar loading
+                  if (mounted) Navigator.pop(context);
+
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(result['message'] ?? 'Review enviada'),
+                        backgroundColor: result['success'] ? Colors.green : Colors.red,
+                      ),
+                    );
+
+                    if (result['success']) {
+                      // Recargar reviews
+                      _checkCanLeaveReview();
+                      _loadReviews();
+                    }
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Enviar Review'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 }

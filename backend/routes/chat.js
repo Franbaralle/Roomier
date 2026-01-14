@@ -4,6 +4,7 @@ const Chat = require('../models/chatModel');
 const User = require('../models/user');
 const multer = require('multer');
 const { uploadImage } = require('../utils/cloudinary');
+const { checkMessage, getSeverityLevel } = require('../utils/contentModerator');
 
 // Configurar multer para recibir imágenes
 const storage = multer.memoryStorage();
@@ -37,10 +38,29 @@ router.post('/create_chat', async (req, res) => {
 
         // Si es firstStep, validar que el usuario tenga "primeros pasos" disponibles
         if (isFirstStep) {
+            // Si es premium, verificar si necesita reseteo semanal
+            if (foundUserA.isPremium) {
+                const now = new Date();
+                const lastReset = new Date(foundUserA.firstStepsResetDate);
+                const daysSinceReset = (now - lastReset) / (1000 * 60 * 60 * 24);
+                
+                // Si han pasado 7 días o más, resetear
+                if (daysSinceReset >= 7) {
+                    foundUserA.firstStepsRemaining = 5;
+                    foundUserA.firstStepsUsedThisWeek = 0;
+                    foundUserA.firstStepsResetDate = now;
+                    await foundUserA.save();
+                    console.log(`[RESET PREMIUM] ${foundUserA.username} reseteado a 5 First Steps`);
+                }
+            }
+            
+            // Validar que tenga pasos disponibles
             if (foundUserA.firstStepsRemaining <= 0) {
                 return res.status(403).json({ 
-                    message: 'No first steps remaining',
-                    requiresPremium: true 
+                    message: foundUserA.isPremium 
+                        ? 'No first steps remaining this week' 
+                        : 'No first steps remaining. Upgrade to Premium for weekly reset.',
+                    requiresPremium: !foundUserA.isPremium 
                 });
             }
         }
@@ -115,6 +135,42 @@ router.post('/send_message', async (req, res) => {
     const { chatId, sender, message } = req.body;
 
     try {
+        console.log(`[CHAT] Mensaje recibido de ${sender}: "${message}"`);
+        
+        // ====== MODERACIÓN DE CONTENIDO ======
+        const moderationResult = checkMessage(message);
+        
+        console.log(`[MODERATOR] Resultado de moderación:`, moderationResult);
+        
+        if (!moderationResult.isClean) {
+            const severity = getSeverityLevel(moderationResult.detectedWords);
+            
+            // Registrar intento de envío de contenido inapropiado
+            console.warn(`[MODERATOR] Mensaje bloqueado - Sender: ${sender}, Severity: ${severity}`);
+            console.warn(`[MODERATOR] Palabras detectadas:`, moderationResult.detectedWords);
+            
+            // Bloquear según severidad
+            if (severity === 'critical' || severity === 'high') {
+                return res.status(400).json({ 
+                    success: false,
+                    message: 'Tu mensaje contiene contenido inapropiado y no puede ser enviado. Por favor, mantén un tono respetuoso.',
+                    severity: severity
+                });
+            } else if (severity === 'medium') {
+                return res.status(400).json({ 
+                    success: false,
+                    message: 'Tu mensaje contiene lenguaje ofensivo. Por favor, reformúlalo de manera respetuosa.',
+                    severity: severity
+                });
+            } else {
+                // Severidad baja - advertencia pero permitir
+                console.log(`[MODERATOR] Advertencia - Mensaje con severidad baja permitido`);
+            }
+        } else {
+            console.log(`[MODERATOR] Mensaje aprobado - No se detectó contenido ofensivo`);
+        }
+        // ====== FIN MODERACIÓN ======
+
         // Buscar el chat por su ID
         const chat = await Chat.findById(chatId);
 
@@ -464,9 +520,26 @@ router.get('/first_steps_remaining/:username', async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
+        // Si es premium, verificar si necesita reseteo semanal
+        if (user.isPremium) {
+            const now = new Date();
+            const lastReset = new Date(user.firstStepsResetDate);
+            const daysSinceReset = (now - lastReset) / (1000 * 60 * 60 * 24);
+            
+            // Si han pasado 7 días o más, resetear
+            if (daysSinceReset >= 7) {
+                user.firstStepsRemaining = 5;
+                user.firstStepsUsedThisWeek = 0;
+                user.firstStepsResetDate = now;
+                await user.save();
+                console.log(`[RESET PREMIUM] ${user.username} reseteado a 5 First Steps`);
+            }
+        }
+
         res.status(200).json({ 
             firstStepsRemaining: user.firstStepsRemaining,
-            isPremium: user.isPremium || false
+            isPremium: user.isPremium || false,
+            resetsWeekly: user.isPremium || false // Indicar si resetea semanalmente
         });
     } catch (error) {
         console.error('Error fetching first steps:', error);

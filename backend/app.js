@@ -67,6 +67,7 @@ const analyticsRoute = require('./routes/analytics');
 const notificationsRoute = require('./routes/notifications');
 const photosRoute = require('./routes/photos');
 const migrateRoute = require('./routes/migrate');
+const reviewRoutes = require('./routes/reviewRoutes');
 
 app.use('/api/auth', authController);
 app.use('/api/register', registerRoutes);
@@ -80,6 +81,7 @@ app.use('/api/analytics', analyticsRoute);
 app.use('/api/notifications', notificationsRoute);
 app.use('/api/photos', photosRoute);
 app.use('/api/migrate', migrateRoute);
+app.use('/api/reviews', reviewRoutes);
 
 // Rutas de salud y raíz
 app.get('/', (req, res) => {
@@ -184,6 +186,28 @@ io.on('connection', (socket) => {
   socket.on('send_message', async (data) => {
     try {
       const { chatId, sender, message } = data;
+      
+      // ====== MODERACIÓN DE CONTENIDO ======
+      const { checkMessage, getSeverityLevel } = require('./utils/contentModerator');
+      const moderationResult = checkMessage(message);
+      
+      if (!moderationResult.isClean) {
+        const severity = getSeverityLevel(moderationResult.detectedWords);
+        
+        // Registrar intento
+        console.warn(`[MODERATOR-SOCKET] Mensaje bloqueado - Sender: ${sender}, Severity: ${severity}`);
+        console.warn(`[MODERATOR-SOCKET] Palabras:`, moderationResult.detectedWords);
+        
+        // Bloquear según severidad
+        if (severity === 'critical' || severity === 'high' || severity === 'medium') {
+          socket.emit('message_blocked', { 
+            reason: 'Tu mensaje contiene contenido inapropiado y no puede ser enviado.',
+            severity: severity
+          });
+          return;
+        }
+      }
+      // ====== FIN MODERACIÓN ======
       
       // Buscar el chat y el usuario
       const chat = await Chat.findById(chatId).populate('users', 'username');

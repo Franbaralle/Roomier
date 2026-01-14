@@ -270,4 +270,57 @@ router.put('/preferences', verifyToken, async (req, res) => {
     }
 });
 
+// PUT /api/edit-profile/tags
+// Actualizar tags de intereses estructurados (convivencia, gastronomía, etc.)
+router.put('/tags', verifyToken, async (req, res) => {
+    try {
+        const username = req.user.username;
+        const { preferences } = req.body;
+
+        // Validar estructura de preferencias
+        if (!preferences || typeof preferences !== 'object') {
+            return res.status(400).json({ message: 'Preferencias inválidas' });
+        }
+
+        // Categorías válidas
+        const validCategories = ['convivencia', 'gastronomia', 'deporte', 'entretenimiento', 'creatividad', 'interesesSociales'];
+        
+        // Limpiar y validar preferencias
+        const cleanedPreferences = {};
+        for (const mainCat of validCategories) {
+            if (preferences[mainCat]) {
+                cleanedPreferences[mainCat] = {};
+                for (const subCat in preferences[mainCat]) {
+                    if (preferences[mainCat][subCat] && Array.isArray(preferences[mainCat][subCat])) {
+                        // Limitar a 5 tags por subcategoría
+                        cleanedPreferences[mainCat][subCat] = preferences[mainCat][subCat].slice(0, 5);
+                    } else {
+                        cleanedPreferences[mainCat][subCat] = [];
+                    }
+                }
+            }
+        }
+
+        const user = await User.findOneAndUpdate(
+            { username },
+            { $set: { preferences: cleanedPreferences } },
+            { new: true, runValidators: true }
+        );
+
+        if (!user) {
+            return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+
+        logger.info(`Tags/preferences updated for user: ${username}`);
+        
+        res.json({ 
+            message: 'Tags actualizados exitosamente', 
+            preferences: user.preferences 
+        });
+    } catch (error) {
+        logger.error(`Error updating tags: ${error.message}`);
+        res.status(500).json({ message: 'Error al actualizar tags' });
+    }
+});
+
 module.exports = router;

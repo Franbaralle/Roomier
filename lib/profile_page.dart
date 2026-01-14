@@ -247,6 +247,8 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildBottomBar() {
+    final isCurrentUserProfile = currentUser == widget.username;
+    
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -262,22 +264,40 @@ class _ProfilePageState extends State<ProfilePage> {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            mainAxisAlignment: isCurrentUserProfile 
+              ? MainAxisAlignment.spaceEvenly 
+              : MainAxisAlignment.spaceAround,
             children: [
-              _buildBottomBarButton(
-                icon: Icons.flash_on,
-                label: 'Explorar',
-                onTap: () {
-                  // Lógica para el botón del rayo
-                },
-              ),
-              _buildBottomBarButton(
-                icon: Icons.home,
-                label: 'Inicio',
-                onTap: () {
-                  Navigator.pushReplacementNamed(context, homeRoute);
-                },
-              ),
+              if (isCurrentUserProfile) ...[
+                // Botón de Configuración
+                _buildBottomBarButton(
+                  icon: Icons.settings,
+                  label: 'Configuración',
+                  onTap: _showConfigMenu,
+                ),
+                // Botón de Cerrar Sesión
+                _buildBottomBarButton(
+                  icon: Icons.logout,
+                  label: 'Cerrar Sesión',
+                  color: Colors.red[700],
+                  onTap: _logout,
+                ),
+              ] else ...[
+                _buildBottomBarButton(
+                  icon: Icons.flash_on,
+                  label: 'Explorar',
+                  onTap: () {
+                    // Lógica para el botón del rayo
+                  },
+                ),
+                _buildBottomBarButton(
+                  icon: Icons.home,
+                  label: 'Inicio',
+                  onTap: () {
+                    Navigator.pushReplacementNamed(context, homeRoute);
+                  },
+                ),
+              ],
             ],
           ),
         ),
@@ -289,6 +309,7 @@ class _ProfilePageState extends State<ProfilePage> {
     required IconData icon,
     required String label,
     required VoidCallback onTap,
+    Color? color,
   }) {
     return InkWell(
       onTap: onTap,
@@ -298,12 +319,12 @@ class _ProfilePageState extends State<ProfilePage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: Colors.grey[700], size: 28),
+            Icon(icon, color: color ?? Colors.grey[700], size: 28),
             const SizedBox(height: 4),
             Text(
               label,
               style: TextStyle(
-                color: Colors.grey[700],
+                color: color ?? Colors.grey[700],
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
               ),
@@ -323,17 +344,11 @@ class _ProfilePageState extends State<ProfilePage> {
       // Botón de Editar Perfil (solo para el propio usuario)
       if (isCurrentUserProfile) _buildEditProfileButton(),
       if (isCurrentUserProfile) const SizedBox(height: 10),
-      // Botón de Exportar Datos (solo para el propio usuario)
-      if (isCurrentUserProfile) _buildExportDataButton(),
-      if (isCurrentUserProfile) const SizedBox(height: 10),
       // Botones de gestión de fotos (solo para el propio usuario)
       if (isCurrentUserProfile) _buildPhotoManagementButtons(),
       if (isCurrentUserProfile) const SizedBox(height: 10),
       // Botón de Panel Admin (solo para admins)
       if (isCurrentUserProfile) _buildAdminButton(),
-      if (isCurrentUserProfile) const SizedBox(height: 10),
-      // Botón de Eliminar Cuenta (solo para el propio usuario)
-      if (isCurrentUserProfile) _buildDeleteAccountButton(),
       const SizedBox(height: 20),
       _buildAdditionalImages(),
       const SizedBox(height: 20),
@@ -1820,6 +1835,68 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget _buildHomeImages() {
     // Implementa según tus necesidades
     return Container();
+  }
+
+  void _showConfigMenu() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 16),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20),
+                child: Text(
+                  'Configuración',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              ListTile(
+                leading: const Icon(Icons.download, color: Colors.blue),
+                title: const Text('Exportar Datos'),
+                subtitle: const Text('Descarga toda tu información personal'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _exportUserData();
+                },
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.delete_forever, color: Colors.red),
+                title: const Text(
+                  'Eliminar Cuenta',
+                  style: TextStyle(color: Colors.red),
+                ),
+                subtitle: const Text('Esta acción es permanente e irreversible'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _deleteAccount();
+                },
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   void _logout() async {

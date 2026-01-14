@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:rommier/home.dart';
 import 'login_page.dart';
 import 'routes.dart';
@@ -48,6 +49,10 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       navigatorKey: navigatorKey,
       title: 'Roomier',
+      theme: ThemeData(
+        textTheme: GoogleFonts.poppinsTextTheme(Theme.of(context).textTheme),
+        primaryTextTheme: GoogleFonts.poppinsTextTheme(Theme.of(context).primaryTextTheme),
+      ),
       home: SplashScreen(), // Comenzar con splash que verifica sesión
       routes: {
         loginRoute: (context) => LoginPage(),

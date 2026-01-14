@@ -158,34 +158,51 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Logo o nombre de la app
-            Text(
-              'Roomier',
-              style: TextStyle(
-                fontSize: 48,
-                fontWeight: FontWeight.bold,
-                color: Colors.purple[700],
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF9AD9C7), // Verde pastel
+              Color(0xFFB7A7E3), // Lila
+            ],
+          ),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Logo de la app
+              Image.asset(
+                'assets/logo_en_blanco.png',
+                width: 200,
+                height: 200,
+                fit: BoxFit.contain,
               ),
-            ),
-            const SizedBox(height: 20),
-            // Indicador de carga
-            CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.purple[700]!),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              'Cargando...',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[600],
+              const SizedBox(height: 40),
+              // Indicador de carga
+              const CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                strokeWidth: 3,
               ),
-            ),
-          ],
+              const SizedBox(height: 30),
+              // Tagline de la app
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 40),
+                child: Text(
+                  'Roomier. Más que un match, un compañero.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

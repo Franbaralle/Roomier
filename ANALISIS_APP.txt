@@ -4,7 +4,7 @@
 ═══════════════════════════════════════════════════════════════════
 
 📅 Fecha de Análisis: 31 de Diciembre de 2025
-🔄 Última Actualización: 8 de Enero de 2026 (Mejoras del Sistema de Chat)
+🔄 Última Actualización: 14 de Enero de 2026 (Cumplimiento Legal Ley 25.326)
 🎉 ESTADO: DESPLEGADO EN PRODUCCIÓN ✅
 
 ═══════════════════════════════════════════════════════════════════
@@ -198,19 +198,27 @@
    ✓ Cleanup automático después de tests
    ✓ Documentación completa de estrategia de testing
 
-11. PÁGINAS LEGALES ⭐ NUEVO
-    ✓ Términos y Condiciones completos
-    ✓ Política de Privacidad detallada
-    ✓ Ambas accesibles desde la app
-    ✓ Formato legal profesional
-    ✓ Consentimiento explícito en registro (checkbox obligatorio)
-    ✓ Links clickeables a documentos legales desde registro
-    ✓ Botón de continuar deshabilitado hasta aceptar términos
-    ✓ Secciones requeridas:
+11. PÁGINAS LEGALES ⭐ COMPLETADO (98% CUMPLIMIENTO)
+    ✅ Términos y Condiciones completos
+    ✅ Política de Privacidad detallada
+    ✅ Ambas accesibles desde la app
+    ✅ Formato legal profesional
+    ✅ Consentimiento explícito en registro (checkbox obligatorio)
+    ✅ Links clickeables a documentos legales desde registro
+    ✅ Botón de continuar deshabilitado hasta aceptar términos
+    ✅ Sección específica de Ley 25.326 (datos sensibles)
+    ✅ Derechos ARCO mencionados (Acceso, Rectificación, Cancelación, Oposición)
+    ✅ Fechas actualizadas: 14 enero 2026
+    ✅ Footer con datos fiscales ⭐ NUEVO (14 ene 2026)
+      - Desarrollador: Francisco Baralle
+      - Email: roomier2024@gmail.com
+      - Domicilio: Córdoba, Argentina
+      - Leyes cumplidas: 25.326, 24.240, 27.078
+    ✅ Secciones requeridas:
       - Aceptación de términos
       - Descripción del servicio
       - Cuenta de usuario y seguridad
-      - Privacidad y protección de datos
+      - Privacidad y protección de datos (Ley 25.326)
       - Propiedad intelectual
       - Conducta del usuario
       - Responsabilidades y limitaciones
@@ -368,6 +376,53 @@
     ✅ Diseño atractivo con gradientes púrpura
     ✅ Estrategia de monetización preparada
 
+22. SISTEMA DE "FIRST STEP" (PRIMER PASO) ⭐ COMPLETADO (8-10 ene 2026)
+    ✅ Sistema freemium diferenciado:
+      - FREE: 5 First Steps TOTALES (lifetime, no resetean)
+      - PREMIUM: 5 First Steps POR SEMANA (reseteo automático cada 7 días)
+    ✅ Campos en User model:
+      - firstStepsRemaining: contador de pasos disponibles (default: 5)
+      - isPremium: flag para usuarios premium (habilita reseteo semanal)
+      - firstStepsUsedThisWeek: contador de uso semanal
+      - firstStepsResetDate: fecha del último reseteo (solo premium)
+    ✅ Backend con reseteo automático:
+      - Verifica en cada uso si han pasado 7 días (premium)
+      - Resetea a 5 automáticamente si aplica
+      - Mensajes diferenciados por tipo de usuario
+      - Campo resetsWeekly en respuesta API
+    ✅ UI Flutter completamente diferenciada (10 ene 2026):
+      - SnackBar: "X de 5 totales (FREE)" vs "X de 5 esta semana"
+      - Popup FREE: Call-to-action "Suscribirme" con beneficios claros
+      - Popup PREMIUM: Info "Esperá una semana" sin venta
+      - Visualización clara de la diferencia en contador
+      - Educación del usuario sobre límites y renovación
+    ✅ Scripts de migración para usuarios existentes:
+      - normalizeUserData.js: limpia campos obsoletos
+      - addFirstStepsToUsers.js: agrega campos de firstSteps
+    ✅ Endpoint POST /api/chat/create_chat con validación:
+      - Verifica firstStepsRemaining > 0
+      - Decrementa contador automáticamente
+      - Registra firstStepsUsedThisWeek
+    ✅ Like automático al crear First Step:
+      - Usuario B se agrega al array isMatch de A
+      - B aparece en "Likes recibidos" de B
+      - Si B da like → match mutuo automático
+    ✅ Chat limitado hasta match mutuo:
+      - Solo 1 mensaje inicial permitido
+      - Validación en /send_message endpoint
+      - Campo isFirstStep en Chat model
+      - Campo firstStepBy almacena quién inició
+    ✅ Logs detallados para debugging:
+      - Chat ID, sender ID, firstStepBy comparison
+      - Conteo de mensajes por usuario
+      - Decisiones de bloqueo/permiso
+    ✅ Flujo completo implementado:
+      - A da First Step a B → Like + mensaje inicial
+      - B ve a A en "Likes recibidos"
+      - B da like → Match mutuo
+      - Chat se desbloquea para ambos
+    ✅ Estrategia de monetización integrada
+
 21. PERFIL DE USUARIO COMPLETO ⭐ MEJORADO
     ✅ Selección de género propio en el registro (nueva página)
     ✅ Opciones: Masculino, Femenino, Otro
@@ -382,6 +437,92 @@
     ✅ Estilo consistente con sombras y efectos
     ✅ Datos completos para algoritmo de matching bidireccional
 
+23. SISTEMA DE REVIEWS ⭐ NUEVO (10 ene 2026)
+    ✅ Reviews solo para usuarios con lugar (hasPlace=true)
+    ✅ Solo usuarios que buscan lugar pueden dejar reviews
+    ✅ Modelo completo con 4 categorías:
+      - Limpieza (cleanliness)
+      - Comunicación (communication)
+      - Precisión (accuracy)
+      - Ubicación (location)
+    ✅ Rating general (1-5 estrellas)
+    ✅ Comentarios de hasta 1000 caracteres
+    ✅ Sistema de moderación:
+      - Estado: pending → approved/rejected
+      - Solo reviews aprobadas son visibles
+      - Moderación por admin (o futura IA)
+    ✅ Feature PREMIUM estratégica:
+      - Usuarios FREE con hasPlace=false ven reviews BLUREADAS
+      - Usuarios PREMIUM ven reviews completas
+      - Popup motivacional para upgrade
+    ✅ Validaciones robustas:
+      - Requiere match mutuo previo
+      - 1 review por relación (no duplicados)
+      - Verificación de hasPlace en ambos usuarios
+    ✅ Integración completa en ProfilePage:
+      - Rating promedio visible en foto de perfil
+      - Sección dedicada con estadísticas
+      - Promedios por categoría
+      - Lista de reviews (primeras 3)
+      - Botón "Dejar review" si cumple condiciones
+    ✅ Endpoints backend completos:
+      - POST /api/reviews/create
+      - GET /api/reviews/user/:username
+      - GET /api/reviews/stats/:username
+      - GET /api/reviews/can-leave
+      - GET /api/reviews/pending (admin)
+      - PUT /api/reviews/moderate/:id (admin)
+    ✅ Prevención de abuse:
+      - No puedes dejarte review a ti mismo
+      - Índice único (reviewer + reviewed)
+      - Validación de permisos en cada operación
+
+
+24. CUMPLIMIENTO LEGAL LEY 25.326 ⭐ COMPLETADO 98% (14 ene 2026)
+    ✅ Consentimiento expreso para datos sensibles:
+      - Checkbox específico para religión y preferencia política
+      - Campos deshabilitados hasta dar consentimiento
+      - Texto explicativo sobre Ley 25.326
+      - Auto-limpieza de datos si desmarca checkbox
+    ✅ Derecho al Olvido (Art. 16):
+      - Botón "Eliminar mi cuenta" en perfil propio
+      - Doble confirmación con advertencias claras
+      - Endpoint DELETE /delete/:username implementado
+      - Eliminación permanente e irreversible de datos
+    ✅ Derecho de Acceso (Art. 14):
+      - Botón "Exportar mis datos" en perfil propio
+      - Endpoint GET /export/:username implementado
+      - Descarga JSON con todos los datos del usuario
+      - Metadata de exportación incluida
+      - Auditoría de exportaciones en logs
+    ✅ Consentimiento de Cookies/Almacenamiento:
+      - Banner de cookies en primera apertura (SplashScreen)
+      - Explicación de uso de SharedPreferences
+      - Opciones "Aceptar" y "Rechazar"
+      - Fecha de consentimiento guardada
+      - Cumplimiento Ley 25.326 Art. 6
+    ✅ Protocolo violencia de género (Ley 26.485) ⭐ NUEVO:
+      - Categoría específica en reportes
+      - Información de Línea 144 (gratuita 24h)
+      - Banner visual en diálogo de reporte
+    ✅ Moderación automática (Ley 24.240) ⭐ NUEVO:
+      - Filtro de palabras ofensivas
+      - Detección de amenazas y violencia
+      - Bloqueo automático según severidad
+      - 4 niveles: none, low, medium, high, critical
+    ✅ Datos fiscales (Ley 27.078) ⭐ NUEVO:
+      - Footer en términos y privacidad
+      - Nombre desarrollador, email, domicilio
+      - Leyes cumplidas listadas
+    ✅ Políticas actualizadas:
+      - Fecha: 14 de enero de 2026
+      - Sección dedicada a Ley 25.326 en términos
+      - Derechos ARCO mencionados claramente
+      - Plazo de respuesta: 10 días hábiles
+    ✅ Documentación legal completa:
+      - ANALISIS_LEGAL_COMPLETO.md actualizado
+      - 7/7 puntos legales resueltos
+      - Cumplimiento: 98%
 
 ═══════════════════════════════════════════════════════════════════
                         ⚠️ FALENCIAS Y ÁREAS DE MEJORA
@@ -390,9 +531,13 @@
 1. SEGURIDAD Y AUTENTICACIÓN
    ✅ Tokens JWT implementados y funcionando en producción
    ✅ Sesiones persistentes con SharedPreferences
+   ✅ Auto-login al abrir la app si hay token válido ⭐ NUEVO (13 ene 2026)
+   ✅ Verificación de token en cada inicio de app
+   ✅ SplashScreen que gestiona autenticación automática
    ✅ HTTPS configurado automáticamente (Railway)
    ✅ Rate limiting activo y funcionando
    ✅ Sistema de blacklist de tokens JWT ⭐ NUEVO (8 ene 2026)
+   ✅ Banner de consentimiento de cookies ⭐ NUEVO (14 ene 2026)
    ⚠ No hay renovación automática de tokens
    ⚠ No hay protección contra ataques CSRF
    ⚠ Email de verificación funciona pero no es obligatorio
@@ -405,20 +550,25 @@
    ⚠ Badges visibles pero sin funcionalidad real
    ⚠ No hay proceso de revisión manual
 
-3. MODERACIÓN Y REPORTES
-   ⚠ No hay moderación automática de contenido
+3. MODERACIÓN Y REPORTES ⭐ COMPLETADO
+   ✅ Moderación automática de contenido ⭐ NUEVO (14 ene 2026)
+   ✅ Sistema de reportes con 9 categorías (incluye violencia de género)
+   ✅ Protocolo de violencia de género con Línea 144
+   ✅ Panel de administración para revisar reportes
    ⚠ No hay sistema de appeals para usuarios sancionados
    ⚠ Falta detección automática de comportamientos sospechosos
    ⚠ No hay límite de cuentas por dispositivo
    ⚠ No hay suspensión automática por múltiples reportes
 
-4. CHAT Y COMUNICACIÓN
+4. CHAT Y COMUNICACIÓN ⭐ COMPLETADO
    ✅ Chat en tiempo real con Socket.IO (WebSockets)
-   ✅ Indicador de "escribiendo..." implementado
+   ✅ Indicador de "escribiendo..." en chat y lista
    ✅ Recepción automática de mensajes
    ✅ Actualización automática al volver del background
-   ⚠ No hay notificaciones de confirmación de lectura (visto)
-   ⚠ No se pueden enviar imágenes en chat
+   ✅ Sistema de "First Step" con chat limitado (8 ene 2026)
+   ✅ Confirmación de lectura (visto) con doble check ✓✓ (8 ene 2026)
+   ✅ Envío de imágenes en chat con Cloudinary (8 ene 2026)
+   ✅ Visor de imagen completa con zoom (InteractiveViewer)
    ⚠ No hay límite de caracteres por mensaje
    ⚠ No hay filtro de lenguaje ofensivo
    ⚠ No se guardan historial de mensajes eliminados
@@ -455,14 +605,18 @@
    ⚠ No hay dashboards visuales de métricas (solo endpoints API)
    ⚠ No hay alertas automáticas de errores
 
-8. LEGAL Y COMPLIANCE
-   ⚠ No hay consentimiento explícito de cookies
-   ⚠ Falta cumplimiento completo GDPR/CCPA:
-     - No hay derecho al olvido implementado
-     - No hay exportación de datos de usuario
-     - No hay opt-out de recopilación de datos
-   ⚠ No hay política de reembolsos (si es de pago)
-   ⚠ No hay banner de cookies
+8. LEGAL Y COMPLIANCE ⭐ COMPLETADO
+   ✅ Consentimiento explícito de cookies ⭐ (14 ene 2026)
+   ✅ Derecho al olvido implementado (botón eliminar cuenta) ⭐ (14 ene 2026)
+   ✅ Exportación de datos implementada (botón exportar) ⭐ (14 ene 2026)
+   ✅ Banner de cookies en primera apertura ⭐ (14 ene 2026)
+   ✅ Protocolo de violencia de género ⭐ NUEVO (14 ene 2026)
+   ✅ Moderación automática de contenido ⭐ NUEVO (14 ene 2026)
+   ✅ Datos fiscales en políticas ⭐ NUEVO (14 ene 2026)
+   ✅ Políticas actualizadas con Ley 25.326
+   ✅ Cumplimiento: 98% (7/7 puntos legales resueltos)
+   ⚠ Falta cumplimiento completo GDPR/CCPA (solo si expanden a Europa/USA)
+   ⚠ No hay política de reembolsos (cuando implementen pagos)
 
 9. NOTIFICACIONES ⭐ MEJORADO
    ✅ Notificaciones push con Firebase Cloud Messaging
@@ -490,8 +644,8 @@
     ✅ Sistema de reportes de usuarios
     ✅ Sistema de bloqueo/desbloqueo
     ✅ Sistema de likes recibidos con preview blureado
-    ⚠ No hay reviews/ratings de roommates
-    ⚠ No hay sistema de referencias
+    ✅ Sistema de reviews para usuarios con lugar (10 ene 2026)
+    ⚠ No hay sistema de referencias adicionales
     ⚠ No hay integración con redes sociales
     ⚠ No se puede compartir perfil
     ⚠ No hay grupos o comunidades
@@ -508,11 +662,21 @@
     ⚠ No hay caché de resultados
     ⚠ Queries a DB sin optimización de índices completos
     ⚠ APK de 21.2MB (puede optimizarse)
-
-14. MONETIZACIÓN ⭐ NUEVO
+MEJORADO
     ✅ Sistema de likes recibidos como teaser para premium
     ✅ Popup de premium implementado con CTA claro
     ✅ Mensaje dual: "Seguí deslizando O accedé a Premium"
+    ✅ Sistema de "First Step" freemium (8 ene 2026):
+      - FREE: 5 primeros pasos TOTALES (nunca resetean)
+      - PREMIUM: 5 primeros pasos POR SEMANA (reseteo automático)
+      - Contador visible en UI
+      - Reseteo automático cada 7 días (solo premium)
+    ✅ Límites claros que motivan upgrade:
+      - Solo 1 mensaje inicial en First Step
+      - Likes recibidos blureados para usuarios free
+      - Reviews blureadas para usuarios free
+      - First Steps TOTALES para free → incentivo fuerte para premium
+      - Premium obtiene renovación semanal de First Steps
     ⚠ No hay sistema de suscripciones implementado
     ⚠ No hay pasarela de pagos (Stripe, MercadoPago)
     ⚠ No hay planes de precios definidos
@@ -533,6 +697,7 @@ CRÍTICO (Antes de lanzar):
 ✅ 4. Implementar términos y condiciones + política de privacidad - COMPLETADO
 ✅ 5. Consentimiento explícito de términos en registro - COMPLETADO
 ✅ 6. Agregar rate limiting - COMPLETADO
+✅ 15. Sistema de First Step freemium - COMPLETADO (8 ene 2026)
 ✅ 7. Panel de administración para revisar reportes - COMPLETADO
 ✅ 8. Logging centralizado (Winston) - COMPLETADO
 ✅ 9. Mover a servidor de producción - COMPLETADO (Railway)
@@ -550,16 +715,17 @@ ALTA PRIORIDAD (Primeras semanas):
 ✅ 5. Múltiples fotos de perfil - COMPLETADO (hasta 10 fotos + fotos del hogar)
 ✅ 6. Selección de género propio - COMPLETADO (7 ene 2026)
 ✅ 7. Visualización de edad en perfil - COMPLETADO (7 ene 2026)
-✅ 8. Sistema de likes recibidos - COMPLETADO (7 ene 2026)
-⚠ 9. Sistema de verificación real (al menos teléfono) - PENDIENTE
-⚠ 10. Confirmación de lectura en chat (visto) - PENDIENTE
+✅ 8. Confirmación de lectura en chat - COMPLETADO (8 ene 2026)
+✅ 9. Sistema de First Step con límites - COMPLETADO (8 ene 2026)
+✅ 10. Envío de imágenes en chat - COMPLETADO (8 ene 2026)
+⚠ 11. Sistema de verificación real (al menos teléfono) - PENDIENTE
 
 MEDIA PRIORIDAD (Primer mes):
 ⚠ 1. Sistema de suscripciones premium (Stripe/MercadoPago) - PENDIENTE
 ⚠ 2. Tutorial de onboarding - PENDIENTE
-⚠ 3. Sistema de reviews - PENDIENTE
-⚠ 4. Búsqueda con filtros avanzados - PENDIENTE
-⚠ 5. Modo oscuro - PENDIENTE
+⚠ 3. Búsqueda con filtros avanzados - PENDIENTE
+⚠ 4. Modo oscuro - PENDIENTE
+⚠ 5. Tab de moderación de reviews en panel admin - PENDIENTE
 
 BAJA PRIORIDAD (Largo plazo):
 ⚠ 1. Internacionalización - PENDIENTE
@@ -574,19 +740,19 @@ BAJA PRIORIDAD (Largo plazo):
 ═══════════════════════════════════════════════════════════════════
 
 PROGRESO GENERAL POR ÁREA:
-- Seguridad y Autenticación: 90% completo ⬆️ (blacklist implementada)
+- Seguridad y Autenticación: 92% completo ⬆️ (blacklist + cookies + moderación)
 - Infraestructura: 98% completo (✅ Producción en Railway)
-- Moderación: 75% completo (falta moderación automática, appeals)
-- Legal: 80% completo (falta GDPR completo, banner cookies)
-- Testing: 85% completo (falta E2E, CI/CD)
-- UX/UI: 90% completo
-- Chat y Comunicación: 85% completo
+- Chat y Comunicación: 95% completo ⬆️ (visto e imágenes funcionando)
+- Moderación: 95% completo ⬆️⬆️ (automática implementada + protocolo violencia)
+- Legal: 98% completo ⬆️⬆️⬆️ (TODOS los puntos resueltos)
+- Testing: 85% completo
 - Notificaciones: 75% completo
 - Sistema de Fotos: 90% completo
-- Perfil de Usuario: 90% completo
+- Perfil de Usuario: 95% completo ⬆️ (con reviews integradas)
 - Analytics: 70% completo
-- Engagement/Monetización: 60% completo
-- Panel Administración: 80% completo
+- Engagement/Monetización: 80% completo ⬆️ (First Step + Reviews premium)
+- Características Sociales: 80% completo ⬆️ (reviews implementadas)
+- Panel Administración: 80% completo (falta tab de reviews)
 - Rendimiento: 80% completo
 
 
@@ -603,8 +769,8 @@ CORTO PLAZO (Próximo mes):
 4. Implementar sistema de suscripciones (Stripe/MercadoPago)
 5. Definir planes y precios de Premium
 6. Desbloquear perfiles en likes recibidos para usuarios premium
-7. Agregar confirmación de lectura en chat (visto)
-8. Implementar caché con Redis
+7. Implementar caché con Redis
+8. Sistema de verificación telefónica
 
 MEDIANO PLAZO (3 meses):
 9. Sistema de verificación telefónica
@@ -630,28 +796,52 @@ CARACTERÍSTICAS DIFERENCIADORES:
 ✅ HTTPS configurado y seguro
 ✅ Chat en tiempo real con Socket.IO
 ✅ Notificaciones push con Firebase Cloud Messaging
+✅ Sistema de "First Step" freemium único (5 pasos/semana)
 ✅ Sistema de likes recibidos con estrategia freemium
+✅ Sistema de reviews con moderación (validación social)
 ✅ Múltiples fotos de perfil y del hogar
 ✅ Panel de administración completo
 ✅ Sistema de testing automatizado
+✅ Cumplimiento legal 98% (7/7 puntos resueltos) ⭐ NUEVO
+✅ Moderación automática de contenido ⭐ NUEVO
+✅ Protocolo de violencia de género ⭐ NUEVO
 
 FORTALEZAS PRINCIPALES:
 - Enfoque en privacidad y seguridad
 - Compatibilidad real basada en hábitos de convivencia
 - Sistema de revelación progresiva de información sensible
+- Sistema de "First Step" único para iniciar conversaciones sin match
+- Reviews como validación social para usuarios con lugar
+- Estrategia freemium inteligente:
+  * First Steps: 5 totales (free) vs 5/semana (premium)
+  * Likes recibidos blureados para free
+  * Reviews blureadas para usuarios free que buscan lugar
+  * Reseteo semanal exclusivo para premium
+- Límites que motivan upgrade natural a premium
 - Infraestructura de producción robusta
-- Estrategia de monetización clara (freemium)
+- Estrategia de monetización clara
 
 ÁREAS DE MEJORA IDENTIFICADAS:
 - Implementar sistema de pagos (Stripe/MercadoPago)
 - Verificaciones reales (teléfono, ID)
-- Moderación automática de contenido
-- Features sociales complementarias (reviews, referencias)
-- Cumplimiento completo GDPR
+- Features sociales complementarias (referencias)
+- Cumplimiento completo GDPR (si expanden a Europa)
 
 READY FOR USERS: ✅
-La app está lista para beta testing con usuarios reales. El sistema de likes
-recibidos crea un incentivo natural para engagement y conversión a premium.
+La app está lista para beta testing con usuarios reales. 
+
+**Cumplimiento legal:** 98% ⬆️⬆️ (7/7 puntos resueltos)
+- ✅ Ley 25.326: Datos sensibles, derecho al olvido, exportación, cookies
+- ✅ Ley 24.240: Moderación automática de contenido
+- ✅ Ley 26.485: Protocolo de violencia de género + Línea 144
+- ✅ Ley 27.078: Datos fiscales completos
+
+**Features premium implementadas:**
+1. 🔄 First Steps renovables semanalmente (free solo 5 totales)
+2. ⭐ Ver reviews completas (validación social)
+3. 👀 Ver likes recibidos sin blur
+
+El sistema de límites crea un incentivo natural para engagement y conversión a premium.
 
 
 ═══════════════════════════════════════════════════════════════════

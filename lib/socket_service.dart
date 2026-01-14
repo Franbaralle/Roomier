@@ -15,6 +15,7 @@ class SocketService {
   final _typingController = StreamController<Map<String, dynamic>>.broadcast();
   final _stopTypingController = StreamController<Map<String, dynamic>>.broadcast();
   final _messagesReadController = StreamController<Map<String, dynamic>>.broadcast();
+  final _messageBlockedController = StreamController<Map<String, dynamic>>.broadcast();
   final Map<String, StreamController<Map<String, dynamic>>> _customEventControllers = {};
 
   // Getters para los streams
@@ -22,6 +23,7 @@ class SocketService {
   Stream<Map<String, dynamic>> get onUserTyping => _typingController.stream;
   Stream<Map<String, dynamic>> get onUserStopTyping => _stopTypingController.stream;
   Stream<Map<String, dynamic>> get onMessagesRead => _messagesReadController.stream;
+  Stream<Map<String, dynamic>> get onMessageBlocked => _messageBlockedController.stream;
 
   // Método para escuchar eventos personalizados
   Stream<Map<String, dynamic>> onCustomEvent(String eventName) {
@@ -115,6 +117,12 @@ class SocketService {
       print('👀 Mensajes leídos: $data');
       _messagesReadController.add(data as Map<String, dynamic>);
     });
+    
+    // Mensaje bloqueado por moderación
+    _socket?.on('message_blocked', (data) {
+      print('🚫 Mensaje bloqueado: $data');
+      _messageBlockedController.add(data as Map<String, dynamic>);
+    });
 
     // Errores
     _socket?.on('error', (data) {
@@ -195,6 +203,7 @@ class SocketService {
     _typingController.close();
     _stopTypingController.close();
     _messagesReadController.close();
+    _messageBlockedController.close();
     
     // Cerrar todos los controladores de eventos personalizados
     _customEventControllers.forEach((key, controller) {

@@ -22,6 +22,7 @@ const reportSchema = new mongoose.Schema({
             'scam',                        // Estafa
             'underage',                    // Menor de edad
             'impersonation',               // Suplantación de identidad
+            'violencia_genero',            // Violencia de género
             'other'                        // Otro
         ],
         required: true

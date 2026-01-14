@@ -515,6 +515,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> with SingleTickerProvid
       'scam': 'Estafa',
       'underage': 'Menor de edad',
       'impersonation': 'Suplantación',
+      'violencia_genero': 'Violencia de género',
     };
     return map[reason] ?? reason;
   }

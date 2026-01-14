@@ -151,6 +151,24 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
         });
       }
     });
+    
+    // Escuchar cuando un mensaje es bloqueado por moderación
+    _socketService.onMessageBlocked.listen((data) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(data['reason'] ?? 'Contenido inapropiado detectado'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: 'Entendido',
+              textColor: Colors.white,
+              onPressed: () {},
+            ),
+          ),
+        );
+      }
+    });
   }
 
   @override
@@ -581,6 +599,7 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
     
     final List<Map<String, String>> reasons = [
       {'value': 'harassment', 'label': '🚨 Acoso o amenazas'},
+      {'value': 'violencia_genero', 'label': '⚠️ Violencia de género'},
       {'value': 'fake', 'label': '🎭 Información falsa'},
       {'value': 'spam', 'label': '📧 Spam o publicidad'},
       {'value': 'inappropriate', 'label': '⚠️ Comportamiento inapropiado'},
@@ -614,6 +633,46 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
                             });
                           },
                         )),
+                    
+                    // Información sobre Línea 144 si es violencia de género
+                    if (selectedReason == 'violencia_genero') ...[
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.purple.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.purple.shade700, width: 2),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.phone, color: Colors.purple.shade700),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Línea 144 - Ayuda inmediata',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.purple.shade900,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Si estás en situación de violencia de género, podés llamar gratis al 144 las 24 horas. Es atención nacional, gratuita y confidencial.',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.purple.shade900,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    
                     const SizedBox(height: 16),
                     TextField(
                       controller: descriptionController,

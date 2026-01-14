@@ -20,6 +20,9 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
   final TextEditingController politicPreferencesController =
       TextEditingController();
   final TextEditingController aboutMeController = TextEditingController();
+  
+  // Consentimiento para datos sensibles (Ley 25.326)
+  bool _consentSensitiveData = false;
 
   @override
   Widget build(BuildContext context) {
@@ -89,32 +92,97 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
                       fillColor: Colors.grey[50],
                     ),
                   ),
+                  const SizedBox(height: 24),
+                  // Sección de datos sensibles (Ley 25.326)
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.amber.shade200),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.info_outline, color: Colors.amber.shade700, size: 20),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'Datos Sensibles (Opcional)',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Religión y preferencia política son datos sensibles (Ley 25.326). Son opcionales y se usarán solo para mejorar tu compatibilidad.',
+                          style: TextStyle(fontSize: 12, color: Colors.black87),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Checkbox(
+                              value: _consentSensitiveData,
+                              onChanged: (value) {
+                                setState(() {
+                                  _consentSensitiveData = value ?? false;
+                                  // Si desmarca, limpiar los campos sensibles
+                                  if (!_consentSensitiveData) {
+                                    religionController.clear();
+                                    politicPreferencesController.clear();
+                                  }
+                                });
+                              },
+                            ),
+                            const Expanded(
+                              child: Text(
+                                'Doy mi consentimiento expreso para el tratamiento de mis datos sensibles (religión y preferencia política)',
+                                style: TextStyle(fontSize: 12),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
                   const SizedBox(height: 16),
                   TextField(
                     controller: religionController,
+                    enabled: _consentSensitiveData,
                     decoration: InputDecoration(
                       labelText: 'Religión',
-                      hintText: 'Opcional',
-                      prefixIcon: const Icon(Icons.church_outlined),
+                      hintText: 'Opcional - Requiere consentimiento',
+                      prefixIcon: Icon(
+                        Icons.church_outlined,
+                        color: _consentSensitiveData ? null : Colors.grey,
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                       filled: true,
-                      fillColor: Colors.grey[50],
+                      fillColor: _consentSensitiveData ? Colors.grey[50] : Colors.grey[200],
                     ),
                   ),
                   const SizedBox(height: 16),
                   TextField(
                     controller: politicPreferencesController,
+                    enabled: _consentSensitiveData,
                     decoration: InputDecoration(
                       labelText: 'Preferencia Política',
-                      hintText: 'Opcional',
-                      prefixIcon: const Icon(Icons.how_to_vote_outlined),
+                      hintText: 'Opcional - Requiere consentimiento',
+                      prefixIcon: Icon(
+                        Icons.how_to_vote_outlined,
+                        color: _consentSensitiveData ? null : Colors.grey,
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                       filled: true,
-                      fillColor: Colors.grey[50],
+                      fillColor: _consentSensitiveData ? Colors.grey[50] : Colors.grey[200],
                     ),
                   ),
                   const SizedBox(height: 16),

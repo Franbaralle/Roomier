@@ -40,7 +40,7 @@ static Future<String?> createChat(String userA, String userB, {bool isFirstStep 
 }
 
   // Método para enviar un mensaje en un chat existente
-  static Future<void> sendMessage(String chatId, String sender, String message) async {
+  static Future<Map<String, dynamic>> sendMessage(String chatId, String sender, String message) async {
     try {
       final response = await http.post(
         Uri.parse('$apiUrl/send_message'),
@@ -56,11 +56,22 @@ static Future<String?> createChat(String userA, String userB, {bool isFirstStep 
 
       if (response.statusCode == 200) {
         print('Message sent successfully');
+        return {'success': true, 'message': 'Mensaje enviado'};
+      } else if (response.statusCode == 400) {
+        // Contenido moderado
+        final responseData = jsonDecode(response.body);
+        return {
+          'success': false, 
+          'message': responseData['message'] ?? 'Contenido inapropiado detectado',
+          'severity': responseData['severity']
+        };
       } else {
         print('Error sending message: ${response.statusCode}');
+        return {'success': false, 'message': 'Error al enviar mensaje'};
       }
     } catch (error) {
       print('Error sending message: $error');
+      return {'success': false, 'message': 'Error de conexión'};
     }
   }
 
@@ -257,15 +268,16 @@ static Future<String?> createChat(String userA, String userB, {bool isFirstStep 
         final Map<String, dynamic> data = jsonDecode(response.body);
         return {
           'firstStepsRemaining': data['firstStepsRemaining'] ?? 5,
-          'isPremium': data['isPremium'] ?? false
+          'isPremium': data['isPremium'] ?? false,
+          'resetsWeekly': data['resetsWeekly'] ?? false
         };
       } else {
         print('Error fetching first steps: ${response.statusCode}');
-        return {'firstStepsRemaining': 5, 'isPremium': false};
+        return {'firstStepsRemaining': 5, 'isPremium': false, 'resetsWeekly': false};
       }
     } catch (error) {
       print('Error fetching first steps: $error');
-      return {'firstStepsRemaining': 5, 'isPremium': false};
+      return {'firstStepsRemaining': 5, 'isPremium': false, 'resetsWeekly': false};
     }
   }
 }

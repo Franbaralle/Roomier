@@ -217,6 +217,51 @@ class AuthService {
     }
   }
 
+  // Verifica si hay una sesión activa (token guardado)
+  Future<bool> isLoggedIn() async {
+    try {
+      final String? accessToken = _prefs.getString('accessToken');
+      final String? username = _prefs.getString('username');
+      
+      if (accessToken == null || username == null) {
+        return false;
+      }
+      
+      // Verificar que el token es válido haciendo una petición al perfil
+      try {
+        final response = await http.get(
+          Uri.parse('$api/profile/$username'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $accessToken',
+          },
+        ).timeout(
+          const Duration(seconds: 10),
+        );
+        
+        if (response.statusCode == 200) {
+          // Token válido, actualizar datos locales
+          currentUserUsername = username;
+          return true;
+        } else {
+          // Token inválido o expirado, limpiar datos
+          await _prefs.remove('accessToken');
+          await _prefs.remove('username');
+          return false;
+        }
+      } catch (e) {
+        print('Error al verificar token: $e');
+        // En caso de error de red, asumimos que está logueado
+        // (evita que pierdan sesión por problemas de conexión)
+        currentUserUsername = username;
+        return true;
+      }
+    } catch (e) {
+      print('Error en isLoggedIn: $e');
+      return false;
+    }
+  }
+
   // Logout: Cierra la sesión y revoca el token en el servidor
   Future<bool> logout(BuildContext context) async {
     try {

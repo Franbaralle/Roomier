@@ -24,6 +24,7 @@ import 'edit_profile_page.dart';
 import 'notification_service.dart';
 import 'manage_profile_photos_page.dart';
 import 'manage_home_photos_page.dart';
+import 'splash_screen.dart';
 
 // NavigatorKey global para navegación desde notificaciones
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -47,7 +48,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       navigatorKey: navigatorKey,
       title: 'Roomier',
-      initialRoute: loginRoute,
+      home: SplashScreen(), // Comenzar con splash que verifica sesión
       routes: {
         loginRoute: (context) => LoginPage(),
         genderSelectionRoute: (context) => GenderSelectionPage(),

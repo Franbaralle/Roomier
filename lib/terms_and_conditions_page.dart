@@ -38,7 +38,7 @@ class TermsAndConditionsPage extends StatelessWidget {
                 const SizedBox(height: 8),
                 Center(
                   child: Text(
-                    'Última actualización: 31 de Diciembre de 2025',
+                    'Última actualización: 14 de Enero de 2026',
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.grey[600],
@@ -98,10 +98,40 @@ class TermsAndConditionsPage extends StatelessWidget {
                 ),
                 
                 _buildSection(
-                  '7. Privacidad de la Información',
-                  'Su información personal será manejada según nuestra Política de Privacidad. '
+                  '7. Privacidad y Protección de Datos Personales',
+                  'Su información personal será manejada según nuestra Política de Privacidad '
+                  'y en cumplimiento de la Ley 25.326 de Protección de Datos Personales de Argentina. '
                   'Información sensible como presupuesto y zonas específicas solo será revelada '
                   'cuando usted lo autorice explícitamente.',
+                ),
+                
+                _buildSection(
+                  '7.1. Tratamiento de Datos Sensibles (Ley 25.326)',
+                  'En cumplimiento del Art. 7 de la Ley 25.326, Roomier puede recolectar los siguientes '
+                  'datos sensibles ÚNICAMENTE con su consentimiento expreso y por escrito:\n\n'
+                  '• Religión (opcional)\n'
+                  '• Preferencia política (opcional)\n\n'
+                  'IMPORTANTE:\n'
+                  '• Estos datos son completamente OPCIONALES\n'
+                  '• Solo se recolectarán si usted da su consentimiento específico mediante checkbox\n'
+                  '• Se utilizarán exclusivamente para mejorar la compatibilidad en el matching\n'
+                  '• Puede solicitar su eliminación en cualquier momento\n'
+                  '• NO compartiremos estos datos con terceros\n'
+                  '• Están protegidos con medidas de seguridad adicionales\n\n'
+                  'El consentimiento para estos datos sensibles es independiente y NO está incluido '
+                  'en la aceptación general de estos términos. Debe otorgarse de forma específica '
+                  'durante el registro.',
+                ),
+                
+                _buildSection(
+                  '7.2. Derechos del Titular de Datos (ARCO)',
+                  'Según la Ley 25.326, usted tiene derecho a:\n\n'
+                  '• ACCESO: Consultar qué datos tenemos sobre usted\n'
+                  '• RECTIFICACIÓN: Corregir datos inexactos o desactualizados\n'
+                  '• CANCELACIÓN: Solicitar la eliminación de sus datos\n'
+                  '• OPOSICIÓN: Negarse al tratamiento de sus datos\n\n'
+                  'Para ejercer estos derechos, contáctenos en roomier2024@gmail.com. '
+                  'Responderemos en un plazo de 10 días hábiles.',
                 ),
                 
                 _buildSection(
@@ -183,8 +213,47 @@ class TermsAndConditionsPage extends StatelessWidget {
                       ),
                     ],
                   ),
-                ),
-              ],
+                ),                
+                const SizedBox(height: 32),
+                const Divider(thickness: 2),
+                const SizedBox(height: 16),
+                
+                // Footer con datos fiscales (Ley 27.078)
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Información Legal',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Desarrollado por: Francisco Baralle\n'
+                        'Email: roomier2024@gmail.com\n'
+                        'Domicilio: Córdoba, Argentina\n\n'
+                        'Esta aplicación cumple con:\n'
+                        '• Ley 25.326 - Protección de Datos Personales\n'
+                        '• Ley 24.240 - Defensa del Consumidor\n'
+                        '• Ley 27.078 - Servicios de Comunicación',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[700],
+                          height: 1.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),              ],
             ),
           ),
         ),

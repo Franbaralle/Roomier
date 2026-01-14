@@ -29,6 +29,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   // Sistema de FirstSteps
   int _firstStepsRemaining = 5;
   bool _isPremium = false;
+  bool _resetsWeekly = false;
 
   @override
   void initState() {
@@ -132,6 +133,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         setState(() {
           _firstStepsRemaining = data['firstStepsRemaining'] ?? 5;
           _isPremium = data['isPremium'] ?? false;
+          _resetsWeekly = data['resetsWeekly'] ?? false;
         });
       }
     } catch (error) {
@@ -482,7 +484,7 @@ Future<void> _showMatchPopup(
               Icon(Icons.star, color: Colors.amber, size: 30),
               SizedBox(width: 10),
               Text(
-                'Sin primeros pasos',
+                _resetsWeekly ? 'Esperá una semana' : 'Sin primeros pasos',
                 style: TextStyle(color: Colors.amber.shade800),
               ),
             ],
@@ -492,56 +494,102 @@ Future<void> _showMatchPopup(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '¡Te quedaste sin primeros pasos!',
+                _resetsWeekly 
+                    ? '¡Ya usaste tus 5 First Steps de esta semana!'
+                    : '¡Te quedaste sin primeros pasos!',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               SizedBox(height: 12),
-              Text(
-                'Suscribite a Premium y conseguí:',
-                style: TextStyle(fontSize: 14),
-              ),
-              SizedBox(height: 8),
-              Row(
-                children: [
-                  Icon(Icons.check_circle, color: Colors.green, size: 20),
-                  SizedBox(width: 8),
-                  Text('5 primeros pasos por semana'),
-                ],
-              ),
-              SizedBox(height: 4),
-              Row(
-                children: [
-                  Icon(Icons.check_circle, color: Colors.green, size: 20),
-                  SizedBox(width: 8),
-                  Text('Ver quién te dio like'),
-                ],
-              ),
-              SizedBox(height: 4),
-              Row(
-                children: [
-                  Icon(Icons.check_circle, color: Colors.green, size: 20),
-                  SizedBox(width: 8),
-                  Text('Match ilimitado'),
-                ],
-              ),
-              SizedBox(height: 16),
-              Container(
-                padding: EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.amber.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.amber.shade200),
+              if (_resetsWeekly) ...[
+                Text(
+                  'Como usuario Premium, tus First Steps se renuevan automáticamente cada 7 días.',
+                  style: TextStyle(fontSize: 14),
                 ),
-                child: Text(
-                  '💎 Solo \$9.99/mes',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.amber.shade900,
+                SizedBox(height: 8),
+                Container(
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.purple.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.purple.shade200),
                   ),
-                  textAlign: TextAlign.center,
+                  child: Row(
+                    children: [
+                      Icon(Icons.access_time, color: Colors.purple),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Volvé la próxima semana para más',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.purple.shade900,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+              ] else ...[
+                Text(
+                  'Suscribite a Premium y conseguí:',
+                  style: TextStyle(fontSize: 14),
+                ),
+                SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(Icons.autorenew, color: Colors.green, size: 20),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text('5 primeros pasos RENOVABLES cada semana'),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(Icons.visibility, color: Colors.green, size: 20),
+                    SizedBox(width: 8),
+                    Text('Ver quién te dio like'),
+                  ],
+                ),
+                SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(Icons.star, color: Colors.green, size: 20),
+                    SizedBox(width: 8),
+                    Text('Ver reviews completas'),
+                  ],
+                ),
+                SizedBox(height: 16),
+                Container(
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.amber.shade200),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        '💡 FREE: Solo 5 First Steps TOTALES',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        '💎 PREMIUM: 5 por semana (renovables)',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.amber.shade900,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
           actions: [
@@ -549,25 +597,26 @@ Future<void> _showMatchPopup(
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: Text('Ahora no'),
+              child: Text(_resetsWeekly ? 'Entendido' : 'Ahora no'),
             ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.amber,
-                foregroundColor: Colors.black,
+            if (!_resetsWeekly)
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.amber,
+                  foregroundColor: Colors.black,
+                ),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  // TODO: Ir a página de suscripción premium
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Próximamente: Suscripción Premium'),
+                      backgroundColor: Colors.amber.shade700,
+                    ),
+                  );
+                },
+                child: Text('Suscribirme', style: TextStyle(fontWeight: FontWeight.bold)),
               ),
-              onPressed: () {
-                Navigator.of(context).pop();
-                // TODO: Ir a página de suscripción premium
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Próximamente: Suscripción Premium'),
-                    backgroundColor: Colors.amber.shade700,
-                  ),
-                );
-              },
-              child: Text('Suscribirme', style: TextStyle(fontWeight: FontWeight.bold)),
-            ),
           ],
         );
       },
@@ -1036,7 +1085,9 @@ Future<void> _showMatchPopup(
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                          'Deslizá hacia arriba para dar el primer paso\n$_firstStepsRemaining primeros pasos disponibles',
+                          _resetsWeekly
+                              ? 'Deslizá hacia arriba para dar el primer paso\n$_firstStepsRemaining de 5 esta semana'
+                              : 'Deslizá hacia arriba para dar el primer paso\n$_firstStepsRemaining de 5 totales (FREE)',
                           textAlign: TextAlign.center,
                         ),
                         backgroundColor: Colors.purple,

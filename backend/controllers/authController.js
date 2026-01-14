@@ -203,4 +203,100 @@ router.delete('/delete/:username', async (req, res) => {
   }
 });
 
+// Ruta para exportar datos del usuario (Ley 25.326 Art. 14 - Derecho de Acceso)
+router.get('/export/:username', verifyToken, async (req, res) => {
+  const { username } = req.params;
+
+  try {
+    // Verificar que el usuario solicita sus propios datos
+    if (req.username !== username) {
+      return res.status(403).json({ 
+        message: 'No autorizado: solo puedes exportar tus propios datos' 
+      });
+    }
+
+    // Buscar al usuario con todos sus datos
+    const user = await User.findOne({ username }).lean();
+
+    if (!user) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+
+    // Eliminar campos sensibles/internos que no deben exportarse
+    delete user.password; // Nunca exportar contraseña (aunque esté hasheada)
+    delete user.__v; // Campo interno de Mongoose
+    delete user.verificationCode; // Código temporal de verificación
+    
+    // Preparar datos para exportación
+    const exportData = {
+      // Metadata de exportación
+      exportDate: new Date().toISOString(),
+      exportedBy: username,
+      dataProtectionNotice: 'Datos exportados según Ley 25.326 de Protección de Datos Personales de Argentina',
+      
+      // Datos del usuario
+      userData: {
+        // Información básica
+        username: user.username,
+        email: user.email,
+        createdAt: user.createdAt,
+        dateOfBirth: user.dateOfBirth,
+        gender: user.gender,
+        
+        // Información personal
+        personalInfo: user.personalInfo,
+        
+        // Intereses
+        preferences: user.preferences,
+        
+        // Hábitos de convivencia
+        livingHabits: user.livingHabits,
+        dealBreakers: user.dealBreakers,
+        
+        // Información de vivienda
+        housingInfo: user.housingInfo,
+        hasPlace: user.hasPlace,
+        
+        // Fotos (URLs)
+        profilePhotos: user.profilePhotos,
+        homePhotos: user.homePhotos,
+        
+        // Verificación
+        verification: user.verification,
+        
+        // Estadísticas
+        isMatch: user.isMatch || [],
+        notMatch: user.notMatch || [],
+        blockedUsers: user.blockedUsers || [],
+        reportedBy: user.reportedBy || [],
+        
+        // Información revelada
+        revealedInfo: user.revealedInfo || [],
+        
+        // Estado de cuenta
+        accountStatus: user.accountStatus,
+        isPremium: user.isPremium,
+        isAdmin: user.isAdmin,
+        
+        // First Steps
+        firstStepsRemaining: user.firstStepsRemaining,
+        firstStepsUsedThisWeek: user.firstStepsUsedThisWeek,
+        firstStepsResetDate: user.firstStepsResetDate,
+      }
+    };
+
+    // Registrar la exportación en logs (auditoría)
+    console.log(`[EXPORT] Usuario ${username} exportó sus datos - ${new Date().toISOString()}`);
+
+    // Enviar como JSON descargable
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="roomier-datos-${username}-${Date.now()}.json"`);
+    
+    return res.json(exportData);
+  } catch (error) {
+    console.error('Error al exportar datos:', error);
+    return res.status(500).json({ message: 'Error interno del servidor' });
+  }
+});
+
 module.exports = router;

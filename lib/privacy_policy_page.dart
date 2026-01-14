@@ -38,7 +38,7 @@ class PrivacyPolicyPage extends StatelessWidget {
                 const SizedBox(height: 8),
                 Center(
                   child: Text(
-                    'Última actualización: 31 de Diciembre de 2025',
+                    'Última actualización: 14 de Enero de 2026',
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.grey[600],
@@ -217,6 +217,9 @@ class PrivacyPolicyPage extends StatelessWidget {
                     ],
                   ),
                 ),
+                
+                const SizedBox(height: 24),
+                _buildFooter(),
               ],
             ),
           ),
@@ -244,6 +247,61 @@ class PrivacyPolicyPage extends StatelessWidget {
             content,
             style: TextStyle(
               fontSize: 14,
+              color: Colors.grey[700],
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFooter() {
+    return Container(
+      margin: const EdgeInsets.only(top: 30),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Información Legal',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Desarrollador: Francisco Baralle\n'
+            'Email de contacto: roomier2024@gmail.com\n'
+            'Domicilio fiscal: Córdoba, Argentina',
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.grey[700],
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Cumplimos con:',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[800],
+            ),
+          ),
+          const SizedBox(height: 5),
+          Text(
+            '• Ley 25.326 de Protección de Datos Personales\n'
+            '• Ley 24.240 de Defensa del Consumidor\n'
+            '• Ley 27.078 Argentina Digital',
+            style: TextStyle(
+              fontSize: 13,
               color: Colors.grey[700],
               height: 1.5,
             ),

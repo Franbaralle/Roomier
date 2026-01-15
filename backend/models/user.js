@@ -128,7 +128,7 @@ const userSchema = new mongoose.Schema({
     url: { type: String, required: true }, // URL de Cloudinary
     publicId: { type: String, required: true }, // Public ID en Cloudinary para eliminación
     description: { type: String, required: false } // Descripción opcional de la foto
-  }]
+  }],
   
   // Token FCM para notificaciones push
   fcmToken: { type: String, required: false }, // Token de Firebase Cloud Messaging

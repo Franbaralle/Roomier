@@ -20,6 +20,7 @@ router.get('/:username', async (req, res) => {
             username: user.username,
             email: user.email,
             birthdate: user.birthdate,
+            gender: user.gender,
             preferences: user.preferences,
             personalInfo: user.personalInfo,
             livingHabits: user.livingHabits, // Hábitos de convivencia
@@ -41,11 +42,13 @@ router.get('/:username', async (req, res) => {
                 idVerified: user.verification?.idVerified,
                 selfieVerified: user.verification?.selfieVerified,
             },
-            profilePhoto: user.profilePhoto, // Ahora es una URL directa de Cloudinary
+            profilePhoto: user.profilePhoto, // Legacy - URL directa de Cloudinary
+            profilePhotos: user.profilePhotos || [], // Array de fotos (nuevo sistema)
             chatId: user.chatId, // Agregar el campo chatId al perfil
             isMatch: user.isMatch || [], // Lista de usuarios con los que hizo match
             notMatch: user.notMatch || [], // Lista de usuarios que rechazó
-            revealedInfo: user.revealedInfo || [] // Agregar información de revelación
+            revealedInfo: user.revealedInfo || [], // Agregar información de revelación
+            isVerified: user.isVerified || false
         };
 
         // Ya no necesitamos convertir a base64, profilePhoto es una URL

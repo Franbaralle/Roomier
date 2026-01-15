@@ -87,9 +87,6 @@ router.post('/profile', verifyToken, upload.array('photos', 9), async (req, res)
         user.profilePhotos.push(...uploadedPhotos);
 
         console.log(`Total fotos después de agregar: ${user.profilePhotos.length}`);
-        } else {
-            console.log(`Manteniendo profilePhoto existente: ${user.profilePhoto}`);
-        }
 
         await user.save();
 
@@ -140,9 +137,6 @@ router.delete('/profile/:publicId', verifyToken, async (req, res) => {
 
         // Si no quedan fotos, el array quedará vacío
         // La primera foto del array siempre es la principal por definición
-            user.profilePhoto = undefined;
-            user.profilePhotoPublicId = undefined;
-        }
 
         await user.save();
 

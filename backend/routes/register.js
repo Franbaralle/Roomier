@@ -173,16 +173,16 @@ router.post('/personal_info', async (req, res) => {
         }
 
         if (personalInfo.job !== undefined) {
-            user.personalInfo.job = personalInfo.job;
+            user.personalInfo.job = personalInfo.job.trim();
         }
         if (personalInfo.religion !== undefined) {
-            user.personalInfo.religion = personalInfo.religion;
+            user.personalInfo.religion = personalInfo.religion.trim();
         }
         if (personalInfo.politicPreference !== undefined) {
-            user.personalInfo.politicPreference = personalInfo.politicPreference;
+            user.personalInfo.politicPreference = personalInfo.politicPreference.trim();
         }
         if (personalInfo.aboutMe !== undefined) {
-            user.personalInfo.aboutMe = personalInfo.aboutMe;
+            user.personalInfo.aboutMe = personalInfo.aboutMe.trim();
         }
 
         await user.save();
@@ -250,25 +250,28 @@ router.post('/housing_info', async (req, res) => {
             return res.status(404).json({ message: 'Usuario no encontrado' });
         }
 
-        // Actualizar información de vivienda
+        // Actualizar información de vivienda (aplicar trim a campos de texto)
         if (housingInfo) {
             user.housingInfo = {
                 budgetMin: housingInfo.budgetMin,
                 budgetMax: housingInfo.budgetMax,
                 hasPlace: housingInfo.hasPlace || false,
-                moveInDate: housingInfo.moveInDate,
+                moveInDate: housingInfo.moveInDate ? housingInfo.moveInDate.trim() : undefined,
                 stayDuration: housingInfo.stayDuration,
                 
-                // Nuevos campos
-                originProvince: housingInfo.originProvince,
-                destinationProvince: housingInfo.destinationProvince,
-                specificNeighborhoodsOrigin: housingInfo.specificNeighborhoodsOrigin || [],
-                specificNeighborhoodsDestination: housingInfo.specificNeighborhoodsDestination || [],
+                // Nuevos campos (aplicar trim)
+                originProvince: housingInfo.originProvince ? housingInfo.originProvince.trim() : undefined,
+                destinationProvince: housingInfo.destinationProvince ? housingInfo.destinationProvince.trim() : undefined,
+                specificNeighborhoodsOrigin: housingInfo.specificNeighborhoodsOrigin ? 
+                    housingInfo.specificNeighborhoodsOrigin.map(n => n.trim()) : [],
+                specificNeighborhoodsDestination: housingInfo.specificNeighborhoodsDestination ? 
+                    housingInfo.specificNeighborhoodsDestination.map(n => n.trim()) : [],
                 
-                // Legacy fields (mantener para compatibilidad)
-                preferredZones: housingInfo.preferredZones || [],
-                city: housingInfo.city || housingInfo.destinationProvince,
-                generalZone: housingInfo.generalZone
+                // Legacy fields (mantener para compatibilidad, aplicar trim)
+                preferredZones: housingInfo.preferredZones ? 
+                    housingInfo.preferredZones.map(z => z.trim()) : [],
+                city: housingInfo.city ? housingInfo.city.trim() : (housingInfo.destinationProvince ? housingInfo.destinationProvince.trim() : undefined),
+                generalZone: housingInfo.generalZone ? housingInfo.generalZone.trim() : undefined
             };
         }
 
@@ -281,17 +284,24 @@ router.post('/housing_info', async (req, res) => {
     }
 });
 
-// Ruta para manejar la foto de perfil durante el registro
-router.post('/profile_photo', upload.single('profilePhoto'), async (req, res) => {
+// Ruta para manejar las fotos de perfil durante el registro (1-9 fotos)
+router.post('/profile_photo', upload.array('profilePhotos', 9), async (req, res) => {
     try {
-        console.log('=== PROFILE PHOTO REQUEST ===');
+        console.log('=== PROFILE PHOTOS REQUEST ===');
         console.log('Body:', req.body);
-        console.log('File:', req.file ? 'Present' : 'Missing');
+        console.log('Files:', req.files ? req.files.length : 0);
         
         const { username, email } = req.body;
-        if (!req.file) {
-            console.log('ERROR: No se proporcionó ninguna imagen');
-            return res.status(400).json({ message: 'No se proporcionó ninguna imagen' });
+        
+        // Validar que haya al menos 1 foto y máximo 9
+        if (!req.files || req.files.length === 0) {
+            console.log('ERROR: Debe subir al menos 1 foto de perfil');
+            return res.status(400).json({ message: 'Debe subir al menos 1 foto de perfil' });
+        }
+        
+        if (req.files.length > 9) {
+            console.log('ERROR: Máximo 9 fotos de perfil permitidas');
+            return res.status(400).json({ message: 'Máximo 9 fotos de perfil permitidas' });
         }
 
         const user = await User.findOne({ username });
@@ -301,43 +311,28 @@ router.post('/profile_photo', upload.single('profilePhoto'), async (req, res) =>
             return res.status(404).json({ message: 'Usuario no encontrado' });
         }
 
-        // Subir imagen a Cloudinary
-        console.log('Subiendo imagen a Cloudinary...');
-        const cloudinaryResult = await uploadImage(
-            req.file.buffer, 
-            'profile_photos', 
-            `user_${username}`
-        );
+        // Subir todas las imágenes a Cloudinary
+        console.log(`Subiendo ${req.files.length} imágenes a Cloudinary...`);
+        const uploadedPhotos = [];
         
-        // Guardar URL de Cloudinary en el usuario
-        user.profilePhoto = cloudinaryResult.secure_url;
-        user.profilePhotoPublicId = cloudinaryResult.public_id;
-        await user.save();
-        
-        console.log('Imagen subida exitosamente a Cloudinary:', cloudinaryResult.secure_url);
-
-        const verificationCode = generateVerificationCode();
-        user.verificationCode = verificationCode;
-
-        // Intentar enviar email, pero continuar si falla (modo testing)
-        try {
-            console.log('Enviando email a:', email);
-            await sendVerificationEmail(email, verificationCode);
-            console.log('Email enviado exitosamente');
-        } catch (emailError) {
-            console.warn('No se pudo enviar email de verificación (modo testing):', emailError.message);
-            console.log('Marcando usuario como verificado automáticamente para continuar el registro');
-            // En modo testing, marcar como verificado automáticamente
-            user.isVerified = true;
+        for (let i = 0; i < req.files.length; i++) {
+            const cloudinaryResult = await uploadImage(
+                req.files[i].buffer, 
+                'profile_photos', 
+                `user_${username}_${i + 1}`
+            );
+            
+            uploadedPhotos.push({
+                url: cloudinaryResult.secure_url,
+                publicId: cloudinaryResult.public_id
+            });
         }
-
+        
+        // Guardar todas las fotos en profilePhotos array
+        user.profilePhotos = uploadedPhotos;
         await user.save();
-
-        return res.json({ 
-            message: 'Foto de perfil actualizada exitosamente',
-            photoUrl: cloudinaryResult.secure_url,
-            emailSent: user.isVerified ? false : true // Indicar si se envió el email
-        });
+        
+        console.log(`${uploadedPhotos.length} imágenes subidas exitosamente a Cloudinary`);\n\n        const verificationCode = generateVerificationCode();\n        user.verificationCode = verificationCode;\n\n        // Intentar enviar email, pero continuar si falla (modo testing)\n        try {\n            console.log('Enviando email a:', email);\n            await sendVerificationEmail(email, verificationCode);\n            console.log('Email enviado exitosamente');\n        } catch (emailError) {\n            console.warn('No se pudo enviar email de verificación (modo testing):', emailError.message);\n            console.log('Marcando usuario como verificado automáticamente para continuar el registro');\n            // En modo testing, marcar como verificado automáticamente\n            user.isVerified = true;\n        }\n\n        await user.save();\n\n        return res.json({ \n            message: `${uploadedPhotos.length} fotos de perfil actualizadas exitosamente`,\n            photos: uploadedPhotos,\n            emailSent: user.isVerified ? false : true\n        });
     } catch (error) {
         console.error('Error al actualizar la foto de perfil:', error);
         return res.status(500).json({ message: 'Error interno del servidor' });
@@ -382,7 +377,7 @@ router.post('/complete', async (req, res) => {
             dealBreakers,
             housingInfo,
             personalInfo,
-            profilePhoto
+            profilePhotos // Ahora es un array de base64
         } = req.body;
 
         console.log('[REGISTRO COMPLETO] Iniciando registro para:', username);
@@ -405,18 +400,25 @@ router.post('/complete', async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
         console.log('[REGISTRO COMPLETO] Contraseña hasheada');
 
-        // Procesar foto de perfil si existe
-        let profilePhotoUrl = null;
-        if (profilePhoto) {
+        // Procesar fotos de perfil si existen (array de base64)
+        const uploadedPhotos = [];
+        if (profilePhotos && Array.isArray(profilePhotos) && profilePhotos.length > 0) {
             try {
-                console.log('[REGISTRO COMPLETO] Subiendo foto de perfil a Cloudinary...');
-                const buffer = Buffer.from(profilePhoto, 'base64');
-                const uploadResult = await uploadImage(buffer, username);
-                profilePhotoUrl = uploadResult.secure_url; // Extraer solo la URL
-                console.log('[REGISTRO COMPLETO] Foto subida:', profilePhotoUrl);
+                console.log(`[REGISTRO COMPLETO] Subiendo ${profilePhotos.length} fotos a Cloudinary...`);
+                
+                for (let i = 0; i < profilePhotos.length; i++) {
+                    const buffer = Buffer.from(profilePhotos[i], 'base64');
+                    const uploadResult = await uploadImage(buffer, 'profile_photos', `user_${username}_${i + 1}`);
+                    uploadedPhotos.push({
+                        url: uploadResult.secure_url,
+                        publicId: uploadResult.public_id
+                    });
+                }
+                
+                console.log(`[REGISTRO COMPLETO] ${uploadedPhotos.length} fotos subidas exitosamente`);
             } catch (photoError) {
-                console.error('[REGISTRO COMPLETO] Error al subir foto:', photoError);
-                // No bloquear el registro por error en foto
+                console.error('[REGISTRO COMPLETO] Error al subir fotos:', photoError);
+                // No bloquear el registro por error en fotos
             }
         }
 
@@ -439,17 +441,17 @@ router.post('/complete', async (req, res) => {
             gender: req.body.gender || undefined, // Género del usuario
             verificationCode,
             isVerified: false, // Se marcará como true si el email no es el del admin
-            profilePhoto: profilePhotoUrl,
+            profilePhotos: uploadedPhotos, // Array de fotos
             preferences: preferences || {},
             roommatePreferences: mappedRoommatePreferences,
             livingHabits: livingHabits || {},
             dealBreakers: dealBreakers || {},
             housingInfo: housingInfo || {},
             personalInfo: {
-                job: personalInfo?.job || '',
-                religion: personalInfo?.religion || '',
-                politicPreference: personalInfo?.politicPreferences || '',
-                aboutMe: personalInfo?.aboutMe || ''
+                job: personalInfo?.job?.trim() || '',
+                religion: personalInfo?.religion?.trim() || '',
+                politicPreference: personalInfo?.politicPreferences?.trim() || '',
+                aboutMe: personalInfo?.aboutMe?.trim() || ''
             }
         });
 

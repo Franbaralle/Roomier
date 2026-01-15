@@ -12,7 +12,7 @@ const upload = multer({
     storage: storage,
     limits: {
         fileSize: 10 * 1024 * 1024, // 10MB por archivo
-        files: 10 // Máximo 10 archivos en una sola petición
+        files: 9 // Máximo 9 archivos en una sola petición
     },
     fileFilter: (req, file, cb) => {
         // Validar que sean imágenes
@@ -24,14 +24,14 @@ const upload = multer({
     }
 });
 
-// ====== FOTOS DE PERFIL (máximo 10) ======
+// ====== FOTOS DE PERFIL (máximo 9) ======
 
 /**
  * POST /api/photos/profile
- * Agregar fotos de perfil (hasta 10 total)
+ * Agregar fotos de perfil (hasta 9 total)
  * Body: username (string), files (array de imágenes)
  */
-router.post('/profile', verifyToken, upload.array('photos', 10), async (req, res) => {
+router.post('/profile', verifyToken, upload.array('photos', 9), async (req, res) => {
     try {
         console.log('=== ADDING PROFILE PHOTOS ===');
         const { username } = req.body;
@@ -48,13 +48,13 @@ router.post('/profile', verifyToken, upload.array('photos', 10), async (req, res
         console.log(`Usuario actual tiene ${user.profilePhotos ? user.profilePhotos.length : 0} fotos`);
         console.log(`Fotos actuales:`, user.profilePhotos);
 
-        // Verificar que no exceda el límite de 10 fotos
+        // Verificar que no exceda el límite de 9 fotos
         const currentPhotosCount = user.profilePhotos ? user.profilePhotos.length : 0;
         const newPhotosCount = req.files.length;
         
-        if (currentPhotosCount + newPhotosCount > 10) {
+        if (currentPhotosCount + newPhotosCount > 9) {
             return res.status(400).json({ 
-                message: `No puedes tener más de 10 fotos de perfil. Actualmente tienes ${currentPhotosCount} fotos.` 
+                message: `No puedes tener más de 9 fotos de perfil. Actualmente tienes ${currentPhotosCount} fotos.` 
             });
         }
 
@@ -63,10 +63,7 @@ router.post('/profile', verifyToken, upload.array('photos', 10), async (req, res
             user.profilePhotos = [];
         }
 
-        // Solo marcar como principal si NO hay fotos previas
-        const isFirstPhoto = user.profilePhotos.length === 0;
-
-        console.log(`Es primera foto: ${isFirstPhoto}`);
+        console.log(`Agregando ${newPhotosCount} fotos. Total actual: ${currentPhotosCount}`);
 
         // Subir todas las imágenes a Cloudinary
         const uploadPromises = req.files.map(async (file, index) => {
@@ -78,8 +75,7 @@ router.post('/profile', verifyToken, upload.array('photos', 10), async (req, res
             
             return {
                 url: cloudinaryResult.secure_url,
-                publicId: cloudinaryResult.public_id,
-                isPrimary: isFirstPhoto && index === 0  // Solo la primera si no había fotos
+                publicId: cloudinaryResult.public_id
             };
         });
 
@@ -91,13 +87,6 @@ router.post('/profile', verifyToken, upload.array('photos', 10), async (req, res
         user.profilePhotos.push(...uploadedPhotos);
 
         console.log(`Total fotos después de agregar: ${user.profilePhotos.length}`);
-
-        // Solo actualizar profilePhoto si es la primera foto o no hay foto principal
-        const primaryPhoto = user.profilePhotos.find(p => p.isPrimary);
-        if (primaryPhoto && (!user.profilePhoto || isFirstPhoto)) {
-            console.log(`Actualizando profilePhoto a: ${primaryPhoto.url}`);
-            user.profilePhoto = primaryPhoto.url;
-            user.profilePhotoPublicId = primaryPhoto.publicId;
         } else {
             console.log(`Manteniendo profilePhoto existente: ${user.profilePhoto}`);
         }
@@ -143,22 +132,14 @@ router.delete('/profile/:publicId', verifyToken, async (req, res) => {
             return res.status(404).json({ message: 'Foto no encontrada' });
         }
 
-        const photoToDelete = user.profilePhotos[photoIndex];
-        const wasPrimary = photoToDelete.isPrimary;
-
         // Eliminar de Cloudinary
         await deleteImage(publicId);
 
         // Eliminar del array
         user.profilePhotos.splice(photoIndex, 1);
 
-        // Si se eliminó la foto principal y hay otras fotos, hacer la primera como principal
-        if (wasPrimary && user.profilePhotos.length > 0) {
-            user.profilePhotos[0].isPrimary = true;
-            user.profilePhoto = user.profilePhotos[0].url;
-            user.profilePhotoPublicId = user.profilePhotos[0].publicId;
-        } else if (user.profilePhotos.length === 0) {
-            // Si no quedan fotos, limpiar campos legacy
+        // Si no quedan fotos, el array quedará vacío
+        // La primera foto del array siempre es la principal por definición
             user.profilePhoto = undefined;
             user.profilePhotoPublicId = undefined;
         }
@@ -177,7 +158,7 @@ router.delete('/profile/:publicId', verifyToken, async (req, res) => {
 
 /**
  * PUT /api/photos/profile/:publicId/primary
- * Establecer una foto como principal
+ * Establecer una foto como principal (moverla a la posición 0 del array)
  */
 router.put('/profile/:publicId/primary', verifyToken, async (req, res) => {
     try {
@@ -204,31 +185,25 @@ router.put('/profile/:publicId/primary', verifyToken, async (req, res) => {
             return res.status(404).json({ message: 'No tienes fotos de perfil' });
         }
 
-        console.log('Fotos del usuario:');
-        user.profilePhotos.forEach((photo, idx) => {
-            console.log(`  [${idx}] publicId: "${photo.publicId}", isPrimary: ${photo.isPrimary}`);
-        });
-        console.log('PublicId buscado:', publicId);
-
-        // Quitar isPrimary de todas las fotos
-        user.profilePhotos.forEach(photo => {
-            photo.isPrimary = false;
-        });
-
-        // Establecer la nueva foto principal
-        const newPrimaryPhoto = user.profilePhotos.find(p => p.publicId === publicId);
+        // Buscar la foto que se quiere hacer principal
+        const photoIndex = user.profilePhotos.findIndex(p => p.publicId === publicId);
         
-        if (!newPrimaryPhoto) {
+        if (photoIndex === -1) {
             console.log('ERROR: Foto no encontrada. PublicId:', publicId);
-            console.log('Fotos disponibles:', user.profilePhotos.map(p => p.publicId));
             return res.status(404).json({ message: 'Foto no encontrada' });
         }
 
-        newPrimaryPhoto.isPrimary = true;
+        // Si ya es la primera (principal), no hacer nada
+        if (photoIndex === 0) {
+            return res.json({
+                message: 'Esta foto ya es la principal',
+                primaryPhoto: user.profilePhotos[0]
+            });
+        }
 
-        // Actualizar campos legacy
-        user.profilePhoto = newPrimaryPhoto.url;
-        user.profilePhotoPublicId = newPrimaryPhoto.publicId;
+        // Mover la foto a la posición 0
+        const [selectedPhoto] = user.profilePhotos.splice(photoIndex, 1);
+        user.profilePhotos.unshift(selectedPhoto);
 
         await user.save();
         
@@ -236,7 +211,7 @@ router.put('/profile/:publicId/primary', verifyToken, async (req, res) => {
 
         return res.json({
             message: 'Foto principal actualizada exitosamente',
-            primaryPhoto: newPrimaryPhoto
+            primaryPhoto: user.profilePhotos[0]
         });
     } catch (error) {
         console.error('Error al establecer foto principal:', error);

@@ -116,11 +116,11 @@ const userSchema = new mongoose.Schema({
     revealedContact: { type: Boolean, default: false }
   }],
   
-  // Fotos de perfil (URLs de Cloudinary) - hasta 10 fotos
+  // Fotos de perfil (URLs de Cloudinary) - 1 a 9 fotos obligatorias
+  // La primera foto del array es siempre la foto principal
   profilePhotos: [{
     url: { type: String, required: true }, // URL de Cloudinary
-    publicId: { type: String, required: true }, // Public ID en Cloudinary para eliminación
-    isPrimary: { type: Boolean, default: false } // Primera foto es la principal
+    publicId: { type: String, required: true } // Public ID en Cloudinary para eliminación
   }],
   
   // Fotos del hogar (solo si hasPlace es true) - ilimitadas
@@ -128,12 +128,7 @@ const userSchema = new mongoose.Schema({
     url: { type: String, required: true }, // URL de Cloudinary
     publicId: { type: String, required: true }, // Public ID en Cloudinary para eliminación
     description: { type: String, required: false } // Descripción opcional de la foto
-  }],
-  
-  // Campos legacy - mantener para migración gradual
-  profilePhoto: { type: String, required: false }, // URL de Cloudinary (deprecated)
-  profilePhotoPublicId: { type: String, required: false }, // Public ID en Cloudinary (deprecated)
-  profilePhotoBuffer: { type: Buffer, required: false }, // Buffer legacy (deprecated)
+  }]
   
   // Token FCM para notificaciones push
   fcmToken: { type: String, required: false }, // Token de Firebase Cloud Messaging

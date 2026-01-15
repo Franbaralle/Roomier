@@ -17,10 +17,10 @@ router.put('/personal-info', verifyToken, async (req, res) => {
         }
 
         const updateData = {};
-        if (occupation !== undefined) updateData['personalInfo.occupation'] = occupation;
-        if (religion !== undefined) updateData['personalInfo.religion'] = religion;
-        if (politicalViews !== undefined) updateData['personalInfo.politicalViews'] = politicalViews;
-        if (bio !== undefined) updateData['personalInfo.bio'] = bio;
+        if (occupation !== undefined) updateData['personalInfo.occupation'] = occupation.trim();
+        if (religion !== undefined) updateData['personalInfo.religion'] = religion.trim();
+        if (politicalViews !== undefined) updateData['personalInfo.politicalViews'] = politicalViews.trim();
+        if (bio !== undefined) updateData['personalInfo.bio'] = bio.trim();
 
         const user = await User.findOneAndUpdate(
             { username },
@@ -165,19 +165,19 @@ router.put('/housing-info', verifyToken, async (req, res) => {
 
         const updateData = {};
         if (hasPlace !== undefined) updateData['housingInfo.hasPlace'] = hasPlace;
-        if (moveInDate !== undefined) updateData['housingInfo.moveInDate'] = moveInDate;
-        if (stayDuration !== undefined) updateData['housingInfo.stayDuration'] = stayDuration;
+        if (moveInDate !== undefined) updateData['housingInfo.moveInDate'] = moveInDate.trim();
+        if (stayDuration !== undefined) updateData['housingInfo.stayDuration'] = stayDuration.trim();
         
-        // Nuevos campos
-        if (originProvince !== undefined) updateData['housingInfo.originProvince'] = originProvince;
-        if (destinationProvince !== undefined) updateData['housingInfo.destinationProvince'] = destinationProvince;
-        if (specificNeighborhoodsOrigin !== undefined) updateData['housingInfo.specificNeighborhoodsOrigin'] = specificNeighborhoodsOrigin;
-        if (specificNeighborhoodsDestination !== undefined) updateData['housingInfo.specificNeighborhoodsDestination'] = specificNeighborhoodsDestination;
+        // Nuevos campos (aplicar trim)
+        if (originProvince !== undefined) updateData['housingInfo.originProvince'] = originProvince.trim();
+        if (destinationProvince !== undefined) updateData['housingInfo.destinationProvince'] = destinationProvince.trim();
+        if (specificNeighborhoodsOrigin !== undefined) updateData['housingInfo.specificNeighborhoodsOrigin'] = specificNeighborhoodsOrigin.map(n => n.trim());
+        if (specificNeighborhoodsDestination !== undefined) updateData['housingInfo.specificNeighborhoodsDestination'] = specificNeighborhoodsDestination.map(n => n.trim());
         
-        // Legacy fields (mantener para compatibilidad)
-        if (city !== undefined) updateData['housingInfo.city'] = city;
-        if (generalZone !== undefined) updateData['housingInfo.generalZone'] = generalZone;
-        if (preferredZones !== undefined) updateData['housingInfo.preferredZones'] = preferredZones;
+        // Legacy fields (mantener para compatibilidad, aplicar trim)
+        if (city !== undefined) updateData['housingInfo.city'] = city.trim();
+        if (generalZone !== undefined) updateData['housingInfo.generalZone'] = generalZone.trim();
+        if (preferredZones !== undefined) updateData['housingInfo.preferredZones'] = preferredZones.map(z => z.trim());
         
         if (budgetMin !== undefined) updateData['housingInfo.budgetMin'] = budgetMin;
         if (budgetMax !== undefined) updateData['housingInfo.budgetMax'] = budgetMax;

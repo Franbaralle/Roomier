@@ -332,7 +332,30 @@ router.post('/profile_photo', upload.array('profilePhotos', 9), async (req, res)
         user.profilePhotos = uploadedPhotos;
         await user.save();
         
-        console.log(`${uploadedPhotos.length} imágenes subidas exitosamente a Cloudinary`);\n\n        const verificationCode = generateVerificationCode();\n        user.verificationCode = verificationCode;\n\n        // Intentar enviar email, pero continuar si falla (modo testing)\n        try {\n            console.log('Enviando email a:', email);\n            await sendVerificationEmail(email, verificationCode);\n            console.log('Email enviado exitosamente');\n        } catch (emailError) {\n            console.warn('No se pudo enviar email de verificación (modo testing):', emailError.message);\n            console.log('Marcando usuario como verificado automáticamente para continuar el registro');\n            // En modo testing, marcar como verificado automáticamente\n            user.isVerified = true;\n        }\n\n        await user.save();\n\n        return res.json({ \n            message: `${uploadedPhotos.length} fotos de perfil actualizadas exitosamente`,\n            photos: uploadedPhotos,\n            emailSent: user.isVerified ? false : true\n        });
+        console.log(`${uploadedPhotos.length} imágenes subidas exitosamente a Cloudinary`);
+
+        const verificationCode = generateVerificationCode();
+        user.verificationCode = verificationCode;
+
+        // Intentar enviar email, pero continuar si falla (modo testing)
+        try {
+            console.log('Enviando email a:', email);
+            await sendVerificationEmail(email, verificationCode);
+            console.log('Email enviado exitosamente');
+        } catch (emailError) {
+            console.warn('No se pudo enviar email de verificación (modo testing):', emailError.message);
+            console.log('Marcando usuario como verificado automáticamente para continuar el registro');
+            // En modo testing, marcar como verificado automáticamente
+            user.isVerified = true;
+        }
+
+        await user.save();
+
+        return res.json({ 
+            message: `${uploadedPhotos.length} fotos de perfil actualizadas exitosamente`,
+            photos: uploadedPhotos,
+            emailSent: user.isVerified ? false : true
+        });
     } catch (error) {
         console.error('Error al actualizar la foto de perfil:', error);
         return res.status(500).json({ message: 'Error interno del servidor' });

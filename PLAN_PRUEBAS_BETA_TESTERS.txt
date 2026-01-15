@@ -1,0 +1,514 @@
+═══════════════════════════════════════════════════════════════════════════════
+                    PLAN DE PRUEBAS BETA - ROOMIER APP
+                          2 Beta Testers en Vivo
+═══════════════════════════════════════════════════════════════════════════════
+
+INFORMACIÓN GENERAL:
+-------------------
+- Fecha de pruebas: __________
+- Beta Tester 1: __________
+- Beta Tester 2: __________
+- Versión de la app: 1.0.1+2
+- Dispositivos: __________
+
+
+═══════════════════════════════════════════════════════════════════════════════
+FASE 1: REGISTRO Y CONFIGURACIÓN INICIAL (30-40 min)
+═══════════════════════════════════════════════════════════════════════════════
+
+TESTER 1 - CUENTA PRINCIPAL:
+----------------------------
+□ 1.1. Abrir la app por primera vez
+   - Observar splash screen (logo, degradado, tagline)
+   - Verificar transición a login
+
+□ 1.2. Crear cuenta nueva
+   - Seleccionar género
+   - Ingresar fecha de nacimiento
+   - Completar datos de registro (username, email, contraseña)
+   - Verificar validaciones de campos
+
+□ 1.3. Confirmar email
+   - Verificar que llegue el email de confirmación
+   - Hacer clic en el enlace de confirmación
+   - Verificar redirección correcta
+
+□ 1.4. Completar preferencias básicas
+   - Seleccionar preferencias personales (ej: fumador, mascotas, etc.)
+   - Guardar y continuar
+
+□ 1.5. Completar preferencias de roommate
+   - Seleccionar qué buscas en un roommate
+   - Configurar filtros importantes
+
+□ 1.6. Completar hábitos de vida
+   - Responder preguntas sobre estilo de vida
+   - Verificar que se guarden correctamente
+
+□ 1.7. Configurar información de vivienda
+   - Indicar si tiene lugar disponible o busca lugar
+   - Si tiene lugar: agregar detalles y fotos
+   - Si busca lugar: configurar preferencias
+
+□ 1.8. Subir foto de perfil
+   - Tomar foto con cámara o seleccionar de galería
+   - Recortar/ajustar imagen
+   - Verificar que se sube correctamente
+
+□ 1.9. Agregar fotos adicionales de perfil (hasta 5)
+   - Subir múltiples fotos
+   - Reordenar fotos
+   - Eliminar alguna foto
+   - Establecer foto principal
+
+
+TESTER 2 - CUENTA PRINCIPAL:
+----------------------------
+□ 2.1. Repetir proceso completo de registro (pasos 1.1 a 1.9)
+   - Usar datos diferentes a Tester 1
+   - Configurar preferencias COMPATIBLES con Tester 1
+   - Seleccionar opción contraria en vivienda (si T1 tiene lugar, T2 busca)
+
+
+PREGUNTAS POST-REGISTRO (Hacer a ambas):
+-----------------------------------------
+1. ¿El proceso de registro te pareció claro y fácil de seguir?
+2. ¿Hubo algún paso confuso o que no entendieras?
+3. ¿Las validaciones de campos fueron claras cuando ingresaste datos incorrectos?
+4. ¿El proceso de subir fotos fue intuitivo?
+5. ¿Cuánto tiempo te tomó completar todo el registro? (registrar tiempo real)
+6. ¿Algo te frustró durante el proceso?
+7. ¿La tipografía y el diseño te parece profesional y legible?
+8. En una escala del 1-10, ¿qué tan motivada te sentiste para completar todo?
+
+
+═══════════════════════════════════════════════════════════════════════════════
+FASE 2: EXPLORACIÓN DE PERFILES Y MATCHES (20-30 min)
+═══════════════════════════════════════════════════════════════════════════════
+
+AMBAS TESTERS:
+--------------
+□ 3.1. Explorar la pantalla principal (Home)
+   - Ver perfiles sugeridos
+   - Deslizar entre fotos del perfil
+   - Leer información del perfil
+
+□ 3.2. Dar "like" a perfiles
+   - Dar like al perfil de la otra tester
+   - Dar like a otros 3-5 perfiles
+   - Verificar que se registren los likes
+
+□ 3.3. Dar "dislike" a perfiles
+   - Rechazar 2-3 perfiles
+   - Verificar que desaparezcan correctamente
+
+□ 3.4. Ver perfiles recibidos (Received Likes)
+   - Acceder a la sección de likes recibidos
+   - Verificar que aparezca el like de la otra tester
+   - Responder likes (aceptar/rechazar)
+
+□ 3.5. Verificar MATCH
+   - Confirmar que se crea match cuando ambas se dan like
+   - Ver notificación de match
+   - Verificar que aparezcan en lista de chats
+
+
+PREGUNTAS POST-EXPLORACIÓN (Hacer a ambas):
+--------------------------------------------
+1. ¿La información de los perfiles es suficiente para decidir dar like o no?
+2. ¿La navegación entre fotos es fluida?
+3. ¿Los botones de like/dislike son intuitivos?
+4. ¿Te quedó claro cuándo hiciste match con alguien?
+5. ¿La velocidad de carga de perfiles es aceptable?
+6. ¿Viste algún error o comportamiento extraño?
+7. ¿Los filtros de preferencias parecen estar funcionando?
+8. En una escala del 1-10, ¿qué tan atractivo es el diseño de los perfiles?
+
+
+═══════════════════════════════════════════════════════════════════════════════
+FASE 3: SISTEMA DE CHAT (20-30 min)
+═══════════════════════════════════════════════════════════════════════════════
+
+AMBAS TESTERS (realizar simultáneamente):
+-----------------------------------------
+□ 4.1. Acceder a la lista de chats
+   - Ver que aparece el match reciente
+   - Verificar foto y nombre del match
+
+□ 4.2. Abrir chat con la otra tester
+   - Ver el perfil del match desde el chat
+   - Volver al chat
+
+□ 4.3. Enviar mensajes de texto
+   - Enviar 5-10 mensajes cada una
+   - Verificar entrega instantánea
+   - Verificar orden correcto de mensajes
+
+□ 4.4. Probar diferentes tipos de mensajes
+   - Mensajes cortos (1-2 palabras)
+   - Mensajes largos (100+ caracteres)
+   - Emojis
+   - Mensajes seguidos sin esperar respuesta
+
+□ 4.5. Probar notificaciones de chat
+   - Una tester sale de la app (minimiza)
+   - La otra envía mensaje
+   - Verificar que llegue notificación push
+   - Abrir app desde notificación
+
+□ 4.6. Verificar estado de conexión
+   - Minimizar y volver a abrir app
+   - Verificar que mensajes sigan llegando
+   - Probar con conexión lenta (opcional)
+
+□ 4.7. Cerrar y reabrir chat
+   - Verificar que se mantenga historial
+   - Scroll al principio del chat
+   - Verificar que no se pierdan mensajes
+
+
+PREGUNTAS POST-CHAT (Hacer a ambas):
+-------------------------------------
+1. ¿Los mensajes llegaban instantáneamente o había demora?
+2. ¿Las notificaciones funcionaron correctamente?
+3. ¿El diseño del chat te parece limpio y fácil de usar?
+4. ¿Hubo algún momento donde los mensajes se desordenaron?
+5. ¿La escritura del teclado fluye bien?
+6. ¿Se perdió algún mensaje durante la conversación?
+7. ¿Te gustaría que el chat tuviera alguna función adicional? ¿Cuál?
+8. En una escala del 1-10, ¿qué tan satisfecha estás con el sistema de chat?
+
+
+═══════════════════════════════════════════════════════════════════════════════
+FASE 4: GESTIÓN DE PERFIL (15-20 min)
+═══════════════════════════════════════════════════════════════════════════════
+
+AMBAS TESTERS:
+--------------
+□ 5.1. Acceder al perfil propio
+   - Desde menú o botón de perfil
+
+□ 5.2. Editar información personal
+   - Cambiar descripción/bio
+   - Modificar preferencias
+   - Guardar cambios
+   - Verificar que se actualicen
+
+□ 5.3. Gestionar fotos de perfil
+   - Agregar nueva foto
+   - Eliminar foto existente
+   - Cambiar orden de fotos
+   - Cambiar foto principal
+   - Verificar que cambios se reflejen
+
+□ 5.4. Gestionar fotos de vivienda (si aplica)
+   - Agregar fotos del lugar
+   - Eliminar fotos
+   - Reordenar fotos
+   - Verificar límite de fotos
+
+□ 5.5. Modificar preferencias de roommate
+   - Cambiar filtros/criterios
+   - Guardar y verificar
+
+□ 5.6. Ver perfil desde perspectiva de otro usuario
+   - Pedirle a la otra tester que vea tu perfil actualizado
+   - Verificar que los cambios se vean
+
+
+PREGUNTAS POST-PERFIL (Hacer a ambas):
+---------------------------------------
+1. ¿Fue fácil encontrar cómo editar tu perfil?
+2. ¿Los cambios se guardaron correctamente?
+3. ¿Hubo alguna opción que no encontraras o que esperabas ver?
+4. ¿El proceso de gestionar fotos es intuitivo?
+5. ¿Hay alguna información que te gustaría agregar a tu perfil?
+6. ¿Los cambios se reflejaron rápido en tu perfil visible?
+
+
+═══════════════════════════════════════════════════════════════════════════════
+FASE 5: NOTIFICACIONES Y PERMISOS (10-15 min)
+═══════════════════════════════════════════════════════════════════════════════
+
+AMBAS TESTERS:
+--------------
+□ 6.1. Verificar permisos solicitados
+   - Notificaciones push
+   - Cámara
+   - Galería de fotos
+   - Verificar que se soliciten en momentos apropiados
+
+□ 6.2. Probar notificaciones de match
+   - Tester 1 crea cuenta secundaria y da like a Tester 2
+   - Tester 2 da like de vuelta
+   - Verificar notificación de match
+
+□ 6.3. Probar notificaciones de mensajes
+   - Con app en segundo plano
+   - Con app completamente cerrada
+   - Verificar que abra el chat correcto al tocar notificación
+
+□ 6.4. Probar con notificaciones desactivadas (opcional)
+   - Desactivar permisos de notificación
+   - Verificar que app siga funcionando
+
+
+PREGUNTAS POST-NOTIFICACIONES (Hacer a ambas):
+-----------------------------------------------
+1. ¿Las notificaciones llegaron en el momento correcto?
+2. ¿El contenido de las notificaciones era claro?
+3. ¿La frecuencia de notificaciones te pareció adecuada o excesiva?
+4. ¿Las notificaciones te redirigieron al lugar correcto?
+
+
+═══════════════════════════════════════════════════════════════════════════════
+FASE 6: CASOS DE USO AVANZADOS (20-30 min)
+═══════════════════════════════════════════════════════════════════════════════
+
+TESTER 1:
+---------
+□ 7.1. Crear cuenta secundaria
+   - Usar email diferente
+   - Completar registro básico
+   - Dar like a Tester 2 (sin match)
+
+□ 7.2. Volver a cuenta principal
+   - Cerrar sesión
+   - Iniciar sesión con credenciales originales
+   - Verificar que todo esté intacto
+
+
+TESTER 2:
+---------
+□ 7.3. Verificar likes recibidos
+   - Ver like de cuenta secundaria de Tester 1
+   - Dar like de vuelta (crear match)
+
+□ 7.4. Probar múltiples chats
+   - Hablar con cuenta original de Tester 1
+   - Hablar con cuenta secundaria de Tester 1
+   - Alternar entre chats
+   - Verificar que no se mezclen mensajes
+
+
+AMBAS TESTERS:
+--------------
+□ 7.5. Probar cierre y reapertura de app
+   - Cerrar app completamente
+   - Reabrir después de 5 minutos
+   - Verificar que sesión persista
+   - Verificar que datos estén intactos
+
+□ 7.6. Probar con conexión intermitente (opcional)
+   - Activar/desactivar WiFi
+   - Verificar comportamiento de la app
+   - Verificar mensajes de error (si hay)
+
+□ 7.7. Llenar espacio de fotos al máximo
+   - Subir máximo de fotos de perfil (5)
+   - Subir fotos de vivienda si aplica
+   - Intentar subir más del límite
+   - Verificar validaciones
+
+
+PREGUNTAS POST-AVANZADO (Hacer a ambas):
+-----------------------------------------
+1. ¿El cambio entre cuentas funcionó sin problemas?
+2. ¿Los chats múltiples se mantuvieron organizados?
+3. ¿Hubo algún momento donde la app se comportó de forma inesperada?
+4. ¿La app maneja bien las situaciones de error?
+
+
+═══════════════════════════════════════════════════════════════════════════════
+FASE 7: USABILIDAD Y EXPERIENCIA GENERAL (15-20 min)
+═══════════════════════════════════════════════════════════════════════════════
+
+AMBAS TESTERS:
+--------------
+□ 8.1. Explorar toda la navegación
+   - Recorrer todos los menús
+   - Intentar encontrar funciones específicas
+   - Verificar iconos y etiquetas
+
+□ 8.2. Leer Términos y Condiciones (brevemente)
+   - Acceder desde menú/configuración
+   - Verificar que sea legible
+
+□ 8.3. Leer Política de Privacidad (brevemente)
+   - Acceder y verificar claridad
+
+□ 8.4. Probar banner de cookies (si lo ven)
+   - Aceptar/rechazar cookies
+   - Verificar comportamiento
+
+
+PREGUNTAS DE USABILIDAD GENERAL (Hacer a ambas):
+-------------------------------------------------
+1. ¿La navegación por la app te pareció intuitiva?
+2. ¿Encontraste fácilmente las funciones principales?
+3. ¿Hay algún elemento que te confundió?
+4. ¿Los iconos y botones son reconocibles?
+5. ¿El tamaño de texto es cómodo para leer?
+6. ¿Los colores y el diseño te resultan atractivos?
+7. ¿La app se siente "profesional" o "amateur"?
+8. ¿Hubo algún momento de frustración durante todo el uso?
+
+
+═══════════════════════════════════════════════════════════════════════════════
+FASE 8: PERFORMANCE Y BUGS (10-15 min)
+═══════════════════════════════════════════════════════════════════════════════
+
+OBSERVACIONES TÉCNICAS (Registrar durante todas las pruebas):
+--------------------------------------------------------------
+□ 9.1. Velocidad y rendimiento
+   - ¿La app se siente rápida o lenta?
+   - ¿Hay delays al cambiar de pantalla?
+   - ¿Las imágenes cargan rápido?
+   - ¿El scroll es fluido?
+
+□ 9.2. Crashes y errores
+   - ¿La app se cerró inesperadamente?
+   - ¿Hubo pantallas en blanco?
+   - ¿Aparecieron mensajes de error?
+   - ¿Alguna función no respondió?
+
+□ 9.3. Consumo de batería y datos (observación)
+   - ¿La app consume mucha batería?
+   - ¿Consume muchos datos móviles?
+
+□ 9.4. Uso de memoria
+   - ¿El celular se pone lento al usar la app?
+   - ¿La app ocupa mucho espacio?
+
+
+PREGUNTAS TÉCNICAS (Hacer a ambas):
+------------------------------------
+1. ¿La app te pareció rápida o lenta en general?
+2. ¿Experimentaste algún crash o cierre inesperado?
+3. ¿Notaste que tu celular se calentara o se pusiera lento?
+4. ¿Hubo algún botón o función que no funcionara?
+5. En una escala del 1-10, ¿qué tan estable te pareció la app?
+
+
+═══════════════════════════════════════════════════════════════════════════════
+FASE 9: FEEDBACK FINAL Y COMPARACIÓN (15-20 min)
+═══════════════════════════════════════════════════════════════════════════════
+
+PREGUNTAS COMPARATIVAS Y DE VALOR:
+-----------------------------------
+1. ¿Usarías esta app para buscar roommate en la vida real? ¿Por qué sí o no?
+
+2. ¿Qué es lo que MÁS te gustó de la app?
+
+3. ¿Qué es lo que MENOS te gustó de la app?
+
+4. Si pudieras cambiar UNA cosa, ¿qué sería?
+
+5. ¿Hay alguna función que esperabas encontrar y no está?
+
+6. Comparada con otras apps que usas (redes sociales, dating apps), ¿cómo la calificarías?
+
+7. ¿Recomendarías esta app a una amiga que busca roommate?
+
+8. ¿Qué tan segura te sentiste usando la app? ¿Hubo algo que te generara desconfianza?
+
+9. ¿El concepto de "match para roommates" te parece útil y diferente?
+
+10. ¿Pagarías por una versión premium de esta app? ¿Qué funciones esperarías?
+
+
+CALIFICACIONES FINALES (Escala 1-10):
+--------------------------------------
+□ Facilidad de uso: ___ / 10
+□ Diseño visual: ___ / 10
+□ Funcionalidad del chat: ___ / 10
+□ Sistema de matches: ___ / 10
+□ Rendimiento/velocidad: ___ / 10
+□ Estabilidad (sin bugs): ___ / 10
+□ Utilidad del concepto: ___ / 10
+□ Probabilidad de recomendar: ___ / 10
+□ CALIFICACIÓN GENERAL: ___ / 10
+
+
+═══════════════════════════════════════════════════════════════════════════════
+BUGS Y PROBLEMAS DETECTADOS
+═══════════════════════════════════════════════════════════════════════════════
+
+Registrar cada bug/problema encontrado con el siguiente formato:
+
+BUG #1:
+-------
+Descripción: ___________________________________________
+Pantalla/Función: ______________________________________
+Pasos para reproducir: _________________________________
+Severidad (Alta/Media/Baja): ___________________________
+Reportado por: _________________________________________
+
+
+BUG #2:
+-------
+Descripción: ___________________________________________
+Pantalla/Función: ______________________________________
+Pasos para reproducir: _________________________________
+Severidad (Alta/Media/Baja): ___________________________
+Reportado por: _________________________________________
+
+
+[Continuar numerando según sea necesario]
+
+
+═══════════════════════════════════════════════════════════════════════════════
+MEJORAS SUGERIDAS
+═══════════════════════════════════════════════════════════════════════════════
+
+PRIORIDAD ALTA:
+1. _________________________________________________
+2. _________________________________________________
+3. _________________________________________________
+
+PRIORIDAD MEDIA:
+1. _________________________________________________
+2. _________________________________________________
+3. _________________________________________________
+
+PRIORIDAD BAJA:
+1. _________________________________________________
+2. _________________________________________________
+3. _________________________________________________
+
+
+═══════════════════════════════════════════════════════════════════════════════
+CONCLUSIONES Y PRÓXIMOS PASOS
+═══════════════════════════════════════════════════════════════════════════════
+
+¿La app está lista para lanzamiento público?    □ SÍ    □ NO
+
+Razones:
+________________________________________________________________
+________________________________________________________________
+________________________________________________________________
+
+Bloqueadores críticos que deben resolverse:
+1. _________________________________________________
+2. _________________________________________________
+3. _________________________________________________
+
+Fecha estimada de siguiente ronda de pruebas: __________________
+
+
+═══════════════════════════════════════════════════════════════════════════════
+NOTAS ADICIONALES
+═══════════════════════════════════════════════════════════════════════════════
+
+________________________________________________________________
+________________________________________________________________
+________________________________________________________________
+________________________________________________________________
+________________________________________________________________
+________________________________________________________________
+
+
+═══════════════════════════════════════════════════════════════════════════════
+                              FIN DEL PLAN DE PRUEBAS
+                        Duración total estimada: 2.5-3 horas
+═══════════════════════════════════════════════════════════════════════════════

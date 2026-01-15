@@ -989,7 +989,9 @@ Future<void> _showMatchPopup(
                                                   ),
                                                   const SizedBox(width: 4),
                                                   Text(
-                                                    '${profile['housingInfo']['city']} - ${profile['housingInfo']['generalZone'] ?? ''}',
+                                                    profile['housingInfo']['hasPlace'] == true
+                                                        ? '${profile['housingInfo']['originProvince'] ?? profile['housingInfo']['city'] ?? 'No especificado'}'
+                                                        : '${profile['housingInfo']['destinationProvince'] ?? profile['housingInfo']['city'] ?? 'No especificado'}',
                                                     style: const TextStyle(
                                                       color: Colors.white70,
                                                       fontSize: 14,

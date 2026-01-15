@@ -4,7 +4,7 @@
 ═══════════════════════════════════════════════════════════════════
 
 📅 Fecha de Análisis: 31 de Diciembre de 2025
-🔄 Última Actualización: 14 de Enero de 2026 (Cumplimiento Legal Ley 25.326)
+🔄 Última Actualización: 15 de Enero de 2026 (Sistema de Barrios con Geolocalización)
 🎉 ESTADO: DESPLEGADO EN PRODUCCIÓN ✅
 
 ═══════════════════════════════════════════════════════════════════
@@ -524,6 +524,47 @@
       - 7/7 puntos legales resueltos
       - Cumplimiento: 98%
 
+25. SISTEMA DE BARRIOS Y GEOLOCALIZACIÓN ⭐ NUEVO (15 ene 2026)
+    ✅ Backend completo con modelo Neighborhood:
+      - Campos: name, cityId, cityName, provinceName, geometry, osmId, source
+      - Soporte para GeoJSON (Point, Polygon, MultiPolygon)
+      - Índice 2dsphere para búsquedas geoespaciales futuras
+      - Campos adicionales: centroid, population, density
+    ✅ API endpoint /api/neighborhoods:
+      - GET /api/neighborhoods?cityId=X retorna barrios de la ciudad
+      - Parámetro opcional search para filtrado
+      - GET /api/neighborhoods/stats para agregaciones
+      - Validación de parámetros requeridos
+    ✅ Integración con API Georef (Argentina):
+      - Autocomplete de provincias (24 provincias argentinas)
+      - Autocomplete de ciudades filtradas por provincia
+      - IDs oficiales de Georef para consistencia
+      - Cobertura completa de todo el país
+    ✅ Importación de barrios de Córdoba:
+      - Script manual: importCordobaManual.js
+      - 52 barrios importados exitosamente
+      - Incluye: Nueva Córdoba, Centro, Güemes, Cerro de las Rosas, etc
+      - Coordenadas de puntos centrales para cada barrio
+    ✅ Sistema híbrido de selección:
+      - Preferido: Selección de barrio desde lista (OSM data)
+      - Fallback: Campo de texto libre si no hay barrios
+      - Mensaje educativo sobre fallback
+      - Búsqueda futura por proximidad preparada
+    ✅ UX de 3 pasos en registro:
+      - Paso 1: Selección de provincia (autocomplete)
+      - Paso 2: Selección de ciudad (autocomplete filtrado)
+      - Paso 3: Selección de barrio (lista o texto libre)
+      - Timeout de 3 segundos con manejo de errores
+    ✅ Configuración para Android emulator:
+      - URL localhost → 10.0.2.2 para desarrollo
+      - Logs detallados de conectividad
+      - Manejo de timeouts y errores de red
+    ✅ Preparado para escalabilidad:
+      - Modelo extensible a otras ciudades argentinas
+      - Posibilidad de importar desde Overpass API (OSM)
+      - Base para matching por proximidad geográfica
+      - Estructura para agregar más metadatos (población, densidad)
+
 ═══════════════════════════════════════════════════════════════════
                         ⚠️ FALENCIAS Y ÁREAS DE MEJORA
 ═══════════════════════════════════════════════════════════════════
@@ -579,12 +620,17 @@
    ✅ Género del usuario capturado y mostrado
    ✅ Edad calculada y visible en perfil
    ✅ Sistema de likes recibidos con preview blureado
+   ✅ Selección de barrios con sistema híbrido (lista + texto libre) ⭐ NUEVO
+   ✅ Integración con API Georef (provincias y ciudades de Argentina) ⭐ NUEVO
+   ✅ 52 barrios de Córdoba Capital importados ⭐ NUEVO
    ⚠ No hay video de presentación
    ⚠ Falta información sobre disponibilidad de mudanza
    ⚠ No hay información sobre mascotas específicas
    ⚠ No se puede filtrar por género del roommate desde UI
    ⚠ No hay búsqueda avanzada con filtros
    ⚠ No se pueden guardar favoritos
+   ⚠ Falta importar barrios de otras ciudades argentinas
+   ⚠ No hay matching por proximidad geográfica (preparado pero no implementado)
 
 6. EXPERIENCIA DE USUARIO
    ⚠ No hay tutorial inicial (onboarding)
@@ -713,13 +759,16 @@ ALTA PRIORIDAD (Primeras semanas):
 ✅ 3. Migración de imágenes a Cloudinary - COMPLETADO (2 usuarios migrados)
 ✅ 4. Analytics básicos - COMPLETADO
 ✅ 5. Múltiples fotos de perfil - COMPLETADO (hasta 10 fotos + fotos del hogar)
-✅ 6. Selección de género propio - COMPLETADO (7 ene 2026)
+✅ 11. Sistema de barrios con geolocalización - COMPLETADO (15 ene 2026)
+⚠ 12 Selección de género propio - COMPLETADO (7 ene 2026)
 ✅ 7. Visualización de edad en perfil - COMPLETADO (7 ene 2026)
 ✅ 8. Confirmación de lectura en chat - COMPLETADO (8 ene 2026)
 ✅ 9. Sistema de First Step con límites - COMPLETADO (8 ene 2026)
 ✅ 10. Envío de imágenes en chat - COMPLETADO (8 ene 2026)
 ⚠ 11. Sistema de verificación real (al menos teléfono) - PENDIENTE
 
+⚠ 6. Importar barrios de Buenos Aires, Rosario, Mendoza - PENDIENTE
+⚠ 7. Matching por proximidad geográfica - PENDIENTE (infraestructura lista)
 MEDIA PRIORIDAD (Primer mes):
 ⚠ 1. Sistema de suscripciones premium (Stripe/MercadoPago) - PENDIENTE
 ⚠ 2. Tutorial de onboarding - PENDIENTE
@@ -749,6 +798,7 @@ PROGRESO GENERAL POR ÁREA:
 - Notificaciones: 75% completo
 - Sistema de Fotos: 90% completo
 - Perfil de Usuario: 95% completo ⬆️ (con reviews integradas)
+- Geolocalización y Barrios: 90% completo ⭐ NUEVO (Córdoba completo, otras ciudades pendientes)
 - Analytics: 70% completo
 - Engagement/Monetización: 80% completo ⬆️ (First Step + Reviews premium)
 - Características Sociales: 80% completo ⬆️ (reviews implementadas)
@@ -805,6 +855,7 @@ CARACTERÍSTICAS DIFERENCIADORES:
 ✅ Cumplimiento legal 98% (7/7 puntos resueltos) ⭐ NUEVO
 ✅ Moderación automática de contenido ⭐ NUEVO
 ✅ Protocolo de violencia de género ⭐ NUEVO
+✅ Sistema de barrios con geolocalización (preparado para matching por proximidad) ⭐ NUEVO
 
 FORTALEZAS PRINCIPALES:
 - Enfoque en privacidad y seguridad

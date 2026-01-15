@@ -255,11 +255,19 @@ router.post('/housing_info', async (req, res) => {
             user.housingInfo = {
                 budgetMin: housingInfo.budgetMin,
                 budgetMax: housingInfo.budgetMax,
-                preferredZones: housingInfo.preferredZones || [],
                 hasPlace: housingInfo.hasPlace || false,
                 moveInDate: housingInfo.moveInDate,
                 stayDuration: housingInfo.stayDuration,
-                city: housingInfo.city,
+                
+                // Nuevos campos
+                originProvince: housingInfo.originProvince,
+                destinationProvince: housingInfo.destinationProvince,
+                specificNeighborhoodsOrigin: housingInfo.specificNeighborhoodsOrigin || [],
+                specificNeighborhoodsDestination: housingInfo.specificNeighborhoodsDestination || [],
+                
+                // Legacy fields (mantener para compatibilidad)
+                preferredZones: housingInfo.preferredZones || [],
+                city: housingInfo.city || housingInfo.destinationProvince,
                 generalZone: housingInfo.generalZone
             };
         }

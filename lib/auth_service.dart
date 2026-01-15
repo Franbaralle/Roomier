@@ -44,6 +44,10 @@ class AuthService {
     _prefs = await SharedPreferences.getInstance();
   }
 
+  // API URL - Cambiar según el entorno
+  // Producción: 'https://roomier-production.up.railway.app/api/auth'
+  // Local (emulador Android): 'http://10.0.2.2:3000/api/auth'
+  // Local (dispositivo físico en misma red): 'http://TU_IP_LOCAL:3000/api/auth'
   static const String apiUrl = 'https://roomier-production.up.railway.app/api/auth';
   static const String api = 'https://roomier-production.up.railway.app/api';
   static DateTime? _selectedDate;

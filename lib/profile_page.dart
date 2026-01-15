@@ -1581,22 +1581,22 @@ class _ProfilePageState extends State<ProfilePage> {
         const SizedBox(height: 12),
         _buildHabitRow(
           Icons.location_city,
-          'Ciudad',
-          housingInfo['city'] ?? 'No especificado',
+          'Provincia de origen',
+          housingInfo['originProvince'] ?? housingInfo['city'] ?? 'No especificado',
           Colors.red,
         ),
         const SizedBox(height: 12),
         _buildHabitRow(
           Icons.place,
-          'Zona',
-          housingInfo['generalZone'] ?? 'No especificado',
+          'Provincia destino',
+          housingInfo['destinationProvince'] ?? housingInfo['city'] ?? 'No especificado',
           Colors.deepOrange,
         ),
         const SizedBox(height: 12),
         _buildHabitRow(
           Icons.calendar_today,
-          'Fecha de mudanza',
-          housingInfo['moveInDate'] ?? 'No especificado',
+          'Mes de mudanza',
+          _formatMoveInDate(housingInfo['moveInDate']),
           Colors.cyan,
         ),
         const SizedBox(height: 12),
@@ -1608,6 +1608,30 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
       ],
     );
+  }
+
+  String _formatMoveInDate(String? moveInDate) {
+    if (moveInDate == null || moveInDate.isEmpty) {
+      return 'No especificado';
+    }
+    
+    // Si está en formato MM/YYYY
+    if (moveInDate.contains('/') && moveInDate.split('/').length == 2) {
+      final parts = moveInDate.split('/');
+      final month = int.tryParse(parts[0]);
+      final year = parts[1];
+      
+      if (month != null && month >= 1 && month <= 12) {
+        final monthNames = [
+          'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+          'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+        ];
+        return '${monthNames[month - 1]} $year';
+      }
+    }
+    
+    // Si está en formato legacy (texto libre)
+    return moveInDate;
   }
 
   Widget _buildHabitRow(IconData icon, String label, String value, Color color) {

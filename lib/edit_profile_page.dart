@@ -42,11 +42,27 @@ class _EditProfilePageState extends State<EditProfilePage> {
   bool _hasPlace = false;
   final TextEditingController _moveInDateController = TextEditingController();
   String? _stayDuration;
+  final TextEditingController _originProvinceController = TextEditingController();
+  final TextEditingController _destinationProvinceController = TextEditingController();
+  String? _selectedOriginProvince;
+  String? _selectedDestinationProvince;
+  List<String> _selectedNeighborhoodsOrigin = [];
+  List<String> _selectedNeighborhoodsDestination = [];
+  
+  // Legacy fields (mantener para compatibilidad)
   final TextEditingController _cityController = TextEditingController();
   String? _generalZone;
   List<String> _preferredZones = [];
+  
   final TextEditingController _budgetMinController = TextEditingController();
   final TextEditingController _budgetMaxController = TextEditingController();
+  
+  // API Georef data
+  List<Map<String, dynamic>> _provinces = [];
+  List<Map<String, dynamic>> _neighborhoodsOrigin = []; // Cambiar a Map
+  List<Map<String, dynamic>> _neighborhoodsDestination = [];
+  bool _isLoadingProvinces = false;
+  bool _isLoadingNeighborhoods = false;
 
   @override
   void initState() {
@@ -59,6 +75,102 @@ class _EditProfilePageState extends State<EditProfilePage> {
       }
     }
     _loadCurrentData();
+    _loadProvinces();
+  }
+
+  // Cargar provincias desde API Georef
+  Future<void> _loadProvinces() async {
+    setState(() => _isLoadingProvinces = true);
+    
+    try {
+      final response = await http.get(
+        Uri.parse('https://apis.datos.gob.ar/georef/api/provincias?campos=id,nombre'),
+      );
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          _provinces = List<Map<String, dynamic>>.from(data['provincias']);
+          _isLoadingProvinces = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading provinces: $e');
+      setState(() => _isLoadingProvinces = false);
+    }
+  }
+
+  // Cargar localidades de una provincia (para después buscar barrios)
+  Future<void> _loadNeighborhoods(String provinceName, bool isOrigin) async {
+    setState(() => _isLoadingNeighborhoods = true);
+    
+    try {
+      // Primero obtener las localidades/ciudades de la provincia
+      final citiesResponse = await http.get(
+        Uri.parse(
+          'https://apis.datos.gob.ar/georef/api/localidades?provincia=$provinceName&campos=id,nombre&max=5000'
+        ),
+      );
+      
+      if (citiesResponse.statusCode == 200) {
+        final citiesData = json.decode(citiesResponse.body);
+        final localities = List<Map<String, dynamic>>.from(citiesData['localidades']);
+        
+        // Intentar cargar barrios desde el backend
+        List<Map<String, dynamic>> allNeighborhoods = [];
+        
+        for (var locality in localities) {
+          try {
+            final neighborhoodsResponse = await http.get(
+              Uri.parse('${AuthService.apiUrl}/neighborhoods?cityId=${locality['id']}'),
+            );
+            
+            if (neighborhoodsResponse.statusCode == 200) {
+              final neighborhoodsData = json.decode(neighborhoodsResponse.body);
+              if (neighborhoodsData['count'] > 0) {
+                // Si la ciudad tiene barrios cargados, usarlos
+                for (var neighborhood in neighborhoodsData['data']) {
+                  allNeighborhoods.add({
+                    'id': neighborhood['_id'],
+                    'name': neighborhood['name'],
+                    'cityName': neighborhood['cityName'],
+                    'cityId': locality['id'],
+                    'hasData': true // Indica que son datos reales de barrios
+                  });
+                }
+              }
+            }
+          } catch (e) {
+            print('Error loading neighborhoods for ${locality['nombre']}: $e');
+          }
+        }
+        
+        // Si no hay barrios cargados, mostrar las ciudades como opciones
+        if (allNeighborhoods.isEmpty) {
+          allNeighborhoods = localities.map((l) => {
+            'id': l['id'],
+            'name': l['nombre'] as String,
+            'cityName': l['nombre'] as String,
+            'cityId': l['id'],
+            'hasData': false // Indica que son ciudades, no barrios
+          }).toList();
+        }
+        
+        allNeighborhoods.sort((a, b) => (a['name'] as String).compareTo(b['name'] as String));
+        
+        setState(() {
+          if (isOrigin) {
+            _neighborhoodsOrigin = allNeighborhoods;
+          } else {
+            _neighborhoodsDestination = allNeighborhoods;
+          }
+          _isLoadingNeighborhoods = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading neighborhoods: $e');
+      setState(() => _isLoadingNeighborhoods = false);
+    }
   }
 
   void _loadCurrentData() {
@@ -142,10 +254,29 @@ class _EditProfilePageState extends State<EditProfilePage> {
       _hasPlace = hasPlaceData == true || hasPlaceData == 'true' || hasPlaceData == 1;
       _moveInDateController.text = widget.currentUserData['housingInfo']?['moveInDate']?.toString() ?? '';
       _stayDuration = widget.currentUserData['housingInfo']?['stayDuration']?.toString();
+      
+      // Nuevos campos
+      _selectedOriginProvince = widget.currentUserData['housingInfo']?['originProvince']?.toString();
+      _selectedDestinationProvince = widget.currentUserData['housingInfo']?['destinationProvince']?.toString();
+      _originProvinceController.text = _selectedOriginProvince ?? '';
+      _destinationProvinceController.text = _selectedDestinationProvince ?? '';
+      
+      // Cargar barrios específicos
+      final neighborhoodsOrigin = widget.currentUserData['housingInfo']?['specificNeighborhoodsOrigin'];
+      if (neighborhoodsOrigin != null && neighborhoodsOrigin is List) {
+        _selectedNeighborhoodsOrigin = neighborhoodsOrigin.map((e) => e?.toString() ?? '').where((s) => s.isNotEmpty).toList();
+      }
+      
+      final neighborhoodsDestination = widget.currentUserData['housingInfo']?['specificNeighborhoodsDestination'];
+      if (neighborhoodsDestination != null && neighborhoodsDestination is List) {
+        _selectedNeighborhoodsDestination = neighborhoodsDestination.map((e) => e?.toString() ?? '').where((s) => s.isNotEmpty).toList();
+      }
+      
+      // Legacy fields (mantener para compatibilidad)
       _cityController.text = widget.currentUserData['housingInfo']?['city']?.toString() ?? '';
       _generalZone = widget.currentUserData['housingInfo']?['generalZone']?.toString();
       
-      // Manejar preferredZones de forma segura
+      // Manejar preferredZones de forma segura (legacy)
       final prefZones = widget.currentUserData['housingInfo']?['preferredZones'];
       if (prefZones != null && prefZones is List) {
         _preferredZones = prefZones.map((e) => e?.toString() ?? '').where((s) => s.isNotEmpty).toList();
@@ -155,6 +286,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
       
       _budgetMinController.text = widget.currentUserData['housingInfo']?['budgetMin']?.toString() ?? '';
       _budgetMaxController.text = widget.currentUserData['housingInfo']?['budgetMax']?.toString() ?? '';
+      
+      // Cargar barrios si hay provincia seleccionada
+      if (_selectedOriginProvince != null && _selectedOriginProvince!.isNotEmpty) {
+        _loadNeighborhoods(_selectedOriginProvince!, true);
+      }
+      if (_selectedDestinationProvince != null && _selectedDestinationProvince!.isNotEmpty) {
+        _loadNeighborhoods(_selectedDestinationProvince!, false);
+      }
     } catch (e) {
       print('Error loading housing info: $e');
     }
@@ -282,11 +421,16 @@ class _EditProfilePageState extends State<EditProfilePage> {
           'hasPlace': _hasPlace,
           'moveInDate': _moveInDateController.text,
           'stayDuration': _stayDuration,
-          'city': _cityController.text,
-          'generalZone': _generalZone,
-          'preferredZones': _preferredZones,
+          'originProvince': _selectedOriginProvince,
+          'destinationProvince': _selectedDestinationProvince,
+          'specificNeighborhoodsOrigin': _selectedNeighborhoodsOrigin,
+          'specificNeighborhoodsDestination': _selectedNeighborhoodsDestination,
           'budgetMin': int.tryParse(_budgetMinController.text),
           'budgetMax': int.tryParse(_budgetMaxController.text),
+          
+          // Legacy fields (mantener para compatibilidad)
+          'city': _selectedDestinationProvince ?? _cityController.text,
+          'preferredZones': _hasPlace ? _selectedNeighborhoodsOrigin : _selectedNeighborhoodsDestination,
         }),
       );
 

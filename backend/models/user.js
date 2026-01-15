@@ -76,12 +76,18 @@ const userSchema = new mongoose.Schema({
   housingInfo: {
     budgetMin: { type: Number, required: false }, // PRIVADO
     budgetMax: { type: Number, required: false }, // PRIVADO
-    preferredZones: [{ type: String }], // PRIVADO hasta match
+    preferredZones: [{ type: String }], // PRIVADO - DEPRECATED - mantener para migración
     hasPlace: { type: Boolean, default: false }, // PÚBLICO - ¿Tiene lugar o busca?
-    moveInDate: { type: String, required: false }, // PÚBLICO - Solo mes/trimestre (ej: "Enero 2026", "Q1 2026")
+    moveInDate: { type: String, required: false }, // PÚBLICO - Solo mes/año (ej: "01/2026", "03/2026")
     stayDuration: { type: String, enum: ['3months', '6months', '1year', 'longterm'], required: false }, // PÚBLICO
-    city: { type: String, required: false }, // PÚBLICO - Ciudad
-    generalZone: { type: String, required: false } // PÚBLICO - Zona amplia (ej: "Zona Norte", "Centro")
+    city: { type: String, required: false }, // PÚBLICO - DEPRECATED - mantener para migración
+    generalZone: { type: String, required: false }, // PÚBLICO - DEPRECATED - mantener para migración
+    
+    // Nuevos campos con API Georef
+    originProvince: { type: String, required: false }, // PÚBLICO - Provincia de origen
+    destinationProvince: { type: String, required: false }, // PÚBLICO - Provincia destino
+    specificNeighborhoodsOrigin: [{ type: String }], // PRIVADO - Barrios específicos si tiene lugar
+    specificNeighborhoodsDestination: [{ type: String }] // PRIVADO - Barrios específicos donde busca
   },
   
   // Deal Breakers (PÚBLICO - para filtrado automático)

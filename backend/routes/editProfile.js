@@ -146,11 +146,16 @@ router.put('/housing-info', verifyToken, async (req, res) => {
             hasPlace, 
             moveInDate, 
             stayDuration, 
-            city, 
-            generalZone, 
-            preferredZones, 
+            originProvince,
+            destinationProvince,
+            specificNeighborhoodsOrigin,
+            specificNeighborhoodsDestination,
             budgetMin, 
-            budgetMax 
+            budgetMax,
+            // Legacy fields
+            city,
+            generalZone, 
+            preferredZones
         } = req.body;
 
         // Validaciones
@@ -162,9 +167,18 @@ router.put('/housing-info', verifyToken, async (req, res) => {
         if (hasPlace !== undefined) updateData['housingInfo.hasPlace'] = hasPlace;
         if (moveInDate !== undefined) updateData['housingInfo.moveInDate'] = moveInDate;
         if (stayDuration !== undefined) updateData['housingInfo.stayDuration'] = stayDuration;
+        
+        // Nuevos campos
+        if (originProvince !== undefined) updateData['housingInfo.originProvince'] = originProvince;
+        if (destinationProvince !== undefined) updateData['housingInfo.destinationProvince'] = destinationProvince;
+        if (specificNeighborhoodsOrigin !== undefined) updateData['housingInfo.specificNeighborhoodsOrigin'] = specificNeighborhoodsOrigin;
+        if (specificNeighborhoodsDestination !== undefined) updateData['housingInfo.specificNeighborhoodsDestination'] = specificNeighborhoodsDestination;
+        
+        // Legacy fields (mantener para compatibilidad)
         if (city !== undefined) updateData['housingInfo.city'] = city;
         if (generalZone !== undefined) updateData['housingInfo.generalZone'] = generalZone;
         if (preferredZones !== undefined) updateData['housingInfo.preferredZones'] = preferredZones;
+        
         if (budgetMin !== undefined) updateData['housingInfo.budgetMin'] = budgetMin;
         if (budgetMax !== undefined) updateData['housingInfo.budgetMax'] = budgetMax;
 

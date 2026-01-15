@@ -193,7 +193,7 @@ class _RegisterFormState extends State<RegisterForm> {
                               WidgetSpan(
                                 child: GestureDetector(
                                   onTap: () {
-                                    Navigator.pushNamed(context, '/legal/terms');
+                                    Navigator.pushNamed(context, termsRoute);
                                   },
                                   child: const Text(
                                     'Términos y Condiciones',
@@ -209,7 +209,7 @@ class _RegisterFormState extends State<RegisterForm> {
                               WidgetSpan(
                                 child: GestureDetector(
                                   onTap: () {
-                                    Navigator.pushNamed(context, '/legal/privacy');
+                                    Navigator.pushNamed(context, privacyRoute);
                                   },
                                   child: const Text(
                                     'Política de Privacidad',

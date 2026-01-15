@@ -68,6 +68,7 @@ const notificationsRoute = require('./routes/notifications');
 const photosRoute = require('./routes/photos');
 const migrateRoute = require('./routes/migrate');
 const reviewRoutes = require('./routes/reviewRoutes');
+const neighborhoodsRoute = require('./routes/neighborhoods');
 
 app.use('/api/auth', authController);
 app.use('/api/register', registerRoutes);
@@ -82,6 +83,7 @@ app.use('/api/notifications', notificationsRoute);
 app.use('/api/photos', photosRoute);
 app.use('/api/migrate', migrateRoute);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/neighborhoods', neighborhoodsRoute);
 
 // Rutas de salud y raíz
 app.get('/', (req, res) => {

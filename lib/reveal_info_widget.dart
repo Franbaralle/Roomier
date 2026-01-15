@@ -116,6 +116,30 @@ class _RevealInfoWidgetState extends State<RevealInfoWidget> {
     }
   }
 
+  // Obtener los barrios específicos correctos según si tiene lugar o busca
+  List<dynamic>? _getSpecificNeighborhoods() {
+    final housingInfo = _matchedUserInfo?['housingInfo'];
+    if (housingInfo == null) return null;
+    
+    final hasPlace = housingInfo['hasPlace'] ?? false;
+    
+    // Intentar obtener barrios nuevos primero
+    if (hasPlace) {
+      final neighborhoods = housingInfo['specificNeighborhoodsOrigin'];
+      if (neighborhoods != null && neighborhoods is List && neighborhoods.isNotEmpty) {
+        return neighborhoods;
+      }
+    } else {
+      final neighborhoods = housingInfo['specificNeighborhoodsDestination'];
+      if (neighborhoods != null && neighborhoods is List && neighborhoods.isNotEmpty) {
+        return neighborhoods;
+      }
+    }
+    
+    // Fallback a preferredZones legacy
+    return housingInfo['preferredZones'];
+  }
+
   Future<void> _revealInformation(String infoType) async {
     try {
       final response = await AuthService().revealInformation(
@@ -200,15 +224,15 @@ class _RevealInfoWidgetState extends State<RevealInfoWidget> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Zonas preferidas
+                // Barrios específicos
                 _buildRevealOption(
                   icon: Icons.location_on,
-                  title: 'Zonas específicas',
-                  description: 'Revelar barrios preferidos',
+                  title: 'Barrios específicos',
+                  description: 'Revelar barrios/localidades preferidos',
                   isRevealed: _revealedInfo?['revealedZones'] ?? false,
                   canShow: _revealedInfo?['showZones'] ?? false,
                   onReveal: () => _revealInformation('zones'),
-                  revealedData: _matchedUserInfo?['housingInfo']?['preferredZones'],
+                  revealedData: _getSpecificNeighborhoods(),
                 ),
 
                 const SizedBox(height: 12),

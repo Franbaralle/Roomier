@@ -16,6 +16,17 @@ router.get('/:username', async (req, res) => {
         }
 
         // Aquí puedes personalizar qué información del perfil deseas enviar al cliente
+        
+        // Compatibilidad: Extraer foto principal
+        let primaryPhotoUrl = null;
+        if (user.profilePhotos && user.profilePhotos.length > 0) {
+            // Nuevo sistema: primera foto del array
+            primaryPhotoUrl = user.profilePhotos[0].url;
+        } else if (user.profilePhoto) {
+            // Legacy: campo profilePhoto directo (para usuarios antiguos)
+            primaryPhotoUrl = user.profilePhoto;
+        }
+        
         const profileInfo = {
             username: user.username,
             email: user.email,
@@ -42,7 +53,7 @@ router.get('/:username', async (req, res) => {
                 idVerified: user.verification?.idVerified,
                 selfieVerified: user.verification?.selfieVerified,
             },
-            profilePhoto: user.profilePhoto, // Legacy - URL directa de Cloudinary
+            profilePhoto: primaryPhotoUrl, // Foto principal (nuevo o legacy)
             profilePhotos: user.profilePhotos || [], // Array de fotos (nuevo sistema)
             chatId: user.chatId, // Agregar el campo chatId al perfil
             isMatch: user.isMatch || [], // Lista de usuarios con los que hizo match

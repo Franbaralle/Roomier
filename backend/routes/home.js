@@ -290,7 +290,7 @@ router.get('/', async (req, res) => {
         let potentialMatches = await User.find({ 
             username: { $nin: excludedUsernames },
             'housingInfo.hasPlace': targetHasPlace
-        });
+        }).lean(); // Usar .lean() para incluir campos legacy del schema
 
         // Filtrar por deal breakers, presupuesto y preferencias de roommate
         potentialMatches = potentialMatches.filter(user => {
@@ -317,23 +317,32 @@ router.get('/', async (req, res) => {
             const compatibility = calculateCompatibility(currentUser, user);
             
             // No enviar datos sensibles al frontend
-            const userObj = user.toObject();
-            delete userObj.housingInfo?.budgetMin;
-            delete userObj.housingInfo?.budgetMax;
-            delete userObj.housingInfo?.preferredZones; // Privado hasta match
-            delete userObj.personalInfo?.religion;
-            delete userObj.personalInfo?.politicPreference;
-            delete userObj.verification;
-            delete userObj.verificationCode;
-            delete userObj.password;
-            delete userObj.isMatch;
-            delete userObj.notMatch;
-            delete userObj.reportedBy;
-            delete userObj.blockedUsers;
-            delete userObj.revealedInfo;
+            // Con .lean() ya es un objeto plano, no necesitamos .toObject()
+            delete user.housingInfo?.budgetMin;
+            delete user.housingInfo?.budgetMax;
+            delete user.housingInfo?.preferredZones; // Privado hasta match
+            delete user.personalInfo?.religion;
+            delete user.personalInfo?.politicPreference;
+            delete user.verification;
+            delete user.verificationCode;
+            delete user.password;
+            delete user.isMatch;
+            delete user.notMatch;
+            delete user.reportedBy;
+            delete user.blockedUsers;
+            delete user.revealedInfo;
 
+            // Extraer foto principal para compatibilidad con frontend
+            let primaryPhotoUrl = null;
+            if (user.profilePhotos && user.profilePhotos.length > 0) {
+                primaryPhotoUrl = user.profilePhotos[0].url;
+            } else if (user.profilePhoto) {
+                primaryPhotoUrl = user.profilePhoto;
+            }
+            
             return {
-                ...userObj,
+                ...user,
+                profilePhoto: primaryPhotoUrl, // Asegurar que siempre haya profilePhoto
                 compatibility
             };
         });
@@ -370,25 +379,31 @@ router.get('/received-likes', async (req, res) => {
         const usersWhoLikedMe = await User.find({
             isMatch: currentUsername,
             username: { $nin: currentUser.isMatch || [] } // No son match mutuo
-        });
+        }).lean(); // Usar .lean() para incluir campos legacy
 
         // Formatear la respuesta con información básica
         const receivedLikes = usersWhoLikedMe.map(user => {
-            const userObj = user.toObject();
-            
             // Calcular edad
             let age = null;
-            if (userObj.birthdate) {
-                age = calculateAge(userObj.birthdate);
+            if (user.birthdate) {
+                age = calculateAge(user.birthdate);
+            }
+
+            // Extraer foto principal
+            let primaryPhotoUrl = null;
+            if (user.profilePhotos && user.profilePhotos.length > 0) {
+                primaryPhotoUrl = user.profilePhotos[0].url;
+            } else if (user.profilePhoto) {
+                primaryPhotoUrl = user.profilePhoto;
             }
 
             // Retornar solo información básica
             return {
-                username: userObj.username,
+                username: user.username,
                 age: age,
-                gender: userObj.gender,
-                profilePhotos: userObj.profilePhotos,
-                profilePhoto: userObj.profilePhoto, // Legacy
+                gender: user.gender,
+                profilePhotos: user.profilePhotos,
+                profilePhoto: primaryPhotoUrl, // Foto principal unificada
                 personalInfo: {
                     job: userObj.personalInfo?.job,
                     aboutMe: userObj.personalInfo?.aboutMe

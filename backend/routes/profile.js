@@ -9,11 +9,15 @@ const logger = require('../utils/logger');
 router.get('/:username', async (req, res) => {
     try {
         const username = req.params.username;
-        const user = await User.findOne({ username });
+        // Usar .lean() para acceder a campos legacy no definidos en el schema
+        const user = await User.findOne({ username }).lean();
 
         if (!user) {
             return res.status(404).json({ message: 'Usuario no encontrado' });
         }
+
+        console.log(`Usuario ${username} - profilePhoto legacy:`, user.profilePhoto);
+        console.log(`Usuario ${username} - profilePhotos array:`, user.profilePhotos);
 
         // Aquí puedes personalizar qué información del perfil deseas enviar al cliente
         

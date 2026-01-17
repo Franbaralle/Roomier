@@ -26,6 +26,7 @@ import 'notification_service.dart';
 import 'manage_profile_photos_page.dart';
 import 'manage_home_photos_page.dart';
 import 'splash_screen.dart';
+import 'services/tag_service.dart';
 
 // NavigatorKey global para navegación desde notificaciones
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -39,6 +40,9 @@ void main() async {
   // Inicializar Firebase y notificaciones
   // No capturar errores aquí para ver el verdadero problema
   await NotificationService().initialize();
+  
+  // Cargar tags desde JSON
+  await TagService().loadTags();
   
   runApp(MyApp());
 }

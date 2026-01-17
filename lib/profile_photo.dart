@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'dart:typed_data';
 import 'dart:convert';
 import 'dart:io';
@@ -19,12 +20,14 @@ class ProfilePhotoPage extends StatefulWidget {
 }
 
 class _ProfilePhotoPageState extends State<ProfilePhotoPage> {
-  late Uint8List _imageData;
+  List<Uint8List> _imageDataList = []; // Lista de imágenes (1-9)
+  final int minPhotos = 1;
+  final int maxPhotos = 9;
 
   @override
   void initState() {
     super.initState();
-    _imageData = Uint8List(0);
+    _imageDataList = [];
   }
 
   Future<void> _updateProfilePhoto() async {
@@ -39,7 +42,26 @@ class _ProfilePhotoPageState extends State<ProfilePhotoPage> {
       final birthdate = prefs.getString('temp_register_birthdate') ?? '';
       final gender = prefs.getString('temp_register_gender') ?? 'other'; // Género del usuario
       
-      // Preferencias
+      // Living habits tags (v3.0 - array de tag IDs)
+      final livingHabitsTagsJson = prefs.getString('temp_register_living_habits_tags');
+      final List<String> livingHabitsTags = livingHabitsTagsJson != null 
+          ? List<String>.from(json.decode(livingHabitsTagsJson))
+          : [];
+      
+      // Interests tags (v3.0 - array de tag IDs)
+      final interestsTagsJson = prefs.getString('temp_register_interests_tags');
+      final List<String> interestsTags = interestsTagsJson != null 
+          ? List<String>.from(json.decode(interestsTagsJson))
+          : [];
+      
+      // Combinar living habits e interests en my_tags (v3.0)
+      final List<String> myTags = [...livingHabitsTags, ...interestsTags];
+      
+      print('🏷️ Tags de hábitos: $livingHabitsTags');
+      print('🏷️ Tags de intereses: $interestsTags');
+      print('🏷️ my_tags combinado: $myTags');
+      
+      // LEGACY: Leer preferencias viejas para compatibilidad
       final preferencesJson = prefs.getString('temp_register_preferences');
       final preferences = preferencesJson != null ? json.decode(preferencesJson) : {};
       
@@ -48,7 +70,7 @@ class _ProfilePhotoPageState extends State<ProfilePhotoPage> {
       final roommateMinAge = prefs.getInt('temp_register_roommate_min_age') ?? 18;
       final roommateMaxAge = prefs.getInt('temp_register_roommate_max_age') ?? 65;
       
-      // Living habits
+      // Living habits (legacy)
       final livingHabitsJson = prefs.getString('temp_register_living_habits');
       final livingHabits = livingHabitsJson != null ? json.decode(livingHabitsJson) : {};
       
@@ -65,27 +87,26 @@ class _ProfilePhotoPageState extends State<ProfilePhotoPage> {
       final politicPreferences = prefs.getString('temp_register_politic_preferences') ?? '';
       final aboutMe = prefs.getString('temp_register_about_me') ?? '';
       
-      // Preparar foto de perfil (base64)
-      String? profilePhotoBase64;
-      if (_imageData.isNotEmpty) {
-        profilePhotoBase64 = base64Encode(_imageData);
+      // Preparar fotos de perfil (base64)
+      List<String> profilePhotosBase64 = [];
+      if (_imageDataList.isNotEmpty) {
+        profilePhotosBase64 = _imageDataList.map((imageData) => base64Encode(imageData)).toList();
       }
       
-      // Construir el objeto de registro completo
+      // Construir el objeto de registro completo (Arquitectura v3.0)
       final registrationData = {
         'username': username,
         'password': password,
         'email': email,
         'birthdate': birthdate,
-        'gender': gender, // Agregar género del usuario
-        'preferences': preferences,
+        'gender': gender,
+        'my_tags': myTags, // Nuevo: array plano de tag IDs
         'roommatePreferences': {
           'gender': roommateGender,
           'minAge': roommateMinAge,
           'maxAge': roommateMaxAge,
         },
-        'livingHabits': livingHabits,
-        'dealBreakers': dealBreakers,
+        'dealBreakers': dealBreakers, // Ya debería ser array de IDs
         'housingInfo': housingInfo,
         'personalInfo': {
           'job': job,
@@ -93,7 +114,7 @@ class _ProfilePhotoPageState extends State<ProfilePhotoPage> {
           'politicPreferences': politicPreferences,
           'aboutMe': aboutMe,
         },
-        if (profilePhotoBase64 != null) 'profilePhoto': profilePhotoBase64,
+        if (profilePhotosBase64.isNotEmpty) 'profilePhotos': profilePhotosBase64,
       };
       
       // Enviar todo al backend
@@ -146,6 +167,17 @@ class _ProfilePhotoPageState extends State<ProfilePhotoPage> {
   }
 
   Future<void> _getImage() async {
+    // Validar que no se exceda el límite
+    if (_imageDataList.length >= maxPhotos) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Máximo $maxPhotos fotos permitidas'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
     try {
       final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
 
@@ -165,11 +197,13 @@ class _ProfilePhotoPageState extends State<ProfilePhotoPage> {
               toolbarTitle: 'Recortar Foto',
               toolbarColor: Colors.blue.shade700,
               toolbarWidgetColor: Colors.white,
+              statusBarColor: Colors.blue.shade700,
               initAspectRatio: CropAspectRatioPreset.square,
               lockAspectRatio: true, // Mantener proporción cuadrada
               activeControlsWidgetColor: Colors.blue.shade700,
               backgroundColor: Colors.black,
               dimmedLayerColor: Colors.black.withOpacity(0.8),
+              hideBottomControls: false,
             ),
             IOSUiSettings(
               title: 'Recortar Foto',
@@ -184,9 +218,9 @@ class _ProfilePhotoPageState extends State<ProfilePhotoPage> {
           print('[PROFILE_PHOTO] Imagen recortada: ${croppedFile.path}');
           final imageData = await File(croppedFile.path).readAsBytes();
           setState(() {
-            _imageData = imageData;
+            _imageDataList.add(imageData);
           });
-          print('[PROFILE_PHOTO] Imagen cargada exitosamente, tamaño: ${imageData.length} bytes');
+          print('[PROFILE_PHOTO] Imagen ${_imageDataList.length}/$maxPhotos agregada exitosamente');
         } else {
           print('[PROFILE_PHOTO] Usuario canceló el recorte');
         }
@@ -204,37 +238,235 @@ class _ProfilePhotoPageState extends State<ProfilePhotoPage> {
     }
   }
 
+  void _removeImage(int index) {
+    setState(() {
+      _imageDataList.removeAt(index);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    final bool hasMinPhotos = _imageDataList.length >= minPhotos;
+    final bool canAddMore = _imageDataList.length < maxPhotos;
+    
+    // Obtener dimensiones de pantalla para diseño responsive
+    final screenWidth = MediaQuery.of(context).size.width;
+    final padding = screenWidth * 0.05; // 5% de padding lateral
+    final spacing = screenWidth * 0.025; // 2.5% de espaciado
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Subir Foto de Perfil'),
+        title: const Text('Fotos de Perfil'),
+        backgroundColor: Colors.blue.shade700,
+        elevation: 4,
+        systemOverlayStyle: SystemUiOverlayStyle.light,
       ),
-      body: Center(
+      body: SafeArea(
+        child: SingleChildScrollView(
+        padding: EdgeInsets.all(padding),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            CircleAvatar(
-              radius: 80,
-              backgroundImage:
-                  _imageData.isNotEmpty ? MemoryImage(_imageData) : null,
+            // Información
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.blue.shade200),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.info_outline, color: Colors.blue.shade700),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Sube entre $minPhotos y $maxPhotos fotos de perfil',
+                          style: TextStyle(
+                            color: Colors.blue.shade900,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'La primera foto será tu foto principal',
+                    style: TextStyle(
+                      color: Colors.blue.shade700,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            
+            // Contador de fotos
+            Center(
+              child: Text(
+                'Fotos agregadas: ${_imageDataList.length}/$maxPhotos',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: hasMinPhotos ? Colors.green : Colors.orange.shade700,
+                ),
+              ),
             ),
             const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                _getImage();
-              },
-              child: const Text('Seleccionar desde Galería'),
+
+            // Grid de fotos
+            if (_imageDataList.isNotEmpty)
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  // Calcular número de columnas según ancho disponible
+                  final crossAxisCount = constraints.maxWidth > 600 ? 4 : 3;
+                  
+                  return GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      crossAxisSpacing: spacing,
+                      mainAxisSpacing: spacing,
+                    ),
+                    itemCount: _imageDataList.length,
+                    itemBuilder: (context, index) {
+                      return Stack(
+                        children: [
+                          Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: index == 0 ? Colors.blue.shade700 : Colors.grey.shade300,
+                                width: index == 0 ? 3 : 1,
+                              ),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.memory(
+                                _imageDataList[index],
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                                height: double.infinity,
+                          ),
+                        ),
+                      ),
+                      if (index == 0)
+                        Positioned(
+                          top: 6,
+                          left: 6,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.shade700,
+                              borderRadius: BorderRadius.circular(8),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.3),
+                                  blurRadius: 4,
+                                ),
+                              ],
+                            ),
+                            child: const Text(
+                              'Principal',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      Positioned(
+                        top: 6,
+                        right: 6,
+                        child: GestureDetector(
+                          onTap: () => _removeImage(index),
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.red.shade700,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.close,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
+          ),
+
+            if (_imageDataList.isEmpty)
+              Container(
+                height: 200,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300, width: 2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.add_photo_alternate, size: 64, color: Colors.grey.shade400),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Aún no has agregado fotos',
+                        style: TextStyle(color: Colors.grey.shade600),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+            const SizedBox(height: 24),
+            
+            // Botón agregar foto
+            ElevatedButton.icon(
+              onPressed: canAddMore ? _getImage : null,
+              icon: const Icon(Icons.add_a_photo),
+              label: Text(canAddMore ? 'Agregar Foto' : 'Máximo $maxPhotos fotos'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue.shade700,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                disabledBackgroundColor: Colors.grey.shade300,
+              ),
             ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () async {
-                await _updateProfilePhoto();
-              },
-              child: const Text('Registrar'),
+            
+            const SizedBox(height: 40),
+            
+            // Botón registrar
+            ElevatedButton.icon(
+              onPressed: hasMinPhotos ? _updateProfilePhoto : null,
+              icon: const Icon(Icons.check_circle),
+              label: Text(hasMinPhotos ? 'Completar Registro' : 'Agrega al menos $minPhotos foto'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green.shade600,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                disabledBackgroundColor: Colors.grey.shade300,
+              ),
             ),
           ],
         ),
+      ),
       ),
     );
   }

@@ -48,25 +48,47 @@ class _RoommatePreferencesPageState extends State<RoommatePreferencesPage> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final isSmallScreen = screenWidth < 600;
+    final isMediumScreen = screenWidth >= 600 && screenWidth < 900;
+    
+    // Escalamiento responsive
+    final horizontalPadding = isSmallScreen ? 16.0 : (isMediumScreen ? 24.0 : 32.0);
+    final cardWidth = isSmallScreen ? screenWidth * 0.95 : (isMediumScreen ? 500.0 : 600.0);
+    final cardPadding = isSmallScreen ? 20.0 : (isMediumScreen ? 28.0 : 32.0);
+    final iconSize = isSmallScreen ? 48.0 : (isMediumScreen ? 56.0 : 64.0);
+    final titleSize = isSmallScreen ? 20.0 : (isMediumScreen ? 22.0 : 24.0);
+    final subtitleSize = isSmallScreen ? 12.0 : (isMediumScreen ? 13.0 : 14.0);
+    final sectionTitleSize = isSmallScreen ? 14.0 : (isMediumScreen ? 15.0 : 16.0);
+    final verticalSpacingSmall = isSmallScreen ? 6.0 : 8.0;
+    final verticalSpacingMedium = isSmallScreen ? 12.0 : 16.0;
+    final verticalSpacingLarge = isSmallScreen ? 24.0 : 32.0;
+    final buttonHeight = isSmallScreen ? 45.0 : 50.0;
+    final buttonTextSize = isSmallScreen ? 14.0 : 16.0;
+    
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: const Text('Preferencias de Roommate'),
+        title: Text(
+          'Preferencias de Roommate',
+          style: TextStyle(fontSize: isSmallScreen ? 16.0 : 18.0),
+        ),
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.blue.shade700,
       ),
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
+          padding: EdgeInsets.all(horizontalPadding),
           child: Card(
             elevation: 8,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
             child: Container(
-              width: 500,
-              padding: const EdgeInsets.all(32.0),
+              width: cardWidth,
+              padding: EdgeInsets.all(cardPadding),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -74,66 +96,66 @@ class _RoommatePreferencesPageState extends State<RoommatePreferencesPage> {
                   Center(
                     child: Icon(
                       Icons.people_outline,
-                      size: 64,
+                      size: iconSize,
                       color: Colors.blue.shade700,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: verticalSpacingMedium),
                   Center(
                     child: Text(
                       '¿Con quién te gustaría convivir?',
                       style: TextStyle(
-                        fontSize: 24,
+                        fontSize: titleSize,
                         fontWeight: FontWeight.bold,
                       ),
                       textAlign: TextAlign.center,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: verticalSpacingSmall),
                   Center(
                     child: Text(
                       'Esto nos ayudará a encontrar el mejor match para ti',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: subtitleSize,
                         color: Colors.grey[600],
                       ),
                       textAlign: TextAlign.center,
                     ),
                   ),
-                  const SizedBox(height: 32),
+                  SizedBox(height: verticalSpacingLarge),
                   
                   // Sección de género
                   Text(
                     'Género preferido',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: sectionTitleSize,
                       fontWeight: FontWeight.bold,
                       color: Colors.grey[800],
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: verticalSpacingMedium),
                   
-                  _buildGenderOption('Hombres', 'male', Icons.man),
-                  const SizedBox(height: 8),
-                  _buildGenderOption('Mujeres', 'female', Icons.woman),
-                  const SizedBox(height: 8),
-                  _buildGenderOption('Ambos', 'both', Icons.people),
+                  _buildGenderOption('Hombres', 'male', Icons.man, isSmallScreen),
+                  SizedBox(height: verticalSpacingSmall),
+                  _buildGenderOption('Mujeres', 'female', Icons.woman, isSmallScreen),
+                  SizedBox(height: verticalSpacingSmall),
+                  _buildGenderOption('Ambos', 'both', Icons.people, isSmallScreen),
                   
-                  const SizedBox(height: 32),
+                  SizedBox(height: verticalSpacingLarge),
                   
                   // Sección de rango de edad
                   Text(
                     'Rango de edad',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: sectionTitleSize,
                       fontWeight: FontWeight.bold,
                       color: Colors.grey[800],
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: verticalSpacingMedium),
                   
                   Container(
-                    padding: const EdgeInsets.all(16),
+                    padding: EdgeInsets.all(isSmallScreen ? 12.0 : 16.0),
                     decoration: BoxDecoration(
                       color: Colors.blue.shade50,
                       borderRadius: BorderRadius.circular(12),
@@ -146,7 +168,7 @@ class _RoommatePreferencesPageState extends State<RoommatePreferencesPage> {
                             Text(
                               'De ${minAge.round()} años',
                               style: TextStyle(
-                                fontSize: 16,
+                                fontSize: sectionTitleSize,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.blue.shade700,
                               ),
@@ -154,14 +176,14 @@ class _RoommatePreferencesPageState extends State<RoommatePreferencesPage> {
                             Text(
                               'a ${maxAge.round()} años',
                               style: TextStyle(
-                                fontSize: 16,
+                                fontSize: sectionTitleSize,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.blue.shade700,
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: verticalSpacingSmall),
                         RangeSlider(
                           values: RangeValues(minAge, maxAge),
                           min: 18,
@@ -186,21 +208,21 @@ class _RoommatePreferencesPageState extends State<RoommatePreferencesPage> {
                   
                   if (minAge > maxAge)
                     Padding(
-                      padding: const EdgeInsets.only(top: 8),
+                      padding: EdgeInsets.only(top: verticalSpacingSmall),
                       child: Text(
                         'La edad mínima no puede ser mayor que la máxima',
                         style: TextStyle(
                           color: Colors.red,
-                          fontSize: 12,
+                          fontSize: isSmallScreen ? 11.0 : 12.0,
                         ),
                       ),
                     ),
                   
-                  const SizedBox(height: 32),
+                  SizedBox(height: verticalSpacingLarge),
                   
                   SizedBox(
                     width: double.infinity,
-                    height: 50,
+                    height: buttonHeight,
                     child: ElevatedButton(
                       onPressed: _canContinue()
                           ? () async {
@@ -228,10 +250,10 @@ class _RoommatePreferencesPageState extends State<RoommatePreferencesPage> {
                         ),
                         elevation: 2,
                       ),
-                      child: const Text(
+                      child: Text(
                         'Continuar',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: buttonTextSize,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                         ),
@@ -247,8 +269,13 @@ class _RoommatePreferencesPageState extends State<RoommatePreferencesPage> {
     );
   }
 
-  Widget _buildGenderOption(String label, String value, IconData icon) {
+  Widget _buildGenderOption(String label, String value, IconData icon, bool isSmallScreen) {
     final isSelected = selectedGender == value;
+    final optionPadding = isSmallScreen ? 12.0 : 16.0;
+    final iconSize = isSmallScreen ? 28.0 : 32.0;
+    final spacingWidth = isSmallScreen ? 12.0 : 16.0;
+    final textSize = isSmallScreen ? 14.0 : 16.0;
+    final checkIconSize = isSmallScreen ? 20.0 : 24.0;
     
     return InkWell(
       onTap: () {
@@ -258,7 +285,7 @@ class _RoommatePreferencesPageState extends State<RoommatePreferencesPage> {
       },
       borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(optionPadding),
         decoration: BoxDecoration(
           color: isSelected ? Colors.blue.shade50 : Colors.white,
           borderRadius: BorderRadius.circular(12),
@@ -272,14 +299,14 @@ class _RoommatePreferencesPageState extends State<RoommatePreferencesPage> {
             Icon(
               icon,
               color: isSelected ? Colors.blue.shade700 : Colors.grey[600],
-              size: 32,
+              size: iconSize,
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: spacingWidth),
             Expanded(
               child: Text(
                 label,
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: textSize,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                   color: isSelected ? Colors.blue.shade700 : Colors.grey[800],
                 ),
@@ -289,7 +316,7 @@ class _RoommatePreferencesPageState extends State<RoommatePreferencesPage> {
               Icon(
                 Icons.check_circle,
                 color: Colors.blue.shade700,
-                size: 24,
+                size: checkIconSize,
               ),
           ],
         ),

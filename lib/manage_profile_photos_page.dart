@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -198,8 +199,11 @@ class _ManageProfilePhotosPageState extends State<ManageProfilePhotosPage> {
       appBar: AppBar(
         title: const Text('Mis Fotos de Perfil'),
         backgroundColor: const Color(0xFF6750A4),
+        elevation: 4,
+        systemOverlayStyle: SystemUiOverlayStyle.light,
       ),
-      body: _isLoading
+      body: SafeArea(
+        child: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
@@ -261,15 +265,22 @@ class _ManageProfilePhotosPageState extends State<ManageProfilePhotosPage> {
                             ],
                           ),
                         )
-                      : GridView.builder(
-                          padding: const EdgeInsets.all(16),
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 16,
-                            mainAxisSpacing: 16,
-                            childAspectRatio: 0.75,
-                          ),
-                          itemCount: _photos.length,
+                      : LayoutBuilder(
+                          builder: (context, constraints) {
+                            // Diseño responsive según ancho
+                            final crossAxisCount = constraints.maxWidth > 600 ? 3 : 2;
+                            final spacing = constraints.maxWidth * 0.04;
+                            final padding = constraints.maxWidth * 0.04;
+                            
+                            return GridView.builder(
+                              padding: EdgeInsets.all(padding),
+                              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: crossAxisCount,
+                                crossAxisSpacing: spacing,
+                                mainAxisSpacing: spacing,
+                                childAspectRatio: 0.75,
+                              ),
+                              itemCount: _photos.length,
                           itemBuilder: (context, index) {
                             final photo = _photos[index];
                             final isPrimary = photo['isPrimary'] == true;
@@ -385,10 +396,13 @@ class _ManageProfilePhotosPageState extends State<ManageProfilePhotosPage> {
                               ),
                             );
                           },
-                        ),
+                        );
+                      },
+                    ),
                 ),
               ],
             ),
+      ),
     );
   }
 }

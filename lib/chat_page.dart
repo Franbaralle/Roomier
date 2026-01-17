@@ -267,6 +267,10 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final isSmallScreen = screenWidth < 360;
+    
     return Scaffold(
       appBar: AppBar(
         title: Text('Chat con ${widget.profile['username']}'),
@@ -316,10 +320,11 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
           ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
+      body: SafeArea(
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : Column(
+                children: [
                 // Widget de revelación de información
                 if (_currentUser.isNotEmpty && widget.profile['username'] != null)
                   RevealInfoWidget(
@@ -354,11 +359,11 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
                             ? Alignment.centerRight
                             : Alignment.centerLeft,
                         child: Container(
-                          margin: const EdgeInsets.symmetric(
-                            vertical: 4,
-                            horizontal: 8,
+                          margin: EdgeInsets.symmetric(
+                            vertical: isSmallScreen ? 3 : 4,
+                            horizontal: screenWidth * 0.02,
                           ),
-                          padding: const EdgeInsets.all(12),
+                          padding: EdgeInsets.all(isSmallScreen ? 10 : 12),
                           decoration: BoxDecoration(
                             color: isMine
                                 ? Colors.blue[100]
@@ -414,7 +419,9 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
                               else
                                 Text(
                                   content,
-                                  style: const TextStyle(fontSize: 16),
+                                  style: TextStyle(
+                                    fontSize: isSmallScreen ? 14 : 16,
+                                  ),
                                 ),
                               const SizedBox(height: 4),
                               Row(
@@ -422,8 +429,8 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
                                 children: [
                                   Text(
                                     _formatTimestamp(message['timestamp']),
-                                    style: const TextStyle(
-                                      fontSize: 10,
+                                    style: TextStyle(
+                                      fontSize: isSmallScreen ? 9 : 10,
                                       color: Colors.grey,
                                     ),
                                   ),
@@ -450,14 +457,14 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
                 // Indicador de escritura
                 if (_isOtherUserTyping)
                   Padding(
-                    padding: const EdgeInsets.all(8.0),
+                    padding: EdgeInsets.all(screenWidth * 0.02),
                     child: Row(
                       children: [
                         const SizedBox(width: 12),
                         Text(
                           '${widget.profile['username']} está escribiendo...',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: isSmallScreen ? 11 : 12,
                             color: Colors.grey[600],
                             fontStyle: FontStyle.italic,
                           ),
@@ -469,8 +476,8 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
                 // Bloquear si es First Step sin match y yo soy quien dio el first step
                 _isFirstStep && !_isMatch && _firstStepBy == _currentUser
                     ? Container(
-                        padding: const EdgeInsets.all(16.0),
-                        margin: const EdgeInsets.all(8.0),
+                        padding: EdgeInsets.all(screenWidth * 0.04),
+                        margin: EdgeInsets.all(screenWidth * 0.02),
                         decoration: BoxDecoration(
                           color: Colors.orange[50],
                           border: Border.all(color: Colors.orange),
@@ -478,14 +485,16 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.lock, color: Colors.orange[700]),
-                            const SizedBox(width: 12),
+                            Icon(Icons.lock, color: Colors.orange[700], 
+                              size: isSmallScreen ? 20 : 24),
+                            SizedBox(width: screenWidth * 0.03),
                             Expanded(
                               child: Text(
                                 '⏳ Esperá a que ${widget.profile['username']} te responda o te dé like para seguir conversando',
                                 style: TextStyle(
                                   color: Colors.orange[900],
                                   fontWeight: FontWeight.w500,
+                                  fontSize: isSmallScreen ? 13 : 14,
                                 ),
                               ),
                             ),
@@ -493,21 +502,33 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
                         ),
                       )
                     : Padding(
-                        padding: const EdgeInsets.all(8.0),
+                        padding: EdgeInsets.all(screenWidth * 0.02),
                         child: Row(
                           children: [
                             // Botón para seleccionar imagen
                             IconButton(
                               onPressed: _pickAndSendImage,
-                              icon: const Icon(Icons.image),
+                              icon: Icon(Icons.image, 
+                                size: isSmallScreen ? 22 : 24),
                               color: Colors.blue,
+                              padding: EdgeInsets.all(isSmallScreen ? 8 : 12),
                             ),
                             Expanded(
                               child: TextField(
                                 controller: _messageController,
-                                decoration: const InputDecoration(
+                                style: TextStyle(
+                                  fontSize: isSmallScreen ? 14 : 16,
+                                ),
+                                decoration: InputDecoration(
                                   hintText: 'Escribe tu mensaje...',
-                                  border: OutlineInputBorder(),
+                                  hintStyle: TextStyle(
+                                    fontSize: isSmallScreen ? 14 : 16,
+                                  ),
+                                  border: const OutlineInputBorder(),
+                                  contentPadding: EdgeInsets.symmetric(
+                                    horizontal: screenWidth * 0.03,
+                                    vertical: isSmallScreen ? 10 : 12,
+                                  ),
                                 ),
                                 onChanged: (text) {
                                   // Indicador de escritura
@@ -540,13 +561,19 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
                                   );
                                 }
                               },
-                              icon: const Icon(Icons.send),
+                              icon: Icon(Icons.send, 
+                                size: isSmallScreen ? 22 : 24),
+                              padding: EdgeInsets.all(isSmallScreen ? 8 : 12),
+                              constraints: BoxConstraints(
+                                minWidth: screenWidth * 0.12,
+                              ),
                             ),
                           ],
                         ),
                       ),
               ],
             ),
+      ),
     );
   }
 
@@ -638,7 +665,7 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
                     if (selectedReason == 'violencia_genero') ...[
                       const SizedBox(height: 16),
                       Container(
-                        padding: const EdgeInsets.all(12),
+                        padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.03),
                         decoration: BoxDecoration(
                           color: Colors.purple.shade50,
                           borderRadius: BorderRadius.circular(8),
@@ -664,7 +691,7 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
                             Text(
                               'Si estás en situación de violencia de género, podés llamar gratis al 144 las 24 horas. Es atención nacional, gratuita y confidencial.',
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: MediaQuery.of(context).size.width < 360 ? 11 : 12,
                                 color: Colors.purple.shade900,
                               ),
                             ),

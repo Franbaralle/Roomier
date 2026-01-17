@@ -24,10 +24,12 @@ class RegisterPage extends StatelessWidget {
           ),
         ),
       ),
-      body: Center(
-        child: SingleChildScrollView(
-          child: RegisterForm(
-            authService: authService,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            child: RegisterForm(
+              authService: authService,
+            ),
           ),
         ),
       ),
@@ -57,22 +59,34 @@ class _RegisterFormState extends State<RegisterForm> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final padding = screenWidth * 0.06;
+    final cardWidth = screenWidth > 600 ? 400.0 : screenWidth * 0.9;
+    final logoSize = screenWidth * 0.15;
+    final titleFontSize = screenWidth * 0.06;
+    final subtitleFontSize = screenWidth * 0.035;
+    final buttonHeight = screenHeight * 0.06;
+    final spacingSmall = screenHeight * 0.01;
+    final spacingMedium = screenHeight * 0.02;
+    final spacingLarge = screenHeight * 0.03;
+    
     return Padding(
-      padding: const EdgeInsets.all(24.0),
+      padding: EdgeInsets.all(padding),
       child: Card(
         elevation: 8,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
         child: Container(
-          width: 400,
-          padding: const EdgeInsets.all(32.0),
+          width: cardWidth,
+          padding: EdgeInsets.all(padding * 1.3),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 80,
-                height: 80,
+                width: logoSize,
+                height: logoSize,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [Color(0xFF9AD9C7), Color(0xFFB7A7E3)],
@@ -81,29 +95,29 @@ class _RegisterFormState extends State<RegisterForm> {
                   ),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.all(padding * 0.5),
                 child: Image.asset(
                   'assets/ChatGPT Image 5 ene 2026, 08_41_59.png',
                   fit: BoxFit.contain,
                 ),
               ),
-              const SizedBox(height: 16),
-              const Text(
+              SizedBox(height: spacingMedium),
+              Text(
                 'Crea tu cuenta',
                 style: TextStyle(
-                  fontSize: 24,
+                  fontSize: titleFontSize,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: spacingSmall),
               Text(
                 'Completa los datos para comenzar',
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: subtitleFontSize,
                   color: Colors.grey[600],
                 ),
               ),
-              const SizedBox(height: 32),
+              SizedBox(height: spacingLarge * 1.1),
               TextField(
                 controller: usernameController,
                 decoration: InputDecoration(
@@ -118,7 +132,7 @@ class _RegisterFormState extends State<RegisterForm> {
                   fillColor: Colors.grey[50],
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: spacingMedium),
               TextField(
                 controller: emailController,
                 keyboardType: TextInputType.emailAddress,
@@ -134,7 +148,7 @@ class _RegisterFormState extends State<RegisterForm> {
                   fillColor: Colors.grey[50],
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: spacingMedium),
               TextField(
                 controller: passwordController,
                 obscureText: obscurePassword,
@@ -160,7 +174,7 @@ class _RegisterFormState extends State<RegisterForm> {
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: spacingLarge),
               // Checkbox de términos y condiciones
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -181,11 +195,11 @@ class _RegisterFormState extends State<RegisterForm> {
                         });
                       },
                       child: Padding(
-                        padding: const EdgeInsets.only(top: 12.0),
+                        padding: EdgeInsets.only(top: spacingSmall * 1.2),
                         child: RichText(
                           text: TextSpan(
                             style: TextStyle(
-                              fontSize: 13,
+                              fontSize: subtitleFontSize * 0.95,
                               color: Colors.grey[700],
                             ),
                             children: [
@@ -195,12 +209,12 @@ class _RegisterFormState extends State<RegisterForm> {
                                   onTap: () {
                                     Navigator.pushNamed(context, termsRoute);
                                   },
-                                  child: const Text(
+                                  child: Text(
                                     'Términos y Condiciones',
                                     style: TextStyle(
                                       color: Color(0xFFB7A7E3),
                                       decoration: TextDecoration.underline,
-                                      fontSize: 13,
+                                      fontSize: subtitleFontSize * 0.95,
                                     ),
                                   ),
                                 ),
@@ -211,12 +225,12 @@ class _RegisterFormState extends State<RegisterForm> {
                                   onTap: () {
                                     Navigator.pushNamed(context, privacyRoute);
                                   },
-                                  child: const Text(
+                                  child: Text(
                                     'Política de Privacidad',
                                     style: TextStyle(
                                       color: Color(0xFFB7A7E3),
                                       decoration: TextDecoration.underline,
-                                      fontSize: 13,
+                                      fontSize: subtitleFontSize * 0.95,
                                     ),
                                   ),
                                 ),
@@ -229,10 +243,10 @@ class _RegisterFormState extends State<RegisterForm> {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: spacingSmall),
               SizedBox(
                 width: double.infinity,
-                height: 50,
+                height: buttonHeight,
                 child: ElevatedButton(
                   onPressed: acceptedTerms ? () {
                     _registerWithAuthService();
@@ -257,10 +271,10 @@ class _RegisterFormState extends State<RegisterForm> {
                     ),
                     child: Container(
                       alignment: Alignment.center,
-                      constraints: const BoxConstraints(minHeight: 50),
-                      child: const Text(
+                      constraints: BoxConstraints(minHeight: buttonHeight),
+                      child: Text(
                         'Continuar',
-                        style: TextStyle(fontSize: 16, color: Colors.white),
+                        style: TextStyle(fontSize: subtitleFontSize * 1.15, color: Colors.white),
                       ),
                     ),
                   ),

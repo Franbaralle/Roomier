@@ -25,7 +25,11 @@ class _ProfilePageState extends State<ProfilePage> {
   late SharedPreferences _prefs;
   String? savedData;
   late String username;
-  late String currentUser; // Usuario actualmente autenticado
+  String currentUser = ''; // Usuario actualmente autenticado
+  
+  // Variables para navegación de fotos
+  int _currentPhotoIndex = 0;
+  PageController _photoPageController = PageController();
   
   // Variables para reviews
   List<dynamic> _reviews = [];
@@ -69,12 +73,21 @@ class _ProfilePageState extends State<ProfilePage> {
       print('Username: ${widget.username}');
       print('User data received: ${user != null}');
       if (user != null) {
-        print('profilePhoto: ${user['profilePhoto']}');
-        print('profilePhoto type: ${user['profilePhoto'].runtimeType}');
+        print('profilePhotos: ${user['profilePhotos']}');
+        print('profilePhotos length: ${user['profilePhotos']?.length ?? 0}');
       }
       print('=========================');
 
       if (user != null) {
+        // Extraer la primera foto de profilePhotos si existe, sino usar profilePhoto legacy
+        String? primaryPhotoUrl;
+        if (user['profilePhotos'] != null && (user['profilePhotos'] as List).isNotEmpty) {
+          primaryPhotoUrl = user['profilePhotos'][0]['url'];
+        } else if (user['profilePhoto'] != null) {
+          // Fallback para modelo legacy
+          primaryPhotoUrl = user['profilePhoto'].toString();
+        }
+
         setState(() {
           userInfo = {
             'username': user['username'],
@@ -86,7 +99,8 @@ class _ProfilePageState extends State<ProfilePage> {
             'housingInfo': user['housingInfo'],
             'dealBreakers': user['dealBreakers'],
             'verification': user['verification'],
-            'profilePhoto': user['profilePhoto'],
+            'profilePhoto': primaryPhotoUrl, // URL de la primera foto
+            'profilePhotos': user['profilePhotos'], // Array completo para otras funcionalidades
             'aboutMe': user['aboutMe'],
             'isVerified': user['isVerified'],
           };
@@ -217,8 +231,26 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final isCurrentUserProfile = currentUser == widget.username;
+    
     return Scaffold(
       backgroundColor: Colors.grey[50],
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 1,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: Colors.blue.shade700),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          widget.username,
+          style: TextStyle(
+            color: Colors.blue.shade700,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        centerTitle: true,
+      ),
       body: _buildProfileContent(),
     );
   }
@@ -311,21 +343,26 @@ class _ProfilePageState extends State<ProfilePage> {
     required VoidCallback onTap,
     Color? color,
   }) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final iconSize = screenWidth < 360 ? 24.0 : 28.0;
+    final fontSize = screenWidth < 360 ? 11.0 : 12.0;
+    final horizontalPadding = screenWidth < 360 ? 16.0 : 24.0;
+    
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 12),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: color ?? Colors.grey[700], size: 28),
+            Icon(icon, color: color ?? Colors.grey[700], size: iconSize),
             const SizedBox(height: 4),
             Text(
               label,
               style: TextStyle(
                 color: color ?? Colors.grey[700],
-                fontSize: 12,
+                fontSize: fontSize,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -378,6 +415,10 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildAdminButton() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final buttonFontSize = screenWidth < 360 ? 16.0 : 18.0;
+    final iconSize = screenWidth < 360 ? 24.0 : 28.0;
+    
     // Verificar si el usuario es admin
     final authService = AuthService();
     final userData = authService.loadUserData('isAdmin');
@@ -413,23 +454,28 @@ class _ProfilePageState extends State<ProfilePage> {
             },
             borderRadius: BorderRadius.circular(16),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              padding: EdgeInsets.symmetric(
+                horizontal: screenWidth < 360 ? 16 : 24, 
+                vertical: 16
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.admin_panel_settings,
                     color: Colors.white,
-                    size: 28,
+                    size: iconSize,
                   ),
                   const SizedBox(width: 12),
-                  const Text(
-                    'Panel de Administración',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
+                  Flexible(
+                    child: Text(
+                      'Panel de Administración',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: buttonFontSize,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
                     ),
                   ),
                   const Spacer(),
@@ -448,6 +494,10 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildEditProfileButton() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final buttonFontSize = screenWidth < 360 ? 16.0 : 18.0;
+    final iconSize = screenWidth < 360 ? 24.0 : 28.0;
+    
     // Solo mostrar en el perfil propio
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
@@ -490,20 +540,20 @@ class _ProfilePageState extends State<ProfilePage> {
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Row(
-                children: const [
-                  Icon(Icons.edit, color: Colors.white, size: 28),
-                  SizedBox(width: 16),
+                children: [
+                  Icon(Icons.edit, color: Colors.white, size: iconSize),
+                  const SizedBox(width: 16),
                   Expanded(
                     child: Text(
                       'Editar Perfil',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 18,
+                        fontSize: buttonFontSize,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
-                  Icon(Icons.arrow_forward_ios, color: Colors.white, size: 20),
+                  const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 20),
                 ],
               ),
             ),
@@ -848,16 +898,18 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildAdditionalInfoSection() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final titleFontSize = screenWidth < 360 ? 24.0 : 28.0;
     final isCurrentUserProfile = currentUser == widget.username;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Información Personal',
             style: TextStyle(
-              fontSize: 28,
+              fontSize: titleFontSize,
               fontWeight: FontWeight.bold,
               color: Colors.black87,
             ),
@@ -866,14 +918,14 @@ class _ProfilePageState extends State<ProfilePage> {
           _buildInfoCard(
             icon: Icons.person,
             title: 'Acerca de mí',
-            content: userInfo?['personalInfo']['aboutMe'],
+            content: userInfo?['personalInfo']?['aboutMe'],
             color: Colors.blue,
           ),
           const SizedBox(height: 12),
           _buildInfoCard(
             icon: Icons.work,
             title: 'Trabajo',
-            content: userInfo?['personalInfo']['job'],
+            content: userInfo?['personalInfo']?['job'],
             color: Colors.orange,
           ),
           const SizedBox(height: 12),
@@ -891,23 +943,23 @@ class _ProfilePageState extends State<ProfilePage> {
             _buildInfoCard(
               icon: Icons.church,
               title: 'Religión',
-              content: userInfo?['personalInfo']['religion'],
+              content: userInfo?['personalInfo']?['religion'],
               color: Colors.purple,
             ),
             const SizedBox(height: 12),
             _buildInfoCard(
               icon: Icons.how_to_vote,
               title: 'Política',
-              content: userInfo?['personalInfo']['politicPreference'],
+              content: userInfo?['personalInfo']?['politicPreference'],
               color: Colors.teal,
             ),
           ],
           
           const SizedBox(height: 24),
-          const Text(
+          Text(
             'Estilo de Vida',
             style: TextStyle(
-              fontSize: 28,
+              fontSize: titleFontSize,
               fontWeight: FontWeight.bold,
               color: Colors.black87,
             ),
@@ -950,6 +1002,10 @@ class _ProfilePageState extends State<ProfilePage> {
     required Color color,
     bool isEditable = true,
   }) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final cardTitleSize = screenWidth < 360 ? 16.0 : 18.0;
+    final cardContentSize = screenWidth < 360 ? 14.0 : 15.0;
+    final iconSize = screenWidth < 360 ? 20.0 : 24.0;
     final isCurrentUserProfile = currentUser == widget.username;
     return Container(
       decoration: BoxDecoration(
@@ -971,26 +1027,30 @@ class _ProfilePageState extends State<ProfilePage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: color.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: color.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(icon, color: color, size: iconSize),
                       ),
-                      child: Icon(icon, color: color, size: 24),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black87,
+                      const SizedBox(width: 12),
+                      Flexible(
+                        child: Text(
+                          title,
+                          style: TextStyle(
+                            fontSize: cardTitleSize,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
                 if (isCurrentUserProfile && isEditable)
                   Container(
@@ -1011,7 +1071,7 @@ class _ProfilePageState extends State<ProfilePage> {
             Text(
               content ?? 'No especificado',
               style: TextStyle(
-                fontSize: 15,
+                fontSize: cardContentSize,
                 color: content != null ? Colors.black87 : Colors.grey,
                 height: 1.5,
               ),
@@ -1148,186 +1208,71 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildProfileImage() {
-    final dynamic profilePhoto = userInfo?['profilePhoto'];
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final imageWidth = screenWidth * 0.9 > 400 ? 400.0 : screenWidth * 0.9;
+    final imageHeight = screenHeight * 0.6 > 500 ? 500.0 : screenHeight * 0.6;
+    
+    // Obtener array de fotos
+    final profilePhotos = userInfo?['profilePhotos'] as List<dynamic>?;
+    final List<String> photoUrls = [];
 
-    if (profilePhoto != null && profilePhoto is String) {
-      final imageProvider = ImageUtils.getImageProvider(profilePhoto);
-      
-      if (imageProvider != null) {
-        return Container(
-          margin: const EdgeInsets.all(16),
-          child: Stack(
-            alignment: Alignment.bottomRight,
-            children: [
-              Container(
-                width: 400,
-                height: 500,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24.0),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(24.0),
-                  child: Image(
-                    image: imageProvider,
-                    width: 400,
-                    height: 500,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-              Container(
-                width: 400,
-                height: 120,
-                decoration: BoxDecoration(
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(24.0),
-                    bottomRight: Radius.circular(24.0),
-                  ),
-                  gradient: LinearGradient(
-                    begin: Alignment.bottomCenter,
-                    end: Alignment.topCenter,
-                    colors: [
-                      Colors.black.withOpacity(0.7),
-                      Colors.transparent,
-                    ],
-                  ),
-                ),
-              ),
-              Positioned(
-                left: 20.0,
-                bottom: 20.0,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.baseline,
-                      textBaseline: TextBaseline.alphabetic,
-                      children: [
-                        Text(
-                          userInfo?['username'] ?? '',
-                          style: const TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            shadows: [
-                              Shadow(
-                                offset: Offset(0, 2),
-                                blurRadius: 8,
-                                color: Colors.black45,
-                              ),
-                            ],
-                          ),
-                        ),
-                        if (_calculateAge(userInfo?['birthdate']) != null) ...[
-                          const SizedBox(width: 8),
-                          Text(
-                            ', ${_calculateAge(userInfo?['birthdate'])}',
-                            style: const TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white,
-                              shadows: [
-                                Shadow(
-                                  offset: Offset(0, 2),
-                                  blurRadius: 8,
-                                  color: Colors.black45,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                    if (userInfo?['gender'] != null && userInfo?['gender'] != '') ...[
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Icon(
-                            userInfo?['gender'] == 'male'
-                                ? Icons.man
-                                : userInfo?['gender'] == 'female'
-                                    ? Icons.woman
-                                    : Icons.person,
-                            size: 18,
-                            color: Colors.white.withOpacity(0.9),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            _getGenderText(userInfo?['gender']),
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white.withOpacity(0.9),
-                              shadows: const [
-                                Shadow(
-                                  offset: Offset(0, 1),
-                                  blurRadius: 4,
-                                  color: Colors.black45,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                    // Mostrar rating si tiene lugar y reviews
-                    if (userInfo?['housingInfo']?['hasPlace'] == true && 
-                        _reviewCount > 0 && 
-                        !_loadingReviews) ...[
-                      const SizedBox(height: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.amber.withOpacity(0.9),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.star, color: Colors.white, size: 16),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${_averageRating.toStringAsFixed(1)} ($_reviewCount reviews)',
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 8),
-                    _buildVerificationBadges(),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
+    print('=== DEBUG _buildProfileImage ===');
+    print('profilePhotos: $profilePhotos');
+    print('profilePhotos is null: ${profilePhotos == null}');
+    print('profilePhotos isEmpty: ${profilePhotos?.isEmpty}');
+
+    // Extraer URLs de las fotos
+    if (profilePhotos != null && profilePhotos.isNotEmpty) {
+      for (var photo in profilePhotos) {
+        print('Processing photo: $photo');
+        if (photo['url'] != null) {
+          print('Adding URL: ${photo['url']}');
+          photoUrls.add(photo['url']);
+        }
       }
     }
 
-    // Cuando no hay foto de perfil, mostrar un placeholder completo
+    print('photoUrls extracted: $photoUrls');
+    print('photoUrls length: ${photoUrls.length}');
+
+    // Si no hay fotos en el nuevo sistema, intentar con el legacy
+    if (photoUrls.isEmpty) {
+      final profilePhoto = userInfo?['profilePhoto'];
+      print('Trying legacy profilePhoto: $profilePhoto');
+      if (profilePhoto != null && profilePhoto is String) {
+        photoUrls.add(profilePhoto);
+      }
+    }
+
+    print('Final photoUrls: $photoUrls');
+    print('================================');
+
+    // Si aún no hay fotos, mostrar placeholder
+    if (photoUrls.isEmpty) {
+      return Container(
+        margin: const EdgeInsets.all(16),
+        width: imageWidth,
+        height: imageHeight,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24.0),
+          color: Colors.grey[300],
+        ),
+        child: Icon(Icons.person, size: screenWidth * 0.2, color: Colors.grey),
+      );
+    }
+
     return Container(
       margin: const EdgeInsets.all(16),
       child: Stack(
         alignment: Alignment.bottomRight,
         children: [
+          // PageView para navegar entre fotos
           Container(
-            width: 400,
-            height: 500,
+            width: imageWidth,
+            height: imageHeight,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(24.0),
-              color: Colors.grey[300],
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.2),
@@ -1338,15 +1283,60 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(24.0),
-              child: Center(
-                child: Icon(
-                  Icons.account_circle,
-                  size: 150,
-                  color: Colors.grey[400],
-                ),
+              child: PageView.builder(
+                controller: _photoPageController,
+                itemCount: photoUrls.length,
+                onPageChanged: (index) {
+                  setState(() {
+                    _currentPhotoIndex = index;
+                  });
+                },
+                itemBuilder: (context, index) {
+                  final imageProvider = ImageUtils.getImageProvider(photoUrls[index]);
+                  if (imageProvider != null) {
+                    return Image(
+                      image: imageProvider,
+                      width: imageWidth,
+                      height: imageHeight,
+                      fit: BoxFit.cover,
+                    );
+                  } else {
+                    return Container(
+                      color: Colors.grey[300],
+                      child: const Icon(Icons.image, size: 100, color: Colors.grey),
+                    );
+                  }
+                },
               ),
             ),
           ),
+          
+          // Indicadores de foto (barrita dividida)
+          if (photoUrls.length > 1)
+            Positioned(
+              top: 12,
+              left: 12,
+              right: 12,
+              child: Row(
+                children: List.generate(
+                  photoUrls.length,
+                  (index) => Expanded(
+                    child: Container(
+                      height: 4,
+                      margin: EdgeInsets.symmetric(horizontal: 2),
+                      decoration: BoxDecoration(
+                        color: index == _currentPhotoIndex
+                            ? Colors.white
+                            : Colors.white.withOpacity(0.4),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          
+          // Gradiente inferior
           Container(
             width: 400,
             height: 120,
@@ -1440,6 +1430,34 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                       ),
                     ],
+                  ),
+                ],
+                // Mostrar rating si tiene lugar y reviews
+                if (userInfo?['housingInfo']?['hasPlace'] == true && 
+                    _reviewCount > 0 && 
+                    !_loadingReviews) ...[
+                  const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.star, color: Colors.white, size: 16),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${_averageRating.toStringAsFixed(1)} ($_reviewCount reviews)',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
                 const SizedBox(height: 8),
@@ -2464,6 +2482,7 @@ class _ProfilePageState extends State<ProfilePage> {
     final rating = (review['rating'] ?? 0).toDouble();
     final comment = review['comment'] ?? '';
     final reviewer = review['reviewer'] ?? 'Usuario';
+    final reviewerInitial = (reviewer.isNotEmpty) ? reviewer[0].toUpperCase() : 'U';
     final timestamp = review['createdAt'] ?? '';
     
     return Container(
@@ -2492,7 +2511,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     CircleAvatar(
                       backgroundColor: Colors.blue[100],
                       child: Text(
-                        reviewer[0].toUpperCase(),
+                        reviewerInitial,
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           color: Colors.blue,

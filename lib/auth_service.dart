@@ -64,6 +64,9 @@ class AuthService {
       String username, String password, BuildContext context) async {
     try {
       final String loginUrl = '$apiUrl/login';
+      print('🔵 Intentando conectar a: $loginUrl');
+      print('🔵 Usuario: $username');
+      
       final response = await http.post(
         Uri.parse(loginUrl),
         headers: {'Content-Type': 'application/json'},
@@ -74,9 +77,12 @@ class AuthService {
       ).timeout(
         const Duration(seconds: 15),
         onTimeout: () {
+          print('🔴 TIMEOUT después de 15 segundos');
           throw Exception('TIMEOUT: La conexión tardó demasiado. Verifica tu conexión a internet.');
         },
       );
+
+      print('🟢 Respuesta recibida. Status code: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         // Hacer la solicitud del perfil en línea sin asignarla a una variable
@@ -98,7 +104,21 @@ class AuthService {
           await saveUserData('username', username);
           await saveUserData('accessToken', token);
           await saveUserData('isAdmin', isAdmin);
-          await saveUserData('profilePhoto', profileData['profilePhoto']);
+          
+          // Extraer foto principal de profilePhotos (nuevo) o profilePhoto (legacy)
+          String? primaryPhotoUrl;
+          if (profileData['profilePhotos'] != null && 
+              (profileData['profilePhotos'] as List).isNotEmpty) {
+            // Nuevo modelo: array de fotos
+            primaryPhotoUrl = profileData['profilePhotos'][0]['url']?.toString();
+          } else if (profileData['profilePhoto'] != null) {
+            // Modelo legacy: string simple
+            primaryPhotoUrl = profileData['profilePhoto'].toString();
+          }
+          
+          if (primaryPhotoUrl != null && primaryPhotoUrl.isNotEmpty) {
+            await saveUserData('profilePhoto', primaryPhotoUrl);
+          }
 
           // Track login event
           try {
@@ -169,7 +189,10 @@ class AuthService {
       }
     } on http.ClientException catch (error) {
       // Error de conexión (DNS, red, etc.)
-      print('Error de conexión: $error');
+      print('🔴 ClientException capturado: $error');
+      print('🔴 Tipo: ${error.runtimeType}');
+      print('🔴 Mensaje completo: ${error.toString()}');
+      
       String errorMessage = '📡 Sin conexión al servidor';
       
       if (error.toString().contains('Failed host lookup')) {
@@ -178,12 +201,14 @@ class AuthService {
         errorMessage = '🚫 El servidor no está disponible.';
       } else if (error.toString().contains('Connection timed out')) {
         errorMessage = '⏱️ Tiempo de espera agotado.\n\nVerifica tu conexión.';
+      } else if (error.toString().contains('Certificate')) {
+        errorMessage = '🔒 Error de certificado SSL.\n\nIntenta actualizar la app.';
       }
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(errorMessage),
-          duration: const Duration(seconds: 5),
+          content: Text('$errorMessage\n\nDetalle técnico: ${error.toString()}'),
+          duration: const Duration(seconds: 7),
           backgroundColor: Colors.blue[900],
           action: SnackBarAction(
             label: 'Entendido',
@@ -194,7 +219,8 @@ class AuthService {
       );
     } on Exception catch (error) {
       // Otros errores (timeout, etc.)
-      print('Error durante el inicio de sesión: $error');
+      print('🔴 Exception capturado: $error');
+      print('🔴 Tipo: ${error.runtimeType}');
       String errorMessage = 'Error de conexión. Verifica tu internet.';
       
       if (error.toString().contains('TIMEOUT')) {
@@ -203,18 +229,19 @@ class AuthService {
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(errorMessage),
-          duration: const Duration(seconds: 5),
+          content: Text('$errorMessage\n\nDetalle: ${error.toString()}'),
+          duration: const Duration(seconds: 6),
           backgroundColor: Colors.indigo[900],
         ),
       );
     } catch (error) {
       // Error genérico
-      print('Error inesperado durante el inicio de sesión: $error');
+      print('🔴 Error genérico capturado: $error');
+      print('🔴 Tipo: ${error.runtimeType}');
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('❌ Error inesperado. Intenta nuevamente.'),
-          duration: Duration(seconds: 3),
+        SnackBar(
+          content: Text('❌ Error inesperado: ${error.toString()}'),
+          duration: const Duration(seconds: 5),
           backgroundColor: Colors.red,
         ),
       );
@@ -575,7 +602,7 @@ class AuthService {
   }
 
   Future<void> updateProfilePhoto(
-      String username, String email, Uint8List profilePhoto) async {
+      String username, String email, List<Uint8List> profilePhotos) async {
     try {
       final String updateProfilePhotoUrl = '$api/register/profile_photo';
 
@@ -583,28 +610,32 @@ class AuthService {
           http.MultipartRequest('POST', Uri.parse(updateProfilePhotoUrl));
       request.fields['username'] = username;
       request.fields['email'] = email;
-      request.files.add(
-        http.MultipartFile.fromBytes(
-          'profilePhoto',
-          profilePhoto,
-          filename: 'profile_photo.jpg',
-          contentType: MediaType('application', 'octet-stream'),
-        ),
-      );
+      
+      // Agregar múltiples fotos
+      for (int i = 0; i < profilePhotos.length; i++) {
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            'profilePhotos', // Nombre del campo en backend (array)
+            profilePhotos[i],
+            filename: 'profile_photo_${i + 1}.jpg',
+            contentType: MediaType('application', 'octet-stream'),
+          ),
+        );
+      }
 
       var response = await request.send();
 
       if (response.statusCode == 200) {
-        print('Foto de perfil actualizada exitosamente');
+        print('${profilePhotos.length} fotos de perfil actualizadas exitosamente');
       } else if (response.statusCode == 404) {
         print('Usuario no encontrado');
       } else {
         print(
-            'Error al actualizar la foto de perfil. Status code: ${response.statusCode}');
+            'Error al actualizar las fotos de perfil. Status code: ${response.statusCode}');
         print('Response Body: ${await response.stream.bytesToString()}');
       }
     } catch (error) {
-      print('Error al actualizar la foto de perfil: $error');
+      print('Error al actualizar las fotos de perfil: $error');
     }
   }
 

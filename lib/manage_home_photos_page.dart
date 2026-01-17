@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart';
 import 'photo_service.dart';
@@ -316,8 +317,11 @@ class _ManageHomePhotosPageState extends State<ManageHomePhotosPage> {
       appBar: AppBar(
         title: const Text('Fotos de Mi Hogar'),
         backgroundColor: const Color(0xFF6750A4),
+        elevation: 4,
+        systemOverlayStyle: SystemUiOverlayStyle.light,
       ),
-      body: _isLoading
+      body: SafeArea(
+        child: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
@@ -379,15 +383,22 @@ class _ManageHomePhotosPageState extends State<ManageHomePhotosPage> {
                             ],
                           ),
                         )
-                      : GridView.builder(
-                          padding: const EdgeInsets.all(16),
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 16,
-                            mainAxisSpacing: 16,
-                            childAspectRatio: 0.75,
-                          ),
-                          itemCount: _photos.length,
+                      : LayoutBuilder(
+                          builder: (context, constraints) {
+                            // Diseño responsive según ancho
+                            final crossAxisCount = constraints.maxWidth > 600 ? 3 : 2;
+                            final spacing = constraints.maxWidth * 0.04;
+                            final padding = constraints.maxWidth * 0.04;
+                            
+                            return GridView.builder(
+                              padding: EdgeInsets.all(padding),
+                              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: crossAxisCount,
+                                crossAxisSpacing: spacing,
+                                mainAxisSpacing: spacing,
+                                childAspectRatio: 0.75,
+                              ),
+                              itemCount: _photos.length,
                           itemBuilder: (context, index) {
                             final photo = _photos[index];
 
@@ -482,10 +493,13 @@ class _ManageHomePhotosPageState extends State<ManageHomePhotosPage> {
                               ),
                             );
                           },
-                        ),
+                        );
+                      },
+                    ),
                 ),
               ],
             ),
+      ),
     );
   }
 }

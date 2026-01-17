@@ -394,9 +394,10 @@ router.post('/complete', async (req, res) => {
             password,
             email,
             birthdate,
-            preferences,
+            my_tags, // NUEVO: array plano de tag IDs (v3.0)
+            preferences, // LEGACY: mantener para compatibilidad
             roommatePreferences,
-            livingHabits,
+            livingHabits, // LEGACY: mantener para compatibilidad
             dealBreakers,
             housingInfo,
             personalInfo,
@@ -404,6 +405,7 @@ router.post('/complete', async (req, res) => {
         } = req.body;
 
         console.log('[REGISTRO COMPLETO] Iniciando registro para:', username);
+        console.log('[REGISTRO V3.0] my_tags recibido:', my_tags);
 
         // Validar datos requeridos
         if (!username || !password || !email || !birthdate) {
@@ -455,7 +457,7 @@ router.post('/complete', async (req, res) => {
         console.log('[REGISTRO] roommatePreferences recibidas:', roommatePreferences);
         console.log('[REGISTRO] roommatePreferences mapeadas:', mappedRoommatePreferences);
 
-        // Crear el nuevo usuario con todos los datos
+        // Crear el nuevo usuario con todos los datos (Arquitectura v3.0)
         const newUser = new User({
             username,
             password: hashedPassword,
@@ -465,9 +467,16 @@ router.post('/complete', async (req, res) => {
             verificationCode,
             isVerified: false, // Se marcará como true si el email no es el del admin
             profilePhotos: uploadedPhotos, // Array de fotos
+            
+            // Arquitectura v3.0: my_tags como array plano
+            my_tags: my_tags && Array.isArray(my_tags) ? my_tags : [],
+            
+            // Legacy: mantener preferences y livingHabits para compatibilidad
             preferences: preferences || {},
-            roommatePreferences: mappedRoommatePreferences,
             livingHabits: livingHabits || {},
+            legacyPreferences: [], // Para migraciones futuras
+            
+            roommatePreferences: mappedRoommatePreferences,
             dealBreakers: dealBreakers || {},
             housingInfo: housingInfo || {},
             personalInfo: {
@@ -477,6 +486,8 @@ router.post('/complete', async (req, res) => {
                 aboutMe: personalInfo?.aboutMe?.trim() || ''
             }
         });
+
+        console.log('[REGISTRO V3.0] Usuario creado con my_tags:', newUser.my_tags);
 
         // Intentar enviar email de verificación
         try {

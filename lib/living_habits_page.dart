@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'auth_service.dart';
 import 'routes.dart';
+import 'services/tag_service.dart';
+import 'models/tag_models.dart';
 
 class LivingHabitsPage extends StatefulWidget {
   final String username;
@@ -15,221 +17,151 @@ class LivingHabitsPage extends StatefulWidget {
 }
 
 class _LivingHabitsPageState extends State<LivingHabitsPage> {
-  // Valores por defecto
-  bool smoker = false;
-  bool hasPets = false;
-  bool acceptsPets = false;
-  String cleanliness = 'normal';
-  String noiseLevel = 'normal';
-  String schedule = 'normal';
-  String socialLevel = 'friendly';
-  bool hasGuests = false;
-  String drinker = 'social';
+  final TagService _tagService = TagService();
+  TagSection? _livingHabitsSection;
+  
+  // Mapa para almacenar las selecciones: categoryId -> selectedTagId
+  Map<String, String?> _selections = {};
 
-  // Deal Breakers
-  bool noSmokers = false;
-  bool noPets = false;
-  bool noParties = false;
-  bool noChildren = false;
+  @override
+  void initState() {
+    super.initState();
+    _loadLivingHabits();
+  }
+
+  void _loadLivingHabits() {
+    setState(() {
+      _livingHabitsSection = _tagService.getSection('living_habits');
+      // Inicializar selecciones vacías para cada categoría
+      if (_livingHabitsSection != null) {
+        for (var category in _livingHabitsSection!.categories) {
+          _selections[category.id] = null;
+        }
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final isSmallScreen = screenWidth < 360;
+    final isMediumScreen = screenWidth >= 360 && screenWidth < 600;
+    
+    // Dimensiones responsivas
+    final horizontalPadding = isSmallScreen ? 12.0 : (isMediumScreen ? 16.0 : 24.0);
+    final titleFontSize = isSmallScreen ? 20.0 : 24.0;
+    final descriptionFontSize = isSmallScreen ? 12.0 : 14.0;
+    final categoryFontSize = isSmallScreen ? 16.0 : 18.0;
+    final verticalSpacing = screenHeight * 0.02;
+    final buttonWidth = screenWidth > 600 ? 250.0 : screenWidth * 0.6;
+    
+    if (_livingHabitsSection == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Hábitos de Convivencia')),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Hábitos de Convivencia'),
+        title: Text(_livingHabitsSection!.title),
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Cuéntanos sobre tus hábitos',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Esta información nos ayuda a encontrar el roommate perfecto para ti',
-                style: TextStyle(fontSize: 14, color: Colors.grey),
-              ),
-              const SizedBox(height: 24),
-
-              // Sección: Hábitos básicos
-              _buildSectionTitle('🚬 Hábitos'),
-              _buildSwitch('¿Fumas?', smoker, (value) {
-                setState(() => smoker = value);
-              }),
-              _buildSwitch('¿Tienes mascotas?', hasPets, (value) {
-                setState(() => hasPets = value);
-              }),
-              _buildSwitch('¿Aceptarías mascotas?', acceptsPets, (value) {
-                setState(() => acceptsPets = value);
-              }),
-              _buildSwitch('¿Recibes visitas frecuentes?', hasGuests, (value) {
-                setState(() => hasGuests = value);
-              }),
-              
-              const Divider(height: 32),
-
-              // Sección: Limpieza
-              _buildSectionTitle('🧹 Limpieza y Orden'),
-              _buildRadioGroup(
-                'Nivel de limpieza',
-                cleanliness,
-                [
-                  {'value': 'low', 'label': 'Relajado'},
-                  {'value': 'normal', 'label': 'Normal'},
-                  {'value': 'high', 'label': 'Muy ordenado'},
-                ],
-                (value) => setState(() => cleanliness = value),
-              ),
-
-              const Divider(height: 32),
-
-              // Sección: Ruido
-              _buildSectionTitle('🔊 Nivel de Ruido'),
-              _buildRadioGroup(
-                '¿Qué tan ruidoso eres?',
-                noiseLevel,
-                [
-                  {'value': 'quiet', 'label': 'Tranquilo'},
-                  {'value': 'normal', 'label': 'Normal'},
-                  {'value': 'social', 'label': 'Social/Fiestas'},
-                ],
-                (value) => setState(() => noiseLevel = value),
-              ),
-
-              const Divider(height: 32),
-
-              // Sección: Horarios
-              _buildSectionTitle('⏰ Horarios'),
-              _buildRadioGroup(
-                'Tu rutina diaria',
-                schedule,
-                [
-                  {'value': 'early', 'label': 'Madrugador (duermo temprano)'},
-                  {'value': 'normal', 'label': 'Normal'},
-                  {'value': 'night', 'label': 'Nocturno (activo de noche)'},
-                ],
-                (value) => setState(() => schedule = value),
-              ),
-
-              const Divider(height: 32),
-
-              // Sección: Socialización
-              _buildSectionTitle('👥 Nivel Social'),
-              _buildRadioGroup(
-                '¿Cómo te gusta convivir?',
-                socialLevel,
-                [
-                  {'value': 'independent', 'label': 'Independiente (cada uno a lo suyo)'},
-                  {'value': 'friendly', 'label': 'Amigable (charlar de vez en cuando)'},
-                  {'value': 'very_social', 'label': 'Muy social (compartir tiempo juntos)'},
-                ],
-                (value) => setState(() => socialLevel = value),
-              ),
-
-              const Divider(height: 32),
-
-              // Sección: Alcohol
-              _buildSectionTitle('🍺 Consumo de Alcohol'),
-              _buildRadioGroup(
-                'Frecuencia',
-                drinker,
-                [
-                  {'value': 'never', 'label': 'Nunca'},
-                  {'value': 'social', 'label': 'Social (ocasionalmente)'},
-                  {'value': 'regular', 'label': 'Regularmente'},
-                ],
-                (value) => setState(() => drinker = value),
-              ),
-
-              const Divider(height: 32),
-
-              // Sección: Deal Breakers
-              _buildSectionTitle('🚫 Deal Breakers (No puedo convivir con...)'),
-              const Text(
-                'Marca lo que definitivamente NO aceptarías',
-                style: TextStyle(fontSize: 12, color: Colors.grey),
-              ),
-              const SizedBox(height: 8),
-              _buildSwitch('Fumadores', noSmokers, (value) {
-                setState(() => noSmokers = value);
-              }),
-              _buildSwitch('Mascotas', noPets, (value) {
-                setState(() => noPets = value);
-              }),
-              _buildSwitch('Fiestas en casa', noParties, (value) {
-                setState(() => noParties = value);
-              }),
-              _buildSwitch('Niños', noChildren, (value) {
-                setState(() => noChildren = value);
-              }),
-
-              const SizedBox(height: 32),
-
-              // Botón Continuar
-              Center(
-                child: ElevatedButton(
-                  onPressed: _handleContinue,
-                  style: ElevatedButton.styleFrom(
-                    minimumSize: const Size(200, 50),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: horizontalPadding,
+              vertical: verticalSpacing,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Cuéntanos sobre tus hábitos',
+                  style: TextStyle(
+                    fontSize: titleFontSize,
+                    fontWeight: FontWeight.bold,
                   ),
-                  child: const Text('Continuar'),
                 ),
-              ),
-              const SizedBox(height: 20),
-            ],
+                SizedBox(height: verticalSpacing * 0.4),
+                Text(
+                  _livingHabitsSection!.description,
+                  style: TextStyle(
+                    fontSize: descriptionFontSize,
+                    color: Colors.grey,
+                  ),
+                ),
+                SizedBox(height: verticalSpacing * 1.2),
+
+                // Renderizar categorías dinámicamente
+                ..._livingHabitsSection!.categories.map((category) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildCategorySection(category, categoryFontSize),
+                      Divider(height: verticalSpacing * 1.6),
+                    ],
+                  );
+                }).toList(),
+
+                SizedBox(height: verticalSpacing * 0.8),
+
+                // Botón Continuar
+                Center(
+                  child: SizedBox(
+                    width: buttonWidth,
+                    child: ElevatedButton(
+                      onPressed: _handleContinue,
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: Size(buttonWidth, isSmallScreen ? 45 : 50),
+                        padding: EdgeInsets.symmetric(
+                          vertical: isSmallScreen ? 12 : 16,
+                        ),
+                      ),
+                      child: const Text('Continuar'),
+                    ),
+                  ),
+                ),
+                SizedBox(height: verticalSpacing),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSwitch(String label, bool value, Function(bool) onChanged) {
-    return SwitchListTile(
-      title: Text(label),
-      value: value,
-      onChanged: onChanged,
-      contentPadding: EdgeInsets.zero,
-    );
-  }
-
-  Widget _buildRadioGroup(
-    String title,
-    String currentValue,
-    List<Map<String, String>> options,
-    Function(String) onChanged,
-  ) {
+  Widget _buildCategorySection(TagCategory category, double categoryFontSize) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final itemSpacing = screenHeight * 0.015;
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Título de la categoría con emoji
         Text(
-          title,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+          category.question ?? category.label,
+          style: TextStyle(
+            fontSize: categoryFontSize,
+            fontWeight: FontWeight.bold,
+          ),
         ),
-        const SizedBox(height: 8),
-        ...options.map((option) {
+        SizedBox(height: itemSpacing),
+        
+        // Renderizar tags como RadioListTile
+        ...category.directTags!.map((tag) {
           return RadioListTile<String>(
-            title: Text(option['label']!),
-            value: option['value']!,
-            groupValue: currentValue,
-            onChanged: (value) => onChanged(value!),
+            title: Text('${tag.icon} ${tag.label}'),
+            value: tag.id,
+            groupValue: _selections[category.id],
+            onChanged: (value) {
+              setState(() {
+                _selections[category.id] = value;
+              });
+            },
             contentPadding: EdgeInsets.zero,
+            visualDensity: VisualDensity.compact,
           );
         }).toList(),
       ],
@@ -238,29 +170,32 @@ class _LivingHabitsPageState extends State<LivingHabitsPage> {
 
   Future<void> _handleContinue() async {
     try {
-      final livingHabitsData = {
-        'smoker': smoker,
-        'hasPets': hasPets,
-        'acceptsPets': acceptsPets,
-        'cleanliness': cleanliness,
-        'noiseLevel': noiseLevel,
-        'schedule': schedule,
-        'socialLevel': socialLevel,
-        'hasGuests': hasGuests,
-        'drinker': drinker,
-      };
+      // Validar que todas las categorías requeridas estén respondidas
+      final missingCategories = _livingHabitsSection!.categories
+          .where((cat) => cat.required && _selections[cat.id] == null)
+          .toList();
 
-      final dealBreakersData = {
-        'noSmokers': noSmokers,
-        'noPets': noPets,
-        'noParties': noParties,
-        'noChildren': noChildren,
-      };
+      if (missingCategories.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Por favor completa todas las secciones requeridas'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
+      // Recopilar los IDs de tags seleccionados (arquitectura nueva)
+      final List<String> selectedTagIds = _selections.values
+          .where((tagId) => tagId != null)
+          .cast<String>()
+          .toList();
 
       // Guardar temporalmente en SharedPreferences
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('temp_register_living_habits', json.encode(livingHabitsData));
-      await prefs.setString('temp_register_deal_breakers', json.encode(dealBreakersData));
+      await prefs.setString('temp_register_living_habits_tags', json.encode(selectedTagIds));
+
+      print('🏠 Hábitos guardados: $selectedTagIds');
 
       // Navegar a la página de información de vivienda
       Navigator.pushNamed(

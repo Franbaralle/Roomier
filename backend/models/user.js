@@ -41,6 +41,10 @@ const userSchema = new mongoose.Schema({
     }
   },
   
+  // Arquitectura v3.0: Array plano de IDs de tags desde master_tags.json
+  // Incluye tanto hábitos de convivencia como intereses
+  my_tags: [{ type: String }],
+  
   // Legacy preferences field para migración gradual
   legacyPreferences: [{ type: String }],
   

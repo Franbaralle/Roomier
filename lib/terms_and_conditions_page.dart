@@ -38,7 +38,7 @@ class TermsAndConditionsPage extends StatelessWidget {
                 const SizedBox(height: 8),
                 Center(
                   child: Text(
-                    'Última actualización: 14 de Enero de 2026',
+                    'Última actualización: 15 de Enero de 2026',
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.grey[600],

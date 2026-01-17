@@ -186,108 +186,133 @@ class _HousingInfoPageState extends State<HousingInfoPage> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final width = size.width;
+    final height = size.height;
+    final isSmallScreen = width < 360;
+    final isMediumScreen = width >= 360 && width < 600;
+    final padding = width < 600 ? 16.0 : 24.0;
+    final titleSize = isSmallScreen ? 20.0 : 24.0;
+    final sectionSpacing = isSmallScreen ? 16.0 : 24.0;
+    
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Información de Vivienda'),
+        title: Text(
+          'Información de Vivienda',
+          style: TextStyle(fontSize: isSmallScreen ? 16 : 18),
+        ),
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                '🏠 Detalles de tu búsqueda',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.blue[50],
-                  borderRadius: BorderRadius.circular(8),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: EdgeInsets.all(padding),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '🏠 Detalles de tu búsqueda',
+                  style: TextStyle(fontSize: titleSize, fontWeight: FontWeight.bold),
                 ),
-                child: Row(
-                  children: const [
-                    Icon(Icons.lock, size: 16, color: Colors.blue),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Tu presupuesto es privado y nunca se mostrará a otros usuarios',
-                        style: TextStyle(fontSize: 12, color: Colors.blue),
+                SizedBox(height: height * 0.01),
+                Container(
+                  padding: EdgeInsets.all(padding * 0.75),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[50],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.lock, size: isSmallScreen ? 14 : 16, color: Colors.blue),
+                      SizedBox(width: width * 0.02),
+                      Expanded(
+                        child: Text(
+                          'Tu presupuesto es privado y nunca se mostrará a otros usuarios',
+                          style: TextStyle(fontSize: isSmallScreen ? 11 : 12, color: Colors.blue),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 24),
+                SizedBox(height: sectionSpacing),
 
-              // ¿Tienes lugar o buscas?
-              _buildSectionTitle('¿Cuál es tu situación?'),
-              Card(
-                child: Column(
+                // ¿Tienes lugar o buscas?
+                _buildSectionTitle('¿Cuál es tu situación?', context),
+                Card(
+                  child: Column(
+                    children: [
+                      RadioListTile<bool>(
+                        title: Text('Busco departamento/casa', style: TextStyle(fontSize: isSmallScreen ? 14 : 16)),
+                        subtitle: Text('Necesito encontrar un lugar', style: TextStyle(fontSize: isSmallScreen ? 12 : 14)),
+                        value: false,
+                        groupValue: hasPlace,
+                        onChanged: (value) => setState(() => hasPlace = value!),
+                      ),
+                      RadioListTile<bool>(
+                        title: Text('Tengo lugar y busco roommate', style: TextStyle(fontSize: isSmallScreen ? 14 : 16)),
+                        subtitle: Text('Tengo espacio disponible', style: TextStyle(fontSize: isSmallScreen ? 12 : 14)),
+                        value: true,
+                        groupValue: hasPlace,
+                        onChanged: (value) => setState(() => hasPlace = value!),
+                      ),
+                    ],
+                  ),
+                ),
+
+                SizedBox(height: sectionSpacing),
+
+                // Presupuesto
+                _buildSectionTitle('💰 Presupuesto mensual', context),
+                Text(
+                  'Rango de lo que puedes/quieres pagar por mes (incluyendo expensas)',
+                  style: TextStyle(fontSize: isSmallScreen ? 11 : 12, color: Colors.grey),
+                ),
+                SizedBox(height: height * 0.015),
+                Row(
                   children: [
-                    RadioListTile<bool>(
-                      title: const Text('Busco departamento/casa'),
-                      subtitle: const Text('Necesito encontrar un lugar'),
-                      value: false,
-                      groupValue: hasPlace,
-                      onChanged: (value) => setState(() => hasPlace = value!),
+                    Expanded(
+                      child: TextField(
+                        controller: budgetMinController,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                        style: TextStyle(fontSize: isSmallScreen ? 14 : 16),
+                        decoration: InputDecoration(
+                          labelText: 'Mínimo',
+                          labelStyle: TextStyle(fontSize: isSmallScreen ? 12 : 14),
+                          prefixText: '\$',
+                          border: const OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: padding * 0.75,
+                            vertical: padding * 0.625,
+                          ),
+                        ),
+                      ),
                     ),
-                    RadioListTile<bool>(
-                      title: const Text('Tengo lugar y busco roommate'),
-                      subtitle: const Text('Tengo espacio disponible'),
-                      value: true,
-                      groupValue: hasPlace,
-                      onChanged: (value) => setState(() => hasPlace = value!),
+                    SizedBox(width: width * 0.04),
+                    Expanded(
+                      child: TextField(
+                        controller: budgetMaxController,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                        style: TextStyle(fontSize: isSmallScreen ? 14 : 16),
+                        decoration: InputDecoration(
+                          labelText: 'Máximo',
+                          labelStyle: TextStyle(fontSize: isSmallScreen ? 12 : 14),
+                          prefixText: '\$',
+                          border: const OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: padding * 0.75,
+                            vertical: padding * 0.625,
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),
-              ),
 
-              const SizedBox(height: 24),
-
-              // Presupuesto
-              _buildSectionTitle('💰 Presupuesto mensual'),
-              const Text(
-                'Rango de lo que puedes/quieres pagar por mes (incluyendo expensas)',
-                style: TextStyle(fontSize: 12, color: Colors.grey),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: budgetMinController,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      decoration: const InputDecoration(
-                        labelText: 'Mínimo',
-                        prefixText: '\$',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: TextField(
-                      controller: budgetMaxController,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      decoration: const InputDecoration(
-                        labelText: 'Máximo',
-                        prefixText: '\$',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 24),
+              SizedBox(height: sectionSpacing),
 
               // Provincia de origen
-              _buildSectionTitle('📍 ¿De dónde sos?'),
+              _buildSectionTitle('📍 ¿De dónde sos?', context),
               if (isLoadingProvinces)
                 const Center(child: CircularProgressIndicator())
               else
@@ -321,20 +346,27 @@ class _HousingInfoPageState extends State<HousingInfoPage> {
                     return TextField(
                       controller: controller,
                       focusNode: focusNode,
-                      decoration: const InputDecoration(
+                      style: TextStyle(fontSize: isSmallScreen ? 14 : 16),
+                      decoration: InputDecoration(
                         labelText: 'Provincia/Ciudad de origen',
-                        border: OutlineInputBorder(),
+                        labelStyle: TextStyle(fontSize: isSmallScreen ? 12 : 14),
+                        border: const OutlineInputBorder(),
                         hintText: 'Ej: Buenos Aires, Córdoba, Santa Fe',
-                        suffixIcon: Icon(Icons.arrow_drop_down),
+                        hintStyle: TextStyle(fontSize: isSmallScreen ? 12 : 14),
+                        suffixIcon: const Icon(Icons.arrow_drop_down),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: padding * 0.75,
+                          vertical: padding * 0.625,
+                        ),
                       ),
                     );
                   },
                 ),
 
-              const SizedBox(height: 16),
+              SizedBox(height: height * 0.02),
 
               // Provincia de destino
-              _buildSectionTitle('📍 ¿A dónde vas?'),
+              _buildSectionTitle('📍 ¿A dónde vas?', context),
               if (isLoadingProvinces)
                 const Center(child: CircularProgressIndicator())
               else
@@ -368,22 +400,29 @@ class _HousingInfoPageState extends State<HousingInfoPage> {
                     return TextField(
                       controller: controller,
                       focusNode: focusNode,
-                      decoration: const InputDecoration(
+                      style: TextStyle(fontSize: isSmallScreen ? 14 : 16),
+                      decoration: InputDecoration(
                         labelText: 'Provincia/Ciudad destino',
-                        border: OutlineInputBorder(),
+                        labelStyle: TextStyle(fontSize: isSmallScreen ? 12 : 14),
+                        border: const OutlineInputBorder(),
                         hintText: 'Ej: Buenos Aires, Córdoba, Santa Fe',
-                        suffixIcon: Icon(Icons.arrow_drop_down),
+                        hintStyle: TextStyle(fontSize: isSmallScreen ? 12 : 14),
+                        suffixIcon: const Icon(Icons.arrow_drop_down),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: padding * 0.75,
+                          vertical: padding * 0.625,
+                        ),
                       ),
                     );
                   },
                 ),
 
-              const SizedBox(height: 16),
+              SizedBox(height: height * 0.02),
 
               // Barrios específicos (condicional según hasPlace)
               if (hasPlace && selectedOriginProvince != null) ...[
-                const SizedBox(height: 8),
-                _buildSectionTitle('🏙️ Ciudad de origen'),
+                SizedBox(height: height * 0.01),
+                _buildSectionTitle('🏙️ Ciudad de origen', context),
                 if (isLoadingCities)
                   const Center(child: CircularProgressIndicator())
                 else if (citiesOrigin.isNotEmpty)
@@ -416,35 +455,42 @@ class _HousingInfoPageState extends State<HousingInfoPage> {
                       return TextField(
                         controller: controller,
                         focusNode: focusNode,
-                        decoration: const InputDecoration(
+                        style: TextStyle(fontSize: isSmallScreen ? 14 : 16),
+                        decoration: InputDecoration(
                           labelText: 'Ciudad (ej: Córdoba, Villa Carlos Paz)',
-                          border: OutlineInputBorder(),
+                          labelStyle: TextStyle(fontSize: isSmallScreen ? 12 : 14),
+                          border: const OutlineInputBorder(),
                           hintText: 'Escribe para buscar tu ciudad',
-                          suffixIcon: Icon(Icons.search),
+                          hintStyle: TextStyle(fontSize: isSmallScreen ? 12 : 14),
+                          suffixIcon: const Icon(Icons.search),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: padding * 0.75,
+                            vertical: padding * 0.625,
+                          ),
                         ),
                       );
                     },
                   ),
-                const SizedBox(height: 12),
+                SizedBox(height: height * 0.015),
                 if (selectedOriginCity != null)
                   Text(
                     'Ciudad seleccionada: $selectedOriginCity',
-                    style: TextStyle(fontSize: 12, color: Colors.green[700], fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: isSmallScreen ? 11 : 12, color: Colors.green[700], fontWeight: FontWeight.bold),
                   ),
-                const SizedBox(height: 12),
+                SizedBox(height: height * 0.015),
                 if (selectedOriginCity != null) ...[
-                  const Text(
+                  Text(
                     'Barrios específicos donde tenés lugar (opcional)',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                    style: TextStyle(fontSize: isSmallScreen ? 13 : 14, fontWeight: FontWeight.w500),
                   ),
-                  const SizedBox(height: 8),
-                  _buildNeighborhoodSelector(true),
+                  SizedBox(height: height * 0.01),
+                  _buildNeighborhoodSelector(true, context),
                 ],
               ],
 
               if (!hasPlace && selectedDestinationProvince != null) ...[
-                const SizedBox(height: 8),
-                _buildSectionTitle('🏙️ Ciudad de destino'),
+                SizedBox(height: height * 0.01),
+                _buildSectionTitle('🏙️ Ciudad de destino', context),
                 if (isLoadingCities)
                   const Center(child: CircularProgressIndicator())
                 else if (citiesDestination.isNotEmpty)
@@ -477,40 +523,47 @@ class _HousingInfoPageState extends State<HousingInfoPage> {
                       return TextField(
                         controller: controller,
                         focusNode: focusNode,
-                        decoration: const InputDecoration(
+                        style: TextStyle(fontSize: isSmallScreen ? 14 : 16),
+                        decoration: InputDecoration(
                           labelText: 'Ciudad (ej: Córdoba, Villa Carlos Paz)',
-                          border: OutlineInputBorder(),
+                          labelStyle: TextStyle(fontSize: isSmallScreen ? 12 : 14),
+                          border: const OutlineInputBorder(),
                           hintText: 'Escribe para buscar tu ciudad',
-                          suffixIcon: Icon(Icons.search),
+                          hintStyle: TextStyle(fontSize: isSmallScreen ? 12 : 14),
+                          suffixIcon: const Icon(Icons.search),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: padding * 0.75,
+                            vertical: padding * 0.625,
+                          ),
                         ),
                       );
                     },
                   ),
-                const SizedBox(height: 12),
+                SizedBox(height: height * 0.015),
                 if (selectedDestinationCity != null)
                   Text(
                     'Ciudad seleccionada: $selectedDestinationCity',
-                    style: TextStyle(fontSize: 12, color: Colors.green[700], fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: isSmallScreen ? 11 : 12, color: Colors.green[700], fontWeight: FontWeight.bold),
                   ),
-                const SizedBox(height: 12),
+                SizedBox(height: height * 0.015),
                 if (selectedDestinationCity != null) ...[
-                  const Text(
+                  Text(
                     'Barrios donde buscás (opcional)',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                    style: TextStyle(fontSize: isSmallScreen ? 13 : 14, fontWeight: FontWeight.w500),
                   ),
-                  const SizedBox(height: 8),
-                  _buildNeighborhoodSelector(false),
+                  SizedBox(height: height * 0.01),
+                  _buildNeighborhoodSelector(false, context),
                 ],
               ],
 
-              const SizedBox(height: 24),
+              SizedBox(height: sectionSpacing),
 
               // Fecha de mudanza (solo mes)
-              _buildSectionTitle('📅 ¿Cuándo te mudas?'),
+              _buildSectionTitle('📅 ¿Cuándo te mudas?', context),
               InkWell(
                 onTap: () => _selectMoveInMonth(context),
                 child: Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(padding),
                   decoration: BoxDecoration(
                     border: Border.all(color: Colors.grey),
                     borderRadius: BorderRadius.circular(4),
@@ -523,43 +576,43 @@ class _HousingInfoPageState extends State<HousingInfoPage> {
                             ? _formatMonthYear(selectedMoveInMonth!)
                             : 'Seleccionar mes',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: isSmallScreen ? 14 : 16,
                           color: selectedMoveInMonth != null ? Colors.black : Colors.grey,
                         ),
                       ),
-                      const Icon(Icons.calendar_today, color: Colors.grey),
+                      Icon(Icons.calendar_today, color: Colors.grey, size: isSmallScreen ? 18 : 20),
                     ],
                   ),
                 ),
               ),
 
-              const SizedBox(height: 24),
+              SizedBox(height: sectionSpacing),
 
               // Duración de estadía
-              _buildSectionTitle('⏱️ ¿Por cuánto tiempo?'),
+              _buildSectionTitle('⏱️ ¿Por cuánto tiempo?', context),
               Card(
                 child: Column(
                   children: [
                     RadioListTile<String>(
-                      title: const Text('3 meses'),
+                      title: Text('3 meses', style: TextStyle(fontSize: isSmallScreen ? 14 : 16)),
                       value: '3months',
                       groupValue: stayDuration,
                       onChanged: (value) => setState(() => stayDuration = value!),
                     ),
                     RadioListTile<String>(
-                      title: const Text('6 meses'),
+                      title: Text('6 meses', style: TextStyle(fontSize: isSmallScreen ? 14 : 16)),
                       value: '6months',
                       groupValue: stayDuration,
                       onChanged: (value) => setState(() => stayDuration = value!),
                     ),
                     RadioListTile<String>(
-                      title: const Text('1 año'),
+                      title: Text('1 año', style: TextStyle(fontSize: isSmallScreen ? 14 : 16)),
                       value: '1year',
                       groupValue: stayDuration,
                       onChanged: (value) => setState(() => stayDuration = value!),
                     ),
                     RadioListTile<String>(
-                      title: const Text('Largo plazo (1+ año)'),
+                      title: Text('Largo plazo (1+ año)', style: TextStyle(fontSize: isSmallScreen ? 14 : 16)),
                       value: 'longterm',
                       groupValue: stayDuration,
                       onChanged: (value) => setState(() => stayDuration = value!),
@@ -568,27 +621,34 @@ class _HousingInfoPageState extends State<HousingInfoPage> {
                 ),
               ),
 
-              const SizedBox(height: 32),
+              SizedBox(height: sectionSpacing * 1.33),
 
               // Botón Continuar
               Center(
                 child: ElevatedButton(
                   onPressed: _handleContinue,
                   style: ElevatedButton.styleFrom(
-                    minimumSize: const Size(200, 50),
+                    minimumSize: Size(width * 0.5, height * 0.06),
+                    padding: EdgeInsets.symmetric(horizontal: padding * 2, vertical: padding),
                   ),
-                  child: const Text('Continuar'),
+                  child: Text('Continuar', style: TextStyle(fontSize: isSmallScreen ? 16 : 18)),
                 ),
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: height * 0.025),
             ],
           ),
         ),
       ),
+      ),
     );
   }
 
-  Widget _buildNeighborhoodSelector(bool isOrigin) {
+  Widget _buildNeighborhoodSelector(bool isOrigin, BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final width = size.width;
+    final isSmallScreen = width < 360;
+    final padding = width < 600 ? 12.0 : 16.0;
+    
     final neighborhoods = isOrigin ? neighborhoodsOrigin : neighborhoodsDestination;
     final selectedNeighborhoods = isOrigin ? selectedNeighborhoodsOrigin : selectedNeighborhoodsDestination;
     
@@ -607,7 +667,7 @@ class _HousingInfoPageState extends State<HousingInfoPage> {
     }
     
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
         border: Border.all(color: Colors.grey[300]!),
         borderRadius: BorderRadius.circular(8),
@@ -619,17 +679,17 @@ class _HousingInfoPageState extends State<HousingInfoPage> {
             children: [
               Icon(
                 hasRealNeighborhoods ? Icons.check_circle : Icons.edit_location_alt,
-                size: 16,
+                size: isSmallScreen ? 14 : 16,
                 color: hasRealNeighborhoods ? Colors.green : Colors.orange,
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: width * 0.02),
               Expanded(
                 child: Text(
                   hasRealNeighborhoods 
                     ? 'Barrios disponibles - Selecciona hasta 5'
                     : 'Ingresa barrios manualmente (separados por Enter)',
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: isSmallScreen ? 11 : 12,
                     color: hasRealNeighborhoods ? Colors.grey[700] : Colors.orange[700],
                     fontWeight: FontWeight.w500,
                   ),
@@ -637,19 +697,21 @@ class _HousingInfoPageState extends State<HousingInfoPage> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: padding),
           
           // Lógica híbrida: Dropdown si hay barrios, TextField libre si no
           if (hasRealNeighborhoods) ...[
             // Campo de búsqueda
             TextField(
+              style: TextStyle(fontSize: isSmallScreen ? 14 : 16),
               decoration: InputDecoration(
                 hintText: 'Buscar barrio... (ej: Nueva Córdoba)',
+                hintStyle: TextStyle(fontSize: isSmallScreen ? 12 : 14),
                 prefixIcon: const Icon(Icons.search),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                contentPadding: EdgeInsets.symmetric(horizontal: padding, vertical: padding * 0.67),
               ),
               onChanged: (value) {
                 setState(() {
@@ -657,14 +719,14 @@ class _HousingInfoPageState extends State<HousingInfoPage> {
                 });
               },
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: padding),
             // Lista filtrada de barrios
             Container(
-              constraints: const BoxConstraints(maxHeight: 200),
+              constraints: BoxConstraints(maxHeight: size.height * 0.25),
               child: SingleChildScrollView(
                 child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
+                  spacing: width * 0.02,
+                  runSpacing: width * 0.02,
                   children: neighborhoods
                       .where((neighborhood) {
                         if (neighborhoodSearchController.text.isEmpty) {
@@ -680,7 +742,10 @@ class _HousingInfoPageState extends State<HousingInfoPage> {
                         final cityName = neighborhood['cityName'] as String;
                         final isSelected = selectedNeighborhoods.contains(neighborhoodName);
                         return FilterChip(
-                          label: Text('$neighborhoodName${neighborhoodName != cityName ? ' ($cityName)' : ''}'),
+                          label: Text(
+                            '$neighborhoodName${neighborhoodName != cityName ? ' ($cityName)' : ''}',
+                            style: TextStyle(fontSize: isSmallScreen ? 12 : 14),
+                          ),
                           selected: isSelected,
                           onSelected: (selected) {
                             setState(() {
@@ -708,12 +773,16 @@ class _HousingInfoPageState extends State<HousingInfoPage> {
             // Campo de texto libre para ciudades sin barrios cargados
             TextField(
               maxLines: 3,
+              style: TextStyle(fontSize: isSmallScreen ? 14 : 16),
               decoration: InputDecoration(
                 hintText: 'Ej: Centro, Barrio Norte, Cerro de las Rosas\n(Presiona Enter para agregar)',
+                hintStyle: TextStyle(fontSize: isSmallScreen ? 12 : 14),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
                 helperText: 'Máximo 5 barrios',
+                helperStyle: TextStyle(fontSize: isSmallScreen ? 11 : 12),
+                contentPadding: EdgeInsets.all(padding),
               ),
               onSubmitted: (value) {
                 if (value.isNotEmpty && selectedNeighborhoods.length < 5) {
@@ -733,20 +802,20 @@ class _HousingInfoPageState extends State<HousingInfoPage> {
           ],
           
           if (selectedNeighborhoods.isNotEmpty) ...[
-            const SizedBox(height: 8),
+            SizedBox(height: padding * 0.67),
             const Divider(),
-            const Text(
+            Text(
               'Seleccionados:',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: isSmallScreen ? 11 : 12, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 4),
+            SizedBox(height: padding * 0.33),
             Wrap(
-              spacing: 8,
-              runSpacing: 8,
+              spacing: width * 0.02,
+              runSpacing: width * 0.02,
               children: selectedNeighborhoods.map((neighborhood) {
                 return Chip(
-                  label: Text(neighborhood),
-                  deleteIcon: const Icon(Icons.close, size: 18),
+                  label: Text(neighborhood, style: TextStyle(fontSize: isSmallScreen ? 12 : 14)),
+                  deleteIcon: Icon(Icons.close, size: isSmallScreen ? 16 : 18),
                   onDeleted: () {
                     setState(() {
                       if (isOrigin) {
@@ -807,13 +876,16 @@ class _HousingInfoPageState extends State<HousingInfoPage> {
     return '${monthNames[month - 1]} $year';
   }
 
-  Widget _buildSectionTitle(String title) {
+  Widget _buildSectionTitle(String title, BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final isSmallScreen = size.width < 360;
+    
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.only(bottom: size.height * 0.015),
       child: Text(
         title,
-        style: const TextStyle(
-          fontSize: 18,
+        style: TextStyle(
+          fontSize: isSmallScreen ? 16 : 18,
           fontWeight: FontWeight.bold,
         ),
       ),

@@ -95,74 +95,89 @@ class _ChatsListPageState extends State<ChatsListPage> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final isTablet = size.width > 600;
+    final horizontalPadding = isTablet ? size.width * 0.15 : 16.0;
+    final titleFontSize = isTablet ? 22.0 : 18.0;
+    final emptyMessageFontSize = isTablet ? 18.0 : 16.0;
+    
     return Scaffold(
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _chats.isEmpty
-              ? const Center(
-                  child: Text(
-                    'No tienes chats aún.\n¡Haz match con alguien para empezar!',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 16, color: Colors.grey),
-                  ),
-                )
-              : RefreshIndicator(
-                  onRefresh: _loadChats,
-                  child: ListView(
-                    children: [
-                      // Conversaciones
-                      if (_chats.isNotEmpty) ...[
-                        const Padding(
-                          padding: EdgeInsets.all(16),
-                          child: Text(
-                            'Conversaciones',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
+      body: SafeArea(
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _chats.isEmpty
+                ? Center(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                      child: Text(
+                        'No tienes chats aún.\n¡Haz match con alguien para empezar!',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: emptyMessageFontSize, color: Colors.grey),
+                      ),
+                    ),
+                  )
+                : RefreshIndicator(
+                    onRefresh: _loadChats,
+                    child: ListView(
+                      padding: EdgeInsets.symmetric(horizontal: horizontalPadding * 0.5),
+                      children: [
+                        // Conversaciones
+                        if (_chats.isNotEmpty) ...[
+                          Padding(
+                            padding: EdgeInsets.all(horizontalPadding * 0.5),
+                            child: Text(
+                              'Conversaciones',
+                              style: TextStyle(
+                                fontSize: titleFontSize,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
-                        ),
-                        ..._chats.map((chat) => _buildChatTile(chat)).toList(),
+                          ..._chats.map((chat) => _buildChatTile(chat, size, isTablet)).toList(),
+                        ],
+                        
+                        // Padding adicional para evitar que el contenido quede debajo de la barra de navegación
+                        SizedBox(height: isTablet ? 30 : 20),
                       ],
-                      
-                      // Padding adicional para evitar que el contenido quede debajo de la barra de navegación
-                      const SizedBox(height: 20),
-                    ],
+                    ),
                   ),
-                ),
-      bottomNavigationBar: BottomAppBar(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            IconButton(
-              onPressed: () {
-                Navigator.pushReplacementNamed(context, homeRoute);
-              },
-              icon: const Icon(Icons.home),
-            ),
-            IconButton(
-              onPressed: () {
-                // Ya estamos en chats, no hacer nada
-              },
-              icon: const Icon(Icons.chat_bubble, color: Colors.blue),
-            ),
-            IconButton(
-              onPressed: () async {
-                if (_currentUsername.isNotEmpty) {
-                  Navigator.pushNamed(
-                    context,
-                    profilePageRoute,
-                    arguments: {'username': _currentUsername},
-                  );
-                }
-              },
-              icon: _savedProfilePhoto != null
-                  ? CircleAvatar(
-                      backgroundImage: ImageUtils.getImageProvider(_savedProfilePhoto),
-                    )
-                  : const Icon(Icons.person),
-            ),
-          ],
+      ),
+      bottomNavigationBar: SafeArea(
+        child: BottomAppBar(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              IconButton(
+                onPressed: () {
+                  Navigator.pushReplacementNamed(context, homeRoute);
+                },
+                icon: Icon(Icons.home, size: isTablet ? 32 : 24),
+              ),
+              IconButton(
+                onPressed: () {
+                  // Ya estamos en chats, no hacer nada
+                },
+                icon: Icon(Icons.chat_bubble, color: Colors.blue, size: isTablet ? 32 : 24),
+              ),
+              IconButton(
+                onPressed: () async {
+                  if (_currentUsername.isNotEmpty) {
+                    Navigator.pushNamed(
+                      context,
+                      profilePageRoute,
+                      arguments: {'username': _currentUsername},
+                    );
+                  }
+                },
+                icon: _savedProfilePhoto != null
+                    ? CircleAvatar(
+                        radius: isTablet ? 18 : 14,
+                        backgroundImage: ImageUtils.getImageProvider(_savedProfilePhoto),
+                      )
+                    : Icon(Icons.person, size: isTablet ? 32 : 24),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -190,10 +205,23 @@ class _ChatsListPageState extends State<ChatsListPage> {
     }
   }
 
-  Widget _buildChatTile(Map<String, dynamic> chat) {
+  Widget _buildChatTile(Map<String, dynamic> chat, Size size, bool isTablet) {
     final otherUser = chat['otherUser'];
     final lastMessage = chat['lastMessage'];
     final unreadCount = chat['unreadCount'] ?? 0;
+    final avatarRadius = isTablet ? 34.0 : 28.0;
+    final titleFontSize = isTablet ? 18.0 : 16.0;
+    final subtitleFontSize = isTablet ? 15.0 : 14.0;
+    final timestampFontSize = isTablet ? 14.0 : 12.0;
+
+    // Extraer foto principal de profilePhotos si existe
+    String? primaryPhotoUrl;
+    if (otherUser['profilePhotos'] != null && otherUser['profilePhotos'].isNotEmpty) {
+      primaryPhotoUrl = otherUser['profilePhotos'][0]['url'];
+    } else if (otherUser['profilePhoto'] != null) {
+      // Fallback para usuarios legacy
+      primaryPhotoUrl = otherUser['profilePhoto'];
+    }
 
     return Dismissible(
       key: Key(chat['chatId']),
@@ -268,13 +296,17 @@ class _ChatsListPageState extends State<ChatsListPage> {
         }
       },
       child: ListTile(
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: isTablet ? 24 : 16,
+          vertical: isTablet ? 12 : 8,
+        ),
         leading: Stack(
           children: [
             CircleAvatar(
-              radius: 28,
-              backgroundImage: ImageUtils.getImageProvider(otherUser['profilePhoto']),
-              child: ImageUtils.getImageProvider(otherUser['profilePhoto']) == null
-                  ? const Icon(Icons.person)
+              radius: avatarRadius,
+              backgroundImage: ImageUtils.getImageProvider(primaryPhotoUrl),
+              child: ImageUtils.getImageProvider(primaryPhotoUrl) == null
+                  ? Icon(Icons.person, size: isTablet ? 34 : 28)
                   : null,
             ),
             if (unreadCount > 0)
@@ -282,20 +314,20 @@ class _ChatsListPageState extends State<ChatsListPage> {
                 right: 0,
                 top: 0,
                 child: Container(
-                  padding: const EdgeInsets.all(4),
+                  padding: EdgeInsets.all(isTablet ? 6 : 4),
                   decoration: BoxDecoration(
                     color: Colors.red,
                     shape: BoxShape.circle,
                   ),
-                  constraints: const BoxConstraints(
-                    minWidth: 20,
-                    minHeight: 20,
+                  constraints: BoxConstraints(
+                    minWidth: isTablet ? 24 : 20,
+                    minHeight: isTablet ? 24 : 20,
                   ),
                   child: Text(
                     unreadCount > 99 ? '99+' : '$unreadCount',
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
-                      fontSize: 10,
+                      fontSize: isTablet ? 11 : 10,
                       fontWeight: FontWeight.bold,
                     ),
                     textAlign: TextAlign.center,
@@ -307,6 +339,7 @@ class _ChatsListPageState extends State<ChatsListPage> {
         title: Text(
           otherUser['username'] ?? 'Usuario',
           style: TextStyle(
+            fontSize: titleFontSize,
             fontWeight: unreadCount > 0
                 ? FontWeight.bold
                 : FontWeight.normal,
@@ -316,6 +349,7 @@ class _ChatsListPageState extends State<ChatsListPage> {
             ? Text(
                 'escribiendo...',
                 style: TextStyle(
+                  fontSize: subtitleFontSize,
                   color: Colors.blue,
                   fontStyle: FontStyle.italic,
                   fontWeight: FontWeight.w500,
@@ -327,6 +361,7 @@ class _ChatsListPageState extends State<ChatsListPage> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
+                      fontSize: subtitleFontSize,
                       color: unreadCount > 0
                           ? Colors.black87
                           : Colors.grey,
@@ -335,15 +370,15 @@ class _ChatsListPageState extends State<ChatsListPage> {
                       : FontWeight.normal,
                 ),
               )
-            : const Text(
+            : Text(
                 'No hay mensajes aún',
-                style: TextStyle(color: Colors.grey),
+                style: TextStyle(fontSize: subtitleFontSize, color: Colors.grey),
               ),
         trailing: lastMessage != null
             ? Text(
                 _formatTimestamp(lastMessage['timestamp']),
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: timestampFontSize,
                   color: unreadCount > 0
                       ? Theme.of(context).primaryColor
                       : Colors.grey,
@@ -357,7 +392,7 @@ class _ChatsListPageState extends State<ChatsListPage> {
             arguments: {
               'profile': {
                 'username': otherUser['username'],
-                'profilePhoto': otherUser['profilePhoto'],
+                'profilePhoto': primaryPhotoUrl,
               },
               'chatId': chat['chatId'],
             },

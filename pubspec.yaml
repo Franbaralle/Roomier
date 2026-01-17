@@ -81,6 +81,7 @@ flutter:
     - assets/ChatGPT Image 5 ene 2026, 08_41_59.png
     - assets/ChatGPT Image 5 ene 2026, 08_46_40.png
     - assets/logo_en_blanco.png
+    - assets/data/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware

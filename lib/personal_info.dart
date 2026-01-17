@@ -26,6 +26,15 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final isSmallScreen = size.width < 600;
+    final cardWidth = isSmallScreen ? size.width * 0.95 : 500.0;
+    final horizontalPadding = isSmallScreen ? 16.0 : 24.0;
+    final cardPadding = isSmallScreen ? 20.0 : 32.0;
+    final iconSize = isSmallScreen ? 28.0 : 32.0;
+    final titleFontSize = isSmallScreen ? 20.0 : 24.0;
+    final subtitleFontSize = isSmallScreen ? 12.0 : 14.0;
+    
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
@@ -34,51 +43,54 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
         elevation: 0,
         backgroundColor: Colors.blue.shade700,
       ),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Card(
-            elevation: 8,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Container(
-              width: 500,
-              padding: const EdgeInsets.all(32.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.person_outline,
-                        size: 32,
-                        color: Colors.blue.shade700,
-                      ),
-                      const SizedBox(width: 12),
-                      const Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Cuéntanos sobre ti',
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.all(horizontalPadding),
+            child: Card(
+              elevation: 8,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Container(
+                width: cardWidth,
+                padding: EdgeInsets.all(cardPadding),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.person_outline,
+                          size: iconSize,
+                          color: Colors.blue.shade700,
+                        ),
+                        SizedBox(width: isSmallScreen ? 8 : 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Cuéntanos sobre ti',
+                                style: TextStyle(
+                                  fontSize: titleFontSize,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                'Esta información aparecerá en tu perfil',
+                                style: TextStyle(
+                                  fontSize: subtitleFontSize,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ],
                           ),
-                          Text(
-                            'Esta información aparecerá en tu perfil',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 32),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: isSmallScreen ? 20 : 32),
                   TextField(
                     controller: jobController,
                     decoration: InputDecoration(
@@ -92,10 +104,10 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
                       fillColor: Colors.grey[50],
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: isSmallScreen ? 16 : 24),
                   // Sección de datos sensibles (Ley 25.326)
                   Container(
-                    padding: const EdgeInsets.all(16),
+                    padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
                     decoration: BoxDecoration(
                       color: Colors.amber.shade50,
                       borderRadius: BorderRadius.circular(12),
@@ -106,21 +118,23 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.info_outline, color: Colors.amber.shade700, size: 20),
+                            Icon(Icons.info_outline, color: Colors.amber.shade700, size: isSmallScreen ? 18 : 20),
                             const SizedBox(width: 8),
-                            const Text(
-                              'Datos Sensibles (Opcional)',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
+                            Flexible(
+                              child: Text(
+                                'Datos Sensibles (Opcional)',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: isSmallScreen ? 13 : 14,
+                                ),
                               ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 8),
-                        const Text(
+                        Text(
                           'Religión y preferencia política son datos sensibles (Ley 25.326). Son opcionales y se usarán solo para mejorar tu compatibilidad.',
-                          style: TextStyle(fontSize: 12, color: Colors.black87),
+                          style: TextStyle(fontSize: isSmallScreen ? 11 : 12, color: Colors.black87),
                         ),
                         const SizedBox(height: 12),
                         Row(
@@ -138,10 +152,10 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
                                 });
                               },
                             ),
-                            const Expanded(
+                            Expanded(
                               child: Text(
                                 'Doy mi consentimiento expreso para el tratamiento de mis datos sensibles (religión y preferencia política)',
-                                style: TextStyle(fontSize: 12),
+                                style: TextStyle(fontSize: isSmallScreen ? 11 : 12),
                               ),
                             ),
                           ],
@@ -185,17 +199,17 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
                       fillColor: _consentSensitiveData ? Colors.grey[50] : Colors.grey[200],
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: isSmallScreen ? 12 : 16),
                   TextField(
                     controller: aboutMeController,
-                    maxLines: 5,
+                    maxLines: isSmallScreen ? 4 : 5,
                     maxLength: 300,
                     decoration: InputDecoration(
                       labelText: 'Sobre mí',
                       hintText: 'Cuéntanos más sobre ti (máx. 300 caracteres)',
-                      prefixIcon: const Padding(
-                        padding: EdgeInsets.only(bottom: 80),
-                        child: Icon(Icons.edit_outlined),
+                      prefixIcon: Padding(
+                        padding: EdgeInsets.only(bottom: isSmallScreen ? 60 : 80),
+                        child: const Icon(Icons.edit_outlined),
                       ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -205,10 +219,10 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
                       alignLabelWithHint: true,
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: isSmallScreen ? 16 : 24),
                   SizedBox(
                     width: double.infinity,
-                    height: 50,
+                    height: isSmallScreen ? 48 : 50,
                     child: ElevatedButton(
                       onPressed: () async {
                         // Guardar temporalmente en SharedPreferences
@@ -231,9 +245,9 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
                         ),
                         elevation: 2,
                       ),
-                      child: const Text(
+                      child: Text(
                         'Continuar',
-                        style: TextStyle(fontSize: 16, color: Colors.white),
+                        style: TextStyle(fontSize: isSmallScreen ? 15 : 16, color: Colors.white),
                       ),
                     ),
                   ),
@@ -242,6 +256,7 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
             ),
           ),
         ),
+      ),
       ),
     );
   }

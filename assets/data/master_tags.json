@@ -1,0 +1,340 @@
+{
+  "version": "3.0",
+  "config": {
+    "max_global_interests": 25,
+    "requires_all_habits_answered": true,
+    "deal_breaker_enabled": true
+  },
+  "sections": [
+    {
+      "id": "living_habits",
+      "title": "🏠 Hábitos de Convivencia",
+      "description": "Información básica sobre tu estilo de vida",
+      "ui_type": "step_wizard",
+      "is_deal_breaker_eligible": true,
+      "categories": [
+        {
+          "id": "smoking_habit",
+          "label": "Hábito de Fumar",
+          "question": "¿Cuál es tu relación con el tabaco?",
+          "selection_mode": "single",
+          "required": true,
+          "tags": [
+            {"id": "smoker", "label": "Fumador", "icon": "🚬"},
+            {"id": "non_smoker", "label": "No fumador", "icon": "🚭"},
+            {"id": "outdoor_smoker", "label": "Solo en exteriores", "icon": "🌳"}
+          ]
+        },
+        {
+          "id": "pets_habit",
+          "label": "Mascotas",
+          "question": "¿Tienes o te gustan las mascotas?",
+          "selection_mode": "single",
+          "required": true,
+          "tags": [
+            {"id": "has_pets", "label": "Tengo mascotas", "icon": "🐕"},
+            {"id": "no_pets", "label": "No tengo mascotas", "icon": "🤷"},
+            {"id": "likes_pets", "label": "Me gustan (no tengo)", "icon": "❤️"},
+            {"id": "allergic", "label": "Soy alérgico/a", "icon": "🤧"}
+          ]
+        },
+        {
+          "id": "schedule",
+          "label": "Horarios",
+          "question": "¿Cuál es tu rutina diaria?",
+          "selection_mode": "single",
+          "required": true,
+          "tags": [
+            {"id": "early_bird", "label": "Madrugador", "icon": "☀️"},
+            {"id": "night_owl", "label": "Noctámbulo", "icon": "🌙"},
+            {"id": "flexible", "label": "Horario flexible", "icon": "🕐"}
+          ]
+        },
+        {
+          "id": "cleanliness",
+          "label": "Limpieza",
+          "question": "¿Qué tan ordenado/a eres?",
+          "selection_mode": "single",
+          "required": true,
+          "tags": [
+            {"id": "clean_freak", "label": "Muy ordenado", "icon": "✨"},
+            {"id": "moderate", "label": "Promedio", "icon": "🧹"},
+            {"id": "messy", "label": "Relajado/Desordenado", "icon": "🌀"}
+          ]
+        },
+        {
+          "id": "guests",
+          "label": "Visitas",
+          "question": "¿Con qué frecuencia recibes visitas?",
+          "selection_mode": "single",
+          "required": true,
+          "tags": [
+            {"id": "always_hosting", "label": "Frecuentemente", "icon": "🎉"},
+            {"id": "sometimes", "label": "Ocasionalmente", "icon": "👥"},
+            {"id": "private", "label": "Raramente/Privado", "icon": "🚪"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "interests",
+      "title": "🎨 Intereses y Gustos",
+      "description": "Selecciona hasta 25 cosas que te definan",
+      "ui_type": "tabs_navigation",
+      "is_deal_breaker_eligible": false,
+      "categories": [
+        {
+          "id": "convivencia",
+          "label": "🏠 Convivencia y Estilo de Vida",
+          "selection_mode": "multiple",
+          "subcategories": [
+            {
+              "id": "hogar",
+              "label": "Hogar",
+              "tags": [
+                {"id": "plantas_jardineria", "label": "Plantas/Jardinería", "icon": "🌿"},
+                {"id": "decoracion_interiores", "label": "Decoración", "icon": "🏠"},
+                {"id": "diy_bricolaje", "label": "DIY/Bricolaje", "icon": "🔨"},
+                {"id": "minimalismo", "label": "Minimalismo", "icon": "✨"},
+                {"id": "organizacion_limpieza", "label": "Organización", "icon": "🧹"},
+                {"id": "feng_shui", "label": "Feng Shui", "icon": "☯️"}
+              ]
+            },
+            {
+              "id": "social",
+              "label": "Social",
+              "tags": [
+                {"id": "anfitrion_cenas", "label": "Anfitrión de cenas", "icon": "🍽️"},
+                {"id": "salidas_nocturnas", "label": "Salidas nocturnas", "icon": "🌙"},
+                {"id": "planes_tranquilos", "label": "Planes tranquilos", "icon": "📚"},
+                {"id": "club_lectura", "label": "Club de lectura", "icon": "📖"},
+                {"id": "juegos_mesa", "label": "Juegos de mesa", "icon": "🎲"},
+                {"id": "karaoke", "label": "Karaoke", "icon": "🎤"}
+              ]
+            },
+            {
+              "id": "mascotas",
+              "label": "Mascotas",
+              "tags": [
+                {"id": "dog_lover", "label": "Dog lover", "icon": "🐕"},
+                {"id": "cat_lover", "label": "Cat lover", "icon": "🐈"},
+                {"id": "rescate_animal", "label": "Rescate animal", "icon": "❤️"},
+                {"id": "animales_exoticos", "label": "Animales exóticos", "icon": "🦎"},
+                {"id": "alergias", "label": "Alergias", "icon": "⚠️"}
+              ]
+            }
+          ]
+        },
+        {
+          "id": "gastronomia",
+          "label": "🍳 Gastronomía y Nutrición",
+          "selection_mode": "multiple",
+          "subcategories": [
+            {
+              "id": "habitos",
+              "label": "Hábitos",
+              "tags": [
+                {"id": "vegetariana", "label": "Vegetariana", "icon": "🥗"},
+                {"id": "vegana", "label": "Vegana", "icon": "🌱"},
+                {"id": "celiacos", "label": "Celíacos", "icon": "🌾"},
+                {"id": "meal_prep", "label": "Meal prep", "icon": "📦"},
+                {"id": "cocina_saludable", "label": "Cocina saludable", "icon": "🥑"},
+                {"id": "foodie", "label": "Foodie", "icon": "🍴"}
+              ]
+            },
+            {
+              "id": "bebidas",
+              "label": "Bebidas",
+              "tags": [
+                {"id": "cafe_especialidad", "label": "Café de especialidad", "icon": "☕"},
+                {"id": "te_mate", "label": "Té/Mate", "icon": "🍵"},
+                {"id": "cerveza_artesanal", "label": "Cerveza artesanal", "icon": "🍺"},
+                {"id": "cocteleria", "label": "Coctelería", "icon": "🍹"},
+                {"id": "catas_vino", "label": "Catas de vino", "icon": "🍷"}
+              ]
+            },
+            {
+              "id": "habilidades",
+              "label": "Habilidades",
+              "tags": [
+                {"id": "reposteria", "label": "Repostería", "icon": "🧁"},
+                {"id": "parrillero_asado", "label": "Parrillero/Asado", "icon": "🥩"},
+                {"id": "cocina_internacional", "label": "Cocina internacional", "icon": "🌍"},
+                {"id": "panaderia_artesanal", "label": "Panadería artesanal", "icon": "🥖"}
+              ]
+            }
+          ]
+        },
+        {
+          "id": "deporte",
+          "label": "🏃 Deporte y Bienestar",
+          "selection_mode": "multiple",
+          "subcategories": [
+            {
+              "id": "intensidad",
+              "label": "Intensidad",
+              "tags": [
+                {"id": "gimnasio", "label": "Gimnasio", "icon": "💪"},
+                {"id": "crossfit", "label": "CrossFit", "icon": "🏋️"},
+                {"id": "calistenia", "label": "Calistenia", "icon": "🤸"},
+                {"id": "running", "label": "Running", "icon": "🏃"},
+                {"id": "ciclismo_urbano", "label": "Ciclismo urbano", "icon": "🚴"}
+              ]
+            },
+            {
+              "id": "menteCuerpo",
+              "label": "Mente y Cuerpo",
+              "tags": [
+                {"id": "yoga", "label": "Yoga", "icon": "🧘"},
+                {"id": "meditacion", "label": "Meditación", "icon": "🕉️"},
+                {"id": "pilates", "label": "Pilates", "icon": "🤸‍♀️"},
+                {"id": "salud_mental", "label": "Salud mental", "icon": "💆"},
+                {"id": "espiritualidad", "label": "Espiritualidad", "icon": "✨"}
+              ]
+            },
+            {
+              "id": "deportesPelota",
+              "label": "Deportes de Pelota",
+              "tags": [
+                {"id": "futbol", "label": "Fútbol", "icon": "⚽"},
+                {"id": "basquet", "label": "Básquet", "icon": "🏀"},
+                {"id": "voley", "label": "Vóley", "icon": "🏐"},
+                {"id": "padel", "label": "Pádel", "icon": "🎾"},
+                {"id": "tenis", "label": "Tenis", "icon": "🎾"},
+                {"id": "rugby", "label": "Rugby", "icon": "🏉"}
+              ]
+            },
+            {
+              "id": "aguaNaturaleza",
+              "label": "Agua/Naturaleza",
+              "tags": [
+                {"id": "trekking", "label": "Trekking", "icon": "🥾"},
+                {"id": "surf", "label": "Surf", "icon": "🏄"},
+                {"id": "natacion", "label": "Natación", "icon": "🏊"},
+                {"id": "buceo", "label": "Buceo", "icon": "🤿"},
+                {"id": "escalada", "label": "Escalada", "icon": "🧗"},
+                {"id": "camping", "label": "Camping", "icon": "⛺"}
+              ]
+            }
+          ]
+        },
+        {
+          "id": "entretenimiento",
+          "label": "🎭 Entretenimiento y Ocio",
+          "selection_mode": "multiple",
+          "subcategories": [
+            {
+              "id": "pantalla",
+              "label": "Pantalla",
+              "tags": [
+                {"id": "cine_independiente", "label": "Cine independiente", "icon": "🎬"},
+                {"id": "documentales", "label": "Documentales", "icon": "📺"},
+                {"id": "true_crime", "label": "True Crime", "icon": "🔍"},
+                {"id": "anime", "label": "Anime", "icon": "🎌"},
+                {"id": "ciencia_ficcion", "label": "Ciencia Ficción", "icon": "🚀"},
+                {"id": "reality_shows", "label": "Reality Shows", "icon": "📺"}
+              ]
+            },
+            {
+              "id": "musica",
+              "label": "Música",
+              "tags": [
+                {"id": "conciertos_recitales", "label": "Conciertos", "icon": "🎸"},
+                {"id": "festivales", "label": "Festivales", "icon": "🎪"},
+                {"id": "tocar_instrumento", "label": "Tocar instrumento", "icon": "🎹"},
+                {"id": "produccion_musical", "label": "Producción musical", "icon": "🎧"},
+                {"id": "vinilos", "label": "Vinilos", "icon": "💿"},
+                {"id": "jazz_blues", "label": "Jazz/Blues", "icon": "🎺"},
+                {"id": "techno_house", "label": "Techno/House", "icon": "🎵"},
+                {"id": "rock", "label": "Rock", "icon": "🎸"},
+                {"id": "urbano", "label": "Urbano", "icon": "🎤"}
+              ]
+            },
+            {
+              "id": "gaming",
+              "label": "Gaming",
+              "tags": [
+                {"id": "videojuegos_competitivos", "label": "Videojuegos", "icon": "🎮"},
+                {"id": "juegos_rol", "label": "Juegos de rol", "icon": "🎲"},
+                {"id": "streamers_twitch", "label": "Streamers/Twitch", "icon": "📹"},
+                {"id": "esports", "label": "E-sports", "icon": "🏆"},
+                {"id": "retrogaming", "label": "Retrogaming", "icon": "👾"}
+              ]
+            }
+          ]
+        },
+        {
+          "id": "creatividad",
+          "label": "🧠 Creatividad y Tecnología",
+          "selection_mode": "multiple",
+          "subcategories": [
+            {
+              "id": "artesPlasticas",
+              "label": "Artes Plásticas",
+              "tags": [
+                {"id": "dibujo_pintura", "label": "Dibujo/Pintura", "icon": "🎨"},
+                {"id": "alfareria_ceramica", "label": "Alfarería/Cerámica", "icon": "🏺"},
+                {"id": "fotografia_analogica", "label": "Fotografía analógica", "icon": "📷"},
+                {"id": "diseno_grafico", "label": "Diseño gráfico", "icon": "💻"},
+                {"id": "tatuajes", "label": "Tatuajes", "icon": "🖊️"}
+              ]
+            },
+            {
+              "id": "tecnologia",
+              "label": "Tecnología",
+              "tags": [
+                {"id": "programacion", "label": "Programación", "icon": "💻"},
+                {"id": "inteligencia_artificial", "label": "IA", "icon": "🤖"},
+                {"id": "crypto_web3", "label": "Crypto/Web3", "icon": "₿"},
+                {"id": "gadgets", "label": "Gadgets", "icon": "📱"},
+                {"id": "robotica", "label": "Robótica", "icon": "🤖"}
+              ]
+            },
+            {
+              "id": "moda",
+              "label": "Moda",
+              "tags": [
+                {"id": "upcycling", "label": "Upcycling", "icon": "♻️"},
+                {"id": "vintage_thrifting", "label": "Vintage/Thrifting", "icon": "👗"},
+                {"id": "diseno_moda", "label": "Diseño de moda", "icon": "👔"},
+                {"id": "maquillaje_artistico", "label": "Maquillaje artístico", "icon": "💄"}
+              ]
+            }
+          ]
+        },
+        {
+          "id": "interesesSociales",
+          "label": "🌍 Intereses Sociales y Conocimiento",
+          "selection_mode": "multiple",
+          "subcategories": [
+            {
+              "id": "causas",
+              "label": "Causas",
+              "tags": [
+                {"id": "activismo_ambiental", "label": "Activismo ambiental", "icon": "🌍"},
+                {"id": "voluntariado", "label": "Voluntariado", "icon": "🤝"},
+                {"id": "feminismo", "label": "Feminismo", "icon": "💪"},
+                {"id": "derechos_humanos", "label": "Derechos humanos", "icon": "✊"},
+                {"id": "politica", "label": "Política", "icon": "🗳️"},
+                {"id": "sostenibilidad", "label": "Sostenibilidad", "icon": "♻️"}
+              ]
+            },
+            {
+              "id": "conocimiento",
+              "label": "Conocimiento",
+              "tags": [
+                {"id": "idiomas", "label": "Idiomas", "icon": "🌐"},
+                {"id": "historia", "label": "Historia", "icon": "📜"},
+                {"id": "filosofia", "label": "Filosofía", "icon": "🤔"},
+                {"id": "psicologia", "label": "Psicología", "icon": "🧠"},
+                {"id": "astrologia", "label": "Astrología", "icon": "⭐"},
+                {"id": "astronomia", "label": "Astronomía", "icon": "🔭"},
+                {"id": "finanzas_personales", "label": "Finanzas personales", "icon": "💰"}
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

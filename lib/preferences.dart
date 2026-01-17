@@ -3,7 +3,8 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'routes.dart';
 import 'auth_service.dart';
-import 'preferences_data.dart';
+import 'services/tag_service.dart';
+import 'models/tag_models.dart';
 
 class PreferencesPage extends StatefulWidget {
   final String username;
@@ -16,54 +17,63 @@ class PreferencesPage extends StatefulWidget {
 }
 
 class _PreferencesPageState extends State<PreferencesPage> {
-  // Mapa para almacenar las preferencias seleccionadas por categoría y subcategoría
-  Map<String, Map<String, List<String>>> selectedPreferences = {};
+  final TagService _tagService = TagService();
+  
+  // Tags seleccionados como array plano (v3.0)
+  List<String> selectedTagIds = [];
+  
+  // Sección de intereses desde master_tags.json
+  TagSection? _interestsSection;
   
   // Categoría actualmente expandida
   String? expandedCategory;
+  
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    // Inicializar estructura vacía
-    for (var mainCat in PreferencesData.categories.keys) {
-      selectedPreferences[mainCat] = {};
-      for (var subCat in PreferencesData.categories[mainCat]!.keys) {
-        selectedPreferences[mainCat]![subCat] = [];
-      }
+    _loadInterestsSection();
+  }
+  
+  Future<void> _loadInterestsSection() async {
+    try {
+      _interestsSection = _tagService.getSection('interests');
+      setState(() {
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('❌ Error cargando sección interests: $e');
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
   // Contar total de tags seleccionados
   int getTotalSelectedCount() {
-    int count = 0;
-    selectedPreferences.forEach((mainCat, subCats) {
-      subCats.forEach((subCat, tags) {
-        count += tags.length;
-      });
-    });
-    return count;
+    return selectedTagIds.length;
   }
 
   // Contar tags seleccionados en una subcategoría específica
-  int getSubcategoryCount(String mainCat, String subCat) {
-    return selectedPreferences[mainCat]?[subCat]?.length ?? 0;
+  int getSubcategoryCount(TagSubcategory subcategory) {
+    return subcategory.tags.where((tag) => selectedTagIds.contains(tag.id)).length;
   }
 
   // Toggle de un tag
-  void toggleTag(String mainCat, String subCat, String tag) {
+  void toggleTag(String tagId) {
     setState(() {
-      final currentTags = selectedPreferences[mainCat]![subCat]!;
-      if (currentTags.contains(tag)) {
-        currentTags.remove(tag);
+      if (selectedTagIds.contains(tagId)) {
+        selectedTagIds.remove(tagId);
       } else {
-        // Limitar a 5 por subcategoría
-        if (currentTags.length < 5) {
-          currentTags.add(tag);
+        // Verificar límite global de 25 tags
+        final maxGlobal = _tagService.config.maxGlobalInterests;
+        if (selectedTagIds.length < maxGlobal) {
+          selectedTagIds.add(tagId);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Máximo 5 tags por subcategoría'),
+              content: Text('Máximo $maxGlobal tags totales'),
               duration: Duration(seconds: 2),
               backgroundColor: Colors.orange,
             ),
@@ -76,222 +86,258 @@ class _PreferencesPageState extends State<PreferencesPage> {
   @override
   Widget build(BuildContext context) {
     final totalSelected = getTotalSelectedCount();
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final maxGlobal = _tagService.config.maxGlobalInterests;
+    
+    // Loading state
+    if (_isLoading || _interestsSection == null) {
+      return Scaffold(
+        backgroundColor: Colors.grey[100],
+        appBar: AppBar(
+          title: const Text('Tus Intereses'),
+          centerTitle: true,
+          elevation: 0,
+          backgroundColor: Colors.blue.shade700,
+        ),
+        body: Center(
+          child: CircularProgressIndicator(
+            color: Colors.blue.shade700,
+          ),
+        ),
+      );
+    }
     
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: const Text('Tus Intereses'),
+        title: Text(_interestsSection!.title),
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.blue.shade700,
       ),
-      body: Column(
-        children: [
-          // Header con contador
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black12,
-                  blurRadius: 4,
-                  offset: Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                Text(
-                  'Selecciona hasta 5 tags por subcategoría',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.grey[700],
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Header con contador
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.all(screenWidth * 0.04),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: screenWidth * 0.01,
+                    offset: Offset(0, screenHeight * 0.002),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.shade50,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    '$totalSelected tags seleccionados',
+                ],
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    _interestsSection!.description,
                     style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue.shade700,
+                      fontSize: screenWidth * 0.04,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey[700],
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
-          
-          // Lista de categorías
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: PreferencesData.categories.length,
-              itemBuilder: (context, index) {
-                final mainCat = PreferencesData.categories.keys.elementAt(index);
-                final subCategories = PreferencesData.categories[mainCat]!;
-                final isExpanded = expandedCategory == mainCat;
-                
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                  SizedBox(height: screenHeight * 0.01),
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: screenWidth * 0.05,
+                      vertical: screenHeight * 0.012,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(screenWidth * 0.05),
+                    ),
+                    child: Text(
+                      '$totalSelected / $maxGlobal tags seleccionados',
+                      style: TextStyle(
+                        fontSize: screenWidth * 0.045,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue.shade700,
+                      ),
+                    ),
                   ),
-                  child: Column(
-                    children: [
-                      InkWell(
-                        onTap: () {
-                          setState(() {
-                            expandedCategory = isExpanded ? null : mainCat;
-                          });
-                        },
-                        borderRadius: BorderRadius.circular(12),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  PreferencesData.categoryLabels[mainCat] ?? mainCat,
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.blue.shade700,
+                ],
+              ),
+            ),
+            
+            // Lista de categorías
+            Expanded(
+              child: ListView.builder(
+                padding: EdgeInsets.all(screenWidth * 0.04),
+                itemCount: _interestsSection!.categories.length,
+                itemBuilder: (context, index) {
+                  final category = _interestsSection!.categories[index];
+                  final isExpanded = expandedCategory == category.id;
+                  
+                  return Card(
+                    margin: EdgeInsets.only(bottom: screenHeight * 0.015),
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                    ),
+                    child: Column(
+                      children: [
+                        InkWell(
+                          onTap: () {
+                            setState(() {
+                              expandedCategory = isExpanded ? null : category.id;
+                            });
+                          },
+                          borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                          child: Padding(
+                            padding: EdgeInsets.all(screenWidth * 0.04),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    category.label,
+                                    style: TextStyle(
+                                      fontSize: screenWidth * 0.045,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.blue.shade700,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              Icon(
-                                isExpanded ? Icons.expand_less : Icons.expand_more,
-                                color: Colors.blue.shade700,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      if (isExpanded)
-                        ...subCategories.entries.map((subCatEntry) {
-                          final subCat = subCatEntry.key;
-                          final tags = subCatEntry.value;
-                          final selectedCount = getSubcategoryCount(mainCat, subCat);
-                          
-                          return Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              border: Border(
-                                top: BorderSide(color: Colors.grey.shade200),
-                              ),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Text(
-                                      PreferencesData.subcategoryLabels[subCat] ?? subCat,
-                                      style: TextStyle(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.grey[800],
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 2,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: selectedCount > 0
-                                            ? Colors.blue.shade100
-                                            : Colors.grey.shade200,
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      child: Text(
-                                        '$selectedCount/5',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold,
-                                          color: selectedCount > 0
-                                              ? Colors.blue.shade700
-                                              : Colors.grey[600],
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-                                Wrap(
-                                  spacing: 8,
-                                  runSpacing: 8,
-                                  children: tags.map((tag) {
-                                    final isSelected = selectedPreferences[mainCat]![subCat]!.contains(tag);
-                                    
-                                    return FilterChip(
-                                      label: Text(
-                                        PreferencesData.tagLabels[tag] ?? tag,
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          color: isSelected ? Colors.white : Colors.grey[800],
-                                        ),
-                                      ),
-                                      selected: isSelected,
-                                      onSelected: (_) => toggleTag(mainCat, subCat, tag),
-                                      selectedColor: Colors.blue.shade600,
-                                      checkmarkColor: Colors.white,
-                                      backgroundColor: Colors.grey[100],
-                                      elevation: isSelected ? 3 : 1,
-                                      pressElevation: 5,
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 8,
-                                      ),
-                                    );
-                                  }).toList(),
+                                Icon(
+                                  isExpanded ? Icons.expand_less : Icons.expand_more,
+                                  color: Colors.blue.shade700,
+                                  size: screenWidth * 0.06,
                                 ),
                               ],
                             ),
-                          );
-                        }).toList(),
-                    ],
+                          ),
+                        ),
+                        if (isExpanded && category.subcategories != null)
+                          ...category.subcategories!.map((subcategory) {
+                            final selectedCount = getSubcategoryCount(subcategory);
+                            
+                            return Container(
+                              padding: EdgeInsets.all(screenWidth * 0.04),
+                              decoration: BoxDecoration(
+                                border: Border(
+                                  top: BorderSide(color: Colors.grey.shade200),
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Text(
+                                        subcategory.label,
+                                        style: TextStyle(
+                                          fontSize: screenWidth * 0.0375,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.grey[800],
+                                        ),
+                                      ),
+                                      SizedBox(width: screenWidth * 0.02),
+                                      Container(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: screenWidth * 0.02,
+                                          vertical: screenHeight * 0.002,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: selectedCount > 0
+                                              ? Colors.blue.shade100
+                                              : Colors.grey.shade200,
+                                          borderRadius: BorderRadius.circular(screenWidth * 0.025),
+                                        ),
+                                        child: Text(
+                                          '$selectedCount seleccionados',
+                                          style: TextStyle(
+                                            fontSize: screenWidth * 0.03,
+                                            fontWeight: FontWeight.bold,
+                                            color: selectedCount > 0
+                                                ? Colors.blue.shade700
+                                                : Colors.grey[600],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(height: screenHeight * 0.015),
+                                  Wrap(
+                                    spacing: screenWidth * 0.02,
+                                    runSpacing: screenHeight * 0.01,
+                                    children: subcategory.tags.map((tag) {
+                                      final isSelected = selectedTagIds.contains(tag.id);
+                                      
+                                      return FilterChip(
+                                        label: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            if (tag.icon != null) ...[
+                                              Text(
+                                                tag.icon!,
+                                                style: TextStyle(fontSize: screenWidth * 0.035),
+                                              ),
+                                              SizedBox(width: screenWidth * 0.01),
+                                            ],
+                                            Text(
+                                              tag.label,
+                                              style: TextStyle(
+                                                fontSize: screenWidth * 0.0325,
+                                                color: isSelected ? Colors.white : Colors.grey[800],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        selected: isSelected,
+                                        onSelected: (_) => toggleTag(tag.id),
+                                        selectedColor: Colors.blue.shade600,
+                                        checkmarkColor: Colors.white,
+                                        backgroundColor: Colors.grey[100],
+                                        elevation: isSelected ? 3 : 1,
+                                        pressElevation: 5,
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: screenWidth * 0.02,
+                                          vertical: screenHeight * 0.01,
+                                        ),
+                                      );
+                                    }).toList(),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+            
+            // Botón de continuar
+            Container(
+              padding: EdgeInsets.all(screenWidth * 0.04),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: screenWidth * 0.01,
+                    offset: Offset(0, -screenHeight * 0.002),
                   ),
-                );
-              },
-            ),
-          ),
-          
-          // Botón de continuar
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black12,
-                  blurRadius: 4,
-                  offset: Offset(0, -2),
-                ),
-              ],
-            ),
-            child: SafeArea(
+                ],
+              ),
               child: SizedBox(
                 width: double.infinity,
-                height: 50,
+                height: screenHeight * 0.06,
                 child: ElevatedButton(
                   onPressed: totalSelected > 0
                       ? () async {
-                          // Guardar preferencias temporalmente
+                          // Guardar tags seleccionados como array plano (v3.0)
                           final prefs = await SharedPreferences.getInstance();
-                          await prefs.setString('temp_register_preferences', json.encode(selectedPreferences));
+                          await prefs.setString('temp_register_interests_tags', json.encode(selectedTagIds));
+                          
+                          print('🏷️ Tags de intereses guardados: $selectedTagIds');
                           
                           Navigator.pushNamed(
                             context,
@@ -307,14 +353,14 @@ class _PreferencesPageState extends State<PreferencesPage> {
                     backgroundColor: Colors.blue.shade700,
                     disabledBackgroundColor: Colors.grey[300],
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(screenWidth * 0.03),
                     ),
                     elevation: 2,
                   ),
-                  child: const Text(
+                  child: Text(
                     'Continuar',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: screenWidth * 0.04,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
@@ -322,8 +368,8 @@ class _PreferencesPageState extends State<PreferencesPage> {
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

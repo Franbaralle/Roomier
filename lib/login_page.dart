@@ -34,6 +34,16 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Dimensiones responsive
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final padding = screenWidth * 0.06; // 6% padding
+    final cardWidth = screenWidth > 600 ? 400.0 : screenWidth * 0.9;
+    final logoSize = screenWidth * 0.2; // 20% del ancho
+    final titleFontSize = screenWidth * 0.07; // 7% del ancho
+    final subtitleFontSize = screenWidth * 0.035; // 3.5% del ancho
+    final buttonHeight = screenHeight * 0.06; // 6% de la altura
+    
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
@@ -50,53 +60,54 @@ class _LoginPageState extends State<LoginPage> {
           ),
         ),
       ),
-      body: Center(
+      body: SafeArea(
+        child: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
+          padding: EdgeInsets.all(padding),
           child: Card(
             elevation: 8,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
             child: Container(
-              width: 400,
-              padding: const EdgeInsets.all(32.0),
+              width: cardWidth,
+              padding: EdgeInsets.all(padding * 1.3),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(20),
                     child: Container(
-                      width: 100,
-                      height: 100,
+                      width: logoSize,
+                      height: logoSize,
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      padding: const EdgeInsets.all(8),
+                      padding: EdgeInsets.all(screenWidth * 0.02),
                       child: Image.asset(
                         'assets/ChatGPT Image 5 ene 2026, 08_41_59.png',
                         fit: BoxFit.contain,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  const Text(
+                  SizedBox(height: screenHeight * 0.03),
+                  Text(
                     'Bienvenido',
                     style: TextStyle(
-                      fontSize: 28,
+                      fontSize: titleFontSize,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: screenHeight * 0.01),
                   Text(
                     'Inicia sesión para continuar',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: subtitleFontSize,
                       color: Colors.grey[600],
                     ),
                   ),
-                  const SizedBox(height: 32),
+                  SizedBox(height: screenHeight * 0.04),
                   TextField(
                     controller: usernameController,
                     decoration: InputDecoration(
@@ -109,7 +120,7 @@ class _LoginPageState extends State<LoginPage> {
                       fillColor: Colors.grey[50],
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: screenHeight * 0.02),
                   TextField(
                     controller: passwordController,
                     decoration: InputDecoration(
@@ -133,7 +144,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     obscureText: obscurePassword,
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: screenHeight * 0.01),
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
@@ -141,10 +152,10 @@ class _LoginPageState extends State<LoginPage> {
                       child: const Text('¿Olvidaste tu contraseña?'),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: screenHeight * 0.03),
                   SizedBox(
                     width: double.infinity,
-                    height: 50,
+                    height: buttonHeight,
                     child: ElevatedButton(
                       onPressed: () {
                         authService.login(
@@ -172,21 +183,21 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                         child: Container(
                           alignment: Alignment.center,
-                          constraints: const BoxConstraints(minHeight: 50),
-                          child: const Text(
+                          constraints: BoxConstraints(minHeight: buttonHeight),
+                          child: Text(
                             'Iniciar Sesión',
-                            style: TextStyle(fontSize: 16, color: Colors.white),
+                            style: TextStyle(fontSize: subtitleFontSize * 1.2, color: Colors.white),
                           ),
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: screenHeight * 0.02),
                   Row(
                     children: [
                       Expanded(child: Divider(color: Colors.grey[400])),
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
                         child: Text(
                           'o',
                           style: TextStyle(color: Colors.grey[600]),
@@ -195,10 +206,10 @@ class _LoginPageState extends State<LoginPage> {
                       Expanded(child: Divider(color: Colors.grey[400])),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: screenHeight * 0.02),
                   SizedBox(
                     width: double.infinity,
-                    height: 50,
+                    height: buttonHeight,
                     child: OutlinedButton(
                       onPressed: () {
                         Navigator.pushNamed(context, genderSelectionRoute);
@@ -209,10 +220,10 @@ class _LoginPageState extends State<LoginPage> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: const Text(
+                      child: Text(
                         'Crear Cuenta',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: subtitleFontSize * 1.2,
                           color: Color(0xFFB7A7E3),
                         ),
                       ),
@@ -248,6 +259,7 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
         ),
+      ),
       ),
     );
   }

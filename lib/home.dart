@@ -26,6 +26,9 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   double _rotationAngle = 0.0;
   late AnimationController _animationController;
   
+  // Sistema de navegación de fotos
+  Map<int, int> _currentPhotoIndexMap = {}; // índice de foto actual por perfil
+  
   // Sistema de FirstSteps
   int _firstStepsRemaining = 5;
   bool _isPremium = false;
@@ -178,7 +181,13 @@ Future<void> _showMatchPopup(
   // Recargar el contador de mensajes no leídos
   await _loadUnreadMessagesCount();
   
-  final imageProvider = ImageUtils.getImageProvider(profile['profilePhoto']);
+  // Extraer foto principal de profilePhotos (nuevo sistema) o profilePhoto (legacy)
+  final primaryPhotoUrl = (profile['profilePhotos'] != null && 
+                          (profile['profilePhotos'] as List).isNotEmpty)
+      ? profile['profilePhotos'][0]['url']
+      : profile['profilePhoto'];
+  
+  final imageProvider = ImageUtils.getImageProvider(primaryPhotoUrl);
   
   showDialog(
     context: context,
@@ -625,36 +634,45 @@ Future<void> _showMatchPopup(
 
   @override
   Widget build(BuildContext context) {
+    // Variables responsive
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final padding = screenWidth * 0.06;
+    final iconSize = screenWidth * 0.2;
+    final titleFontSize = screenWidth * 0.06;
+    final bodyFontSize = screenWidth * 0.04;
+    
     return Scaffold(
-      body: _isInitialLoad
+      body: SafeArea(
+        child: _isInitialLoad
         ? Center(child: CircularProgressIndicator())
         : homeProfiles.isEmpty
           ? Center(
               child: Padding(
-                padding: const EdgeInsets.all(24.0),
+                padding: EdgeInsets.all(padding),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
                       Icons.search_off,
-                      size: 80,
+                      size: iconSize,
                       color: Colors.grey[400],
                     ),
-                    SizedBox(height: 24),
+                    SizedBox(height: screenHeight * 0.03),
                     Text(
                       '¡Ya viste todo por ahora!',
                       style: TextStyle(
-                        fontSize: 24,
+                        fontSize: titleFontSize,
                         fontWeight: FontWeight.bold,
                         color: Colors.grey[800],
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    SizedBox(height: 16),
+                    SizedBox(height: screenHeight * 0.02),
                     Text(
                       'Cambia tus parámetros de búsqueda o espera que haya alguien que pueda coincidir con tu perfil',
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: bodyFontSize,
                         color: Colors.grey[600],
                       ),
                       textAlign: TextAlign.center,
@@ -678,7 +696,7 @@ Future<void> _showMatchPopup(
                   // Calcular offset para apilar las tarjetas
                   final double topOffset = index == _draggingIndex 
                       ? _imageOffset.dy 
-                      : index * 10.0;
+                      : 0.0;
                   final double leftOffset = index == _draggingIndex 
                       ? _imageOffset.dx 
                       : 0;
@@ -751,16 +769,12 @@ Future<void> _showMatchPopup(
                           }
                         },
                         onTap: () {
-                          Navigator.pushNamed(
-                            context,
-                            profilePageRoute,
-                            arguments: {'username': profile['username']},
-                          );
+                          // Remover el tap general - lo manejaremos con GestureDetectors específicos
                         },
                         child: Container(
                           margin: const EdgeInsets.symmetric(
                             horizontal: 20,
-                            vertical: 20,
+                            vertical: 0,
                           ),
                           width: cardWidth,
                           height: cardHeight,
@@ -771,19 +785,111 @@ Future<void> _showMatchPopup(
                               borderRadius: BorderRadius.circular(10),
                               child: Stack(
                                 children: [
-                                  ImageUtils.getImageProvider(profile['profilePhoto']) != null
-                                    ? Image(
-                                        image: ImageUtils.getImageProvider(profile['profilePhoto'])!,
-                                        width: double.infinity,
-                                        height: double.infinity,
-                                        fit: BoxFit.cover,
-                                      )
-                                    : Container(
-                                        width: double.infinity,
-                                        height: double.infinity,
-                                        color: Colors.grey[300],
-                                        child: Icon(Icons.person, size: 100),
-                                      ),
+                                  // Imagen con sistema de navegación
+                                  () {
+                                    // Obtener todas las fotos disponibles
+                                    final List<String> photoUrls = [];
+                                    if (profile['profilePhotos'] != null && 
+                                        (profile['profilePhotos'] as List).isNotEmpty) {
+                                      for (var photo in profile['profilePhotos']) {
+                                        if (photo['url'] != null) {
+                                          photoUrls.add(photo['url']);
+                                        }
+                                      }
+                                    } else if (profile['profilePhoto'] != null) {
+                                      photoUrls.add(profile['profilePhoto']);
+                                    }
+
+                                    // Obtener índice actual de foto para este perfil
+                                    final currentPhotoIndex = _currentPhotoIndexMap[index] ?? 0;
+                                    final photoUrl = photoUrls.isNotEmpty 
+                                        ? photoUrls[currentPhotoIndex.clamp(0, photoUrls.length - 1)]
+                                        : null;
+
+                                    final imageProvider = photoUrl != null 
+                                        ? ImageUtils.getImageProvider(photoUrl) 
+                                        : null;
+                                    
+                                    return Stack(
+                                      children: [
+                                        // La imagen
+                                        Positioned.fill(
+                                          child: imageProvider != null
+                                            ? Image(
+                                                image: imageProvider,
+                                                fit: BoxFit.cover,
+                                              )
+                                            : Container(
+                                                color: Colors.grey[300],
+                                                child: Icon(Icons.person, size: 100),
+                                              ),
+                                        ),
+                                        
+                                        // Áreas de tap para navegar fotos
+                                        Row(
+                                          children: [
+                                            // Tap izquierdo - foto anterior
+                                            Expanded(
+                                              child: GestureDetector(
+                                                onTap: () {
+                                                  if (photoUrls.length > 1) {
+                                                    setState(() {
+                                                      final current = _currentPhotoIndexMap[index] ?? 0;
+                                                      if (current > 0) {
+                                                        _currentPhotoIndexMap[index] = current - 1;
+                                                      }
+                                                    });
+                                                  }
+                                                },
+                                                child: Container(color: Colors.transparent),
+                                              ),
+                                            ),
+                                            // Tap derecho - foto siguiente
+                                            Expanded(
+                                              child: GestureDetector(
+                                                onTap: () {
+                                                  if (photoUrls.length > 1) {
+                                                    setState(() {
+                                                      final current = _currentPhotoIndexMap[index] ?? 0;
+                                                      if (current < photoUrls.length - 1) {
+                                                        _currentPhotoIndexMap[index] = current + 1;
+                                                      }
+                                                    });
+                                                  }
+                                                },
+                                                child: Container(color: Colors.transparent),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        
+                                        // Indicadores de fotos (barrita dividida)
+                                        if (photoUrls.length > 1)
+                                          Positioned(
+                                            top: 12,
+                                            left: 12,
+                                            right: 12,
+                                            child: Row(
+                                              children: List.generate(
+                                                photoUrls.length,
+                                                (photoIndex) => Expanded(
+                                                  child: Container(
+                                                    height: 3,
+                                                    margin: EdgeInsets.symmetric(horizontal: 2),
+                                                    decoration: BoxDecoration(
+                                                      color: photoIndex == currentPhotoIndex
+                                                          ? Colors.white
+                                                          : Colors.white.withOpacity(0.4),
+                                                      borderRadius: BorderRadius.circular(2),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    );
+                                  }(),
                                   // Indicador de LIKE
                                   if (index == _draggingIndex && _imageOffset.dx > 50)
                                     Positioned(
@@ -1007,33 +1113,6 @@ Future<void> _showMatchPopup(
                                       Row(
                                         mainAxisAlignment: MainAxisAlignment.center,
                                         children: [
-                                          // Botón de LIKE
-                                          Container(
-                                            decoration: BoxDecoration(
-                                              shape: BoxShape.circle,
-                                              color: Colors.white,
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color: Colors.green.withOpacity(0.3),
-                                                  blurRadius: 15,
-                                                  spreadRadius: 2,
-                                                ),
-                                              ],
-                                            ),
-                                            child: IconButton(
-                                              iconSize: 35,
-                                              onPressed: () {
-                                                if (index == 0) {
-                                                  _swipeCard(index, true);
-                                                }
-                                              },
-                                              icon: const Icon(
-                                                Icons.check,
-                                                color: Colors.green,
-                                              ),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 30),
                                           // Botón de NOPE
                                           Container(
                                             decoration: BoxDecoration(
@@ -1060,6 +1139,62 @@ Future<void> _showMatchPopup(
                                               ),
                                             ),
                                           ),
+                                          const SizedBox(width: 20),
+                                          // Botón de VER PERFIL
+                                          Container(
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: Colors.white,
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.blue.withOpacity(0.3),
+                                                  blurRadius: 15,
+                                                  spreadRadius: 2,
+                                                ),
+                                              ],
+                                            ),
+                                            child: IconButton(
+                                              iconSize: 30,
+                                              onPressed: () {
+                                                Navigator.pushNamed(
+                                                  context,
+                                                  profilePageRoute,
+                                                  arguments: {'username': profile['username']},
+                                                );
+                                              },
+                                              icon: const Icon(
+                                                Icons.info_outline,
+                                                color: Colors.blue,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 20),
+                                          // Botón de LIKE
+                                          Container(
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: Colors.white,
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.green.withOpacity(0.3),
+                                                  blurRadius: 15,
+                                                  spreadRadius: 2,
+                                                ),
+                                              ],
+                                            ),
+                                            child: IconButton(
+                                              iconSize: 35,
+                                              onPressed: () {
+                                                if (index == 0) {
+                                                  _swipeCard(index, true);
+                                                }
+                                              },
+                                              icon: const Icon(
+                                                Icons.check,
+                                                color: Colors.green,
+                                              ),
+                                            ),
+                                          ),
                                         ],
                                       ),
                                     ],
@@ -1075,6 +1210,7 @@ Future<void> _showMatchPopup(
                   }).toList().reversed.toList(),
             ),
           ),
+      ),
       bottomNavigationBar: BottomAppBar(
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,

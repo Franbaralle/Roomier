@@ -56,7 +56,7 @@ class _PreferencesPageState extends State<PreferencesPage> {
   }
 
   // Contar tags seleccionados en una subcategoría específica
-  int getSubcategoryCount(TagSubcategory subcategory) {
+  int getSubcategoryCount(TagSubCategory subcategory) {
     return subcategory.tags.where((tag) => selectedTagIds.contains(tag.id)).length;
   }
 

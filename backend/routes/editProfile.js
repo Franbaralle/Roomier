@@ -17,10 +17,10 @@ router.put('/personal-info', verifyToken, async (req, res) => {
         }
 
         const updateData = {};
-        if (occupation !== undefined) updateData['personalInfo.occupation'] = occupation.trim();
-        if (religion !== undefined) updateData['personalInfo.religion'] = religion.trim();
-        if (politicalViews !== undefined) updateData['personalInfo.politicalViews'] = politicalViews.trim();
-        if (bio !== undefined) updateData['personalInfo.bio'] = bio.trim();
+        if (occupation !== undefined && occupation !== null) updateData['personalInfo.occupation'] = occupation.trim();
+        if (religion !== undefined && religion !== null) updateData['personalInfo.religion'] = religion.trim();
+        if (politicalViews !== undefined && politicalViews !== null) updateData['personalInfo.politicalViews'] = politicalViews.trim();
+        if (bio !== undefined && bio !== null) updateData['personalInfo.bio'] = bio.trim();
 
         const user = await User.findOneAndUpdate(
             { username },
@@ -165,22 +165,22 @@ router.put('/housing-info', verifyToken, async (req, res) => {
 
         const updateData = {};
         if (hasPlace !== undefined) updateData['housingInfo.hasPlace'] = hasPlace;
-        if (moveInDate !== undefined) updateData['housingInfo.moveInDate'] = moveInDate.trim();
-        if (stayDuration !== undefined) updateData['housingInfo.stayDuration'] = stayDuration.trim();
+        if (moveInDate !== undefined && moveInDate !== null) updateData['housingInfo.moveInDate'] = moveInDate.trim();
+        if (stayDuration !== undefined && stayDuration !== null) updateData['housingInfo.stayDuration'] = stayDuration.trim();
         
-        // Nuevos campos (aplicar trim)
-        if (originProvince !== undefined) updateData['housingInfo.originProvince'] = originProvince.trim();
-        if (destinationProvince !== undefined) updateData['housingInfo.destinationProvince'] = destinationProvince.trim();
-        if (specificNeighborhoodsOrigin !== undefined) updateData['housingInfo.specificNeighborhoodsOrigin'] = specificNeighborhoodsOrigin.map(n => n.trim());
-        if (specificNeighborhoodsDestination !== undefined) updateData['housingInfo.specificNeighborhoodsDestination'] = specificNeighborhoodsDestination.map(n => n.trim());
+        // Nuevos campos (aplicar trim solo si no son null)
+        if (originProvince !== undefined && originProvince !== null) updateData['housingInfo.originProvince'] = originProvince.trim();
+        if (destinationProvince !== undefined && destinationProvince !== null) updateData['housingInfo.destinationProvince'] = destinationProvince.trim();
+        if (specificNeighborhoodsOrigin !== undefined && Array.isArray(specificNeighborhoodsOrigin)) updateData['housingInfo.specificNeighborhoodsOrigin'] = specificNeighborhoodsOrigin.map(n => n.trim());
+        if (specificNeighborhoodsDestination !== undefined && Array.isArray(specificNeighborhoodsDestination)) updateData['housingInfo.specificNeighborhoodsDestination'] = specificNeighborhoodsDestination.map(n => n.trim());
         
-        // Legacy fields (mantener para compatibilidad, aplicar trim)
-        if (city !== undefined) updateData['housingInfo.city'] = city.trim();
-        if (generalZone !== undefined) updateData['housingInfo.generalZone'] = generalZone.trim();
-        if (preferredZones !== undefined) updateData['housingInfo.preferredZones'] = preferredZones.map(z => z.trim());
+        // Legacy fields (mantener para compatibilidad, aplicar trim solo si no son null)
+        if (city !== undefined && city !== null) updateData['housingInfo.city'] = city.trim();
+        if (generalZone !== undefined && generalZone !== null) updateData['housingInfo.generalZone'] = generalZone.trim();
+        if (preferredZones !== undefined && Array.isArray(preferredZones)) updateData['housingInfo.preferredZones'] = preferredZones.map(z => z.trim());
         
-        if (budgetMin !== undefined) updateData['housingInfo.budgetMin'] = budgetMin;
-        if (budgetMax !== undefined) updateData['housingInfo.budgetMax'] = budgetMax;
+        if (budgetMin !== undefined && budgetMin !== null) updateData['housingInfo.budgetMin'] = budgetMin;
+        if (budgetMax !== undefined && budgetMax !== null) updateData['housingInfo.budgetMax'] = budgetMax;
 
         const user = await User.findOneAndUpdate(
             { username },

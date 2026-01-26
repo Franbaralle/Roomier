@@ -39,7 +39,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> with SingleTickerProvid
       if (token == null) return;
 
       final response = await http.get(
-        Uri.parse('https://roomier-production.up.railway.app/api/admin/reports/stats'),
+        Uri.parse('https://roomier-qeyu.onrender.com/api/admin/reports/stats'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -62,7 +62,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> with SingleTickerProvid
       if (token == null) return;
 
       final response = await http.get(
-        Uri.parse('https://roomier-production.up.railway.app/api/admin/reports?status=$_selectedStatus&limit=50'),
+        Uri.parse('https://roomier-qeyu.onrender.com/api/admin/reports?status=$_selectedStatus&limit=50'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -435,7 +435,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> with SingleTickerProvid
       if (token == null) return;
 
       final response = await http.put(
-        Uri.parse('https://roomier-production.up.railway.app/api/admin/reports/$reportId'),
+        Uri.parse('https://roomier-qeyu.onrender.com/api/admin/reports/$reportId'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -466,7 +466,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> with SingleTickerProvid
 
       // Aplicar acción al usuario
       final response = await http.post(
-        Uri.parse('https://roomier-production.up.railway.app/api/admin/users/$username/action'),
+        Uri.parse('https://roomier-qeyu.onrender.com/api/admin/users/$username/action'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',

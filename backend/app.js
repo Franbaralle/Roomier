@@ -45,8 +45,8 @@ app.use(bodyParser.json({limit: '50mb'}));
 app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
 app.use(express.json());
 
-// Usar variable de entorno para MongoDB
-const mongoUri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/flutter_auth';
+// Usar variable de entorno para MongoDB - soporta MONGO_URI y MONGODB_URI
+const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/flutter_auth';
 mongoose.connect(mongoUri);
 
 const db = mongoose.connection;

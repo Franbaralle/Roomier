@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 
 class ChatService {
-  static const String apiUrl = 'https://roomier-production.up.railway.app/api/chat';
+  static const String apiUrl = 'https://roomier-qeyu.onrender.com/api/chat';
 
   // Método para crear un nuevo chat entre dos usuarios
 static Future<String?> createChat(String userA, String userB, {bool isFirstStep = false, String? firstMessage}) async {

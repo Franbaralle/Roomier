@@ -155,7 +155,7 @@ class NotificationService {
 
       const String baseUrl = String.fromEnvironment(
         'API_URL',
-        defaultValue: 'https://roomier-production.up.railway.app',
+        defaultValue: 'https://roomier-qeyu.onrender.com',
       );
 
       final response = await http.post(
@@ -276,7 +276,7 @@ class NotificationService {
 
       const String baseUrl = String.fromEnvironment(
         'API_URL',
-        defaultValue: 'https://roomier-production.up.railway.app',
+        defaultValue: 'https://roomier-qeyu.onrender.com',
       );
 
       await http.delete(

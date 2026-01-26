@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http_parser/http_parser.dart';
 
 class PhotoService {
-  static const String apiUrl = 'https://roomier-production.up.railway.app/api/photos';
+  static const String apiUrl = 'https://roomier-qeyu.onrender.com/api/photos';
 
   // ======== FOTOS DE PERFIL ========
 

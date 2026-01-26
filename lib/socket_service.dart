@@ -53,7 +53,7 @@ class SocketService {
     // URL del backend - ajustar según entorno
     const String serverUrl = String.fromEnvironment(
       'SOCKET_URL',
-      defaultValue: 'https://roomier-production.up.railway.app',
+      defaultValue: 'https://roomier-qeyu.onrender.com',
     );
 
     print('Conectando a Socket.IO: $serverUrl');

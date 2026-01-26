@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'auth_service.dart';
 
 class ReviewService {
-  static const String apiUrl = 'https://roomier-production.up.railway.app/api/reviews';
+  static const String apiUrl = 'https://roomier-qeyu.onrender.com/api/reviews';
 
   // Crear una nueva review
   static Future<Map<String, dynamic>> createReview({

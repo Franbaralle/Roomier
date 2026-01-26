@@ -45,11 +45,11 @@ class AuthService {
   }
 
   // API URL - Cambiar según el entorno
-  // Producción: 'https://roomier-production.up.railway.app/api/auth'
+  // Producción: 'https://roomier-qeyu.onrender.com/api/auth'
   // Local (emulador Android): 'http://10.0.2.2:3000/api/auth'
   // Local (dispositivo físico en misma red): 'http://TU_IP_LOCAL:3000/api/auth'
-  static const String apiUrl = 'https://roomier-production.up.railway.app/api/auth';
-  static const String api = 'https://roomier-production.up.railway.app/api';
+  static const String apiUrl = 'https://roomier-qeyu.onrender.com/api/auth';
+  static const String api = 'https://roomier-qeyu.onrender.com/api';
   static DateTime? _selectedDate;
 
   static void setSelectedDate(DateTime date) {
@@ -397,7 +397,7 @@ class AuthService {
   Future<Map<String, dynamic>> completeRegistration(Map<String, dynamic> registrationData) async {
     try {
       // Usar ruta correcta para el endpoint de registro completo
-      final String completeRegisterUrl = 'https://roomier-production.up.railway.app/api/register/complete';
+      final String completeRegisterUrl = 'https://roomier-qeyu.onrender.com/api/register/complete';
       final response = await http.post(
         Uri.parse(completeRegisterUrl),
         headers: {'Content-Type': 'application/json'},

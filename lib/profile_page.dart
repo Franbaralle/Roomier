@@ -1472,7 +1472,12 @@ class _ProfilePageState extends State<ProfilePage> {
 
   String _formatList(List<dynamic>? items) {
     if (items != null && items.isNotEmpty) {
-      return items.join(', ');
+      // Convertir cada tag al formato legible usando PreferencesData
+      final formattedItems = items.map((item) {
+        final tagKey = item.toString();
+        return PreferencesData.tagLabels[tagKey] ?? tagKey;
+      }).toList();
+      return formattedItems.join(', ');
     }
     return 'No especificado';
   }

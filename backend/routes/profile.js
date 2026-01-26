@@ -31,12 +31,29 @@ router.get('/:username', async (req, res) => {
             primaryPhotoUrl = user.profilePhoto;
         }
         
+        // Si preferences está vacío pero tiene my_tags, convertir my_tags a formato legacy de lista
+        let preferencesToSend = user.preferences;
+        if (user.my_tags && user.my_tags.length > 0) {
+            // Verificar si preferences está vacío (todas las subcategorías vacías)
+            const isEmpty = !user.preferences || 
+                           Object.values(user.preferences).every(mainCat => 
+                             !mainCat || Object.values(mainCat).every(subCat => 
+                               !Array.isArray(subCat) || subCat.length === 0
+                             )
+                           );
+            
+            if (isEmpty) {
+                // Enviar my_tags como array para compatibilidad con _formatPreferences
+                preferencesToSend = user.my_tags;
+            }
+        }
+        
         const profileInfo = {
             username: user.username,
             email: user.email,
             birthdate: user.birthdate,
             gender: user.gender,
-            preferences: user.preferences,
+            preferences: preferencesToSend,
             personalInfo: user.personalInfo,
             livingHabits: user.livingHabits, // Hábitos de convivencia
             housingInfo: {

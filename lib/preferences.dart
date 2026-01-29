@@ -29,6 +29,12 @@ class _PreferencesPageState extends State<PreferencesPage> {
   String? expandedCategory;
   
   bool _isLoading = true;
+  
+  // ScrollController para manejar el scroll
+  final ScrollController _scrollController = ScrollController();
+  
+  // Keys para cada categoría
+  final Map<String, GlobalKey> _categoryKeys = {};
 
   @override
   void initState() {
@@ -36,9 +42,23 @@ class _PreferencesPageState extends State<PreferencesPage> {
     _loadInterestsSection();
   }
   
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+  
   Future<void> _loadInterestsSection() async {
     try {
       _interestsSection = _tagService.getSection('interests');
+      
+      // Crear keys para cada categoría
+      if (_interestsSection != null) {
+        for (var category in _interestsSection!.categories) {
+          _categoryKeys[category.id] = GlobalKey();
+        }
+      }
+      
       setState(() {
         _isLoading = false;
       });
@@ -169,6 +189,7 @@ class _PreferencesPageState extends State<PreferencesPage> {
             // Lista de categorías
             Expanded(
               child: ListView.builder(
+                controller: _scrollController,
                 padding: EdgeInsets.all(screenWidth * 0.04),
                 itemCount: _interestsSection!.categories.length,
                 itemBuilder: (context, index) {
@@ -176,6 +197,7 @@ class _PreferencesPageState extends State<PreferencesPage> {
                   final isExpanded = expandedCategory == category.id;
                   
                   return Card(
+                    key: _categoryKeys[category.id],
                     margin: EdgeInsets.only(bottom: screenHeight * 0.015),
                     elevation: 2,
                     shape: RoundedRectangleBorder(
@@ -186,7 +208,26 @@ class _PreferencesPageState extends State<PreferencesPage> {
                         InkWell(
                           onTap: () {
                             setState(() {
+                              final wasExpanded = isExpanded;
                               expandedCategory = isExpanded ? null : category.id;
+                              
+                              // Si se está expandiendo (no estaba expandido), hacer scroll al inicio de la categoría
+                              if (!wasExpanded && _categoryKeys[category.id] != null) {
+                                // Esperar a que el widget se expanda antes de hacer scroll
+                                WidgetsBinding.instance.addPostFrameCallback((_) {
+                                  final RenderBox? renderBox = _categoryKeys[category.id]!.currentContext?.findRenderObject() as RenderBox?;
+                                  if (renderBox != null) {
+                                    final position = renderBox.localToGlobal(Offset.zero);
+                                    final scrollPosition = _scrollController.position.pixels + position.dy - 100; // 100 es un offset para dejar espacio arriba
+                                    
+                                    _scrollController.animateTo(
+                                      scrollPosition,
+                                      duration: const Duration(milliseconds: 300),
+                                      curve: Curves.easeInOut,
+                                    );
+                                  }
+                                });
+                              }
                             });
                           },
                           borderRadius: BorderRadius.circular(screenWidth * 0.03),

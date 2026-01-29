@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:typed_data';
+import 'dart:io';
 import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'photo_service.dart';
 
@@ -40,7 +42,42 @@ class _ManageProfilePhotosPageState extends State<ManageProfilePhotosPage> {
     }
   }
 
+  // Mostrar diálogo para elegir entre cámara o galería
+  Future<ImageSource?> _showImageSourceDialog() async {
+    return await showDialog<ImageSource>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Seleccionar foto'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt, color: Colors.blue),
+                title: const Text('Tomar foto'),
+                onTap: () {
+                  Navigator.pop(context, ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library, color: Colors.blue),
+                title: const Text('Elegir de galería'),
+                onTap: () {
+                  Navigator.pop(context, ImageSource.gallery);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _pickAndUploadPhotos() async {
+    // Mostrar diálogo para elegir fuente
+    final ImageSource? source = await _showImageSourceDialog();
+    if (source == null) return; // Usuario canceló
+    
     try {
       // Calcular cuántas fotos más se pueden agregar
       final remainingSlots = 10 - _photos.length;
@@ -50,14 +87,66 @@ class _ManageProfilePhotosPageState extends State<ManageProfilePhotosPage> {
         return;
       }
 
-      // Permitir seleccionar múltiples fotos
-      final List<XFile> pickedFiles = await _picker.pickMultiImage();
+      List<XFile> pickedFiles = [];
+      
+      // Si es cámara, solo permitir una foto a la vez
+      if (source == ImageSource.camera) {
+        final XFile? photo = await _picker.pickImage(source: ImageSource.camera);
+        if (photo != null) {
+          pickedFiles.add(photo);
+        }
+      } else {
+        // Si es galería, permitir múltiples
+        pickedFiles = await _picker.pickMultiImage();
+      }
 
       if (pickedFiles.isEmpty) return;
 
       // Verificar que no exceda el límite
       if (pickedFiles.length > remainingSlots) {
         _showError('Solo puedes agregar $remainingSlots fotos más');
+        return;
+      }
+
+      // Recortar fotos de perfil (cuadradas)
+      List<XFile> croppedFiles = [];
+      for (var file in pickedFiles) {
+        final croppedFile = await ImageCropper().cropImage(
+          sourcePath: file.path,
+          aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+          compressQuality: 90,
+          maxWidth: 800,
+          maxHeight: 800,
+          compressFormat: ImageCompressFormat.jpg,
+          uiSettings: [
+            AndroidUiSettings(
+              toolbarTitle: 'Recortar Foto',
+              toolbarColor: Colors.blue.shade700,
+              toolbarWidgetColor: Colors.white,
+              statusBarColor: Colors.blue.shade700,
+              initAspectRatio: CropAspectRatioPreset.square,
+              lockAspectRatio: true,
+              activeControlsWidgetColor: Colors.blue.shade700,
+              backgroundColor: Colors.black,
+              dimmedLayerColor: Colors.black.withOpacity(0.8),
+              hideBottomControls: false,
+            ),
+            IOSUiSettings(
+              title: 'Recortar Foto',
+              aspectRatioLockEnabled: true,
+              resetAspectRatioEnabled: false,
+              aspectRatioPickerButtonHidden: true,
+            ),
+          ],
+        );
+        
+        if (croppedFile != null) {
+          croppedFiles.add(XFile(croppedFile.path));
+        }
+      }
+
+      if (croppedFiles.isEmpty) {
+        _showError('Recorte cancelado');
         return;
       }
 
@@ -72,7 +161,7 @@ class _ManageProfilePhotosPageState extends State<ManageProfilePhotosPage> {
 
       // Convertir a Uint8List
       List<Uint8List> photoDataList = [];
-      for (var file in pickedFiles) {
+      for (var file in croppedFiles) {
         final bytes = await file.readAsBytes();
         photoDataList.add(bytes);
       }

@@ -39,6 +39,9 @@ class _ProfilePageState extends State<ProfilePage> {
   Map<String, double> _categoryAverages = {};
   bool _loadingReviews = true;
   bool _canLeaveReview = false;
+  
+  // Variable para menú colapsable de intereses
+  Map<String, bool> _expandedCategories = {};
 
   @override
   void didChangeDependencies() {
@@ -929,13 +932,7 @@ class _ProfilePageState extends State<ProfilePage> {
             color: Colors.orange,
           ),
           const SizedBox(height: 12),
-          _buildInfoCard(
-            icon: Icons.favorite,
-            title: 'Lo que me gusta',
-            content: _formatPreferences(userInfo?['preferences']),
-            color: Colors.pink,
-            isEditable: false,
-          ),
+          _buildInterestsCollapsibleCard(),
           
           // Mostrar religión y política solo si es el perfil propio
           if (isCurrentUserProfile) ...[
@@ -1754,6 +1751,408 @@ class _ProfilePageState extends State<ProfilePage> {
       case 'regular': return 'Regularmente';
       default: return 'No especificado';
     }
+  }
+
+  // Widget para mostrar intereses con menú colapsable por categorías
+  Widget _buildInterestsCollapsibleCard() {
+    final preferences = userInfo?['preferences'];
+    
+    // Lista de tags de living habits que NO deben mostrarse en "Lo que me gusta"
+    // porque ya se muestran en la sección "Estilo de Vida"
+    final Set<String> livingHabitsTags = {
+      'smoker', 'non_smoker', 'outdoor_smoker',
+      'has_pets', 'no_pets', 'likes_pets', 'allergic',
+      'early_bird', 'night_owl', 'flexible',
+      'clean_freak', 'moderate', 'messy',
+      'always_hosting', 'sometimes', 'private'
+    };
+    
+    // Si no hay preferencias, mostrar mensaje
+    if (preferences == null || 
+        (preferences is Map && preferences.isEmpty) ||
+        (preferences is List && preferences.isEmpty)) {
+      return Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.pink.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.favorite, color: Colors.pink, size: 28),
+              ),
+              const SizedBox(width: 16),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Lo que me gusta',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'No especificado',
+                      style: TextStyle(fontSize: 14, color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Si es una lista (formato antiguo), mostrar sin categorías
+    if (preferences is List) {
+      final formattedTags = preferences
+          .where((item) => !livingHabitsTags.contains(item.toString())) // Filtrar living habits
+          .map((item) {
+        final tagKey = item.toString();
+        return PreferencesData.tagLabels[tagKey] ?? tagKey;
+      }).toList();
+      
+      // Si después de filtrar no quedan tags, mostrar mensaje
+      if (formattedTags.isEmpty) {
+        return Card(
+          elevation: 2,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.pink.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.favorite, color: Colors.pink, size: 28),
+                ),
+                const SizedBox(width: 16),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Lo que me gusta',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'No especificado',
+                        style: TextStyle(fontSize: 14, color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+
+      return Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.pink.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.favorite, color: Colors.pink, size: 28),
+                  ),
+                  const SizedBox(width: 16),
+                  const Expanded(
+                    child: Text(
+                      'Lo que me gusta',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: formattedTags.map((tag) {
+                  return Chip(
+                    label: Text(tag),
+                    backgroundColor: Colors.pink.shade50,
+                    labelStyle: TextStyle(
+                      color: Colors.pink.shade700,
+                      fontSize: 13,
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Si es un objeto (formato nuevo con categorías) - mostrar con menús colapsables
+    if (preferences is Map) {
+      // Organizar tags por categoría
+      Map<String, List<String>> categorizedTags = {};
+      
+      preferences.forEach((mainCat, subCats) {
+        if (subCats is Map) {
+          subCats.forEach((subCat, tags) {
+            if (tags is List && tags.isNotEmpty) {
+              final categoryKey = mainCat.toString();
+              if (!categorizedTags.containsKey(categoryKey)) {
+                categorizedTags[categoryKey] = [];
+              }
+              
+              // Convertir tags a formato legible y filtrar living habits
+              final filteredTags = tags
+                  .where((t) => !livingHabitsTags.contains(t.toString())) // Filtrar living habits
+                  .map((t) {
+                final tagKey = t.toString();
+                return PreferencesData.tagLabels[tagKey] ?? tagKey;
+              }).toList();
+              
+              if (filteredTags.isNotEmpty) {
+                categorizedTags[categoryKey]!.addAll(filteredTags);
+              }
+            }
+          });
+        }
+      });
+      
+      // Eliminar categorías vacías después del filtrado
+      categorizedTags.removeWhere((key, value) => value.isEmpty);
+
+      if (categorizedTags.isEmpty) {
+        return Card(
+          elevation: 2,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.pink.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.favorite, color: Colors.pink, size: 28),
+                ),
+                const SizedBox(width: 16),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Lo que me gusta',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'No especificado',
+                        style: TextStyle(fontSize: 14, color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+
+      return Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header de la tarjeta
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.pink.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.favorite, color: Colors.pink, size: 28),
+                  ),
+                  const SizedBox(width: 16),
+                  const Expanded(
+                    child: Text(
+                      'Lo que me gusta',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            
+            // Categorías colapsables
+            ...categorizedTags.entries.map((entry) {
+              final categoryKey = entry.key;
+              final tags = entry.value;
+              final isExpanded = _expandedCategories[categoryKey] ?? false;
+              final categoryLabel = PreferencesData.categoryLabels[categoryKey] ?? categoryKey;
+              
+              return Column(
+                children: [
+                  InkWell(
+                    onTap: () {
+                      setState(() {
+                        _expandedCategories[categoryKey] = !isExpanded;
+                      });
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              categoryLabel,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.pink.shade700,
+                              ),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.pink.shade50,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              '${tags.length}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.pink.shade700,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Icon(
+                            isExpanded ? Icons.expand_less : Icons.expand_more,
+                            color: Colors.pink.shade700,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (isExpanded)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 12.0),
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: tags.map((tag) {
+                          return Chip(
+                            label: Text(tag),
+                            backgroundColor: Colors.pink.shade50,
+                            labelStyle: TextStyle(
+                              color: Colors.pink.shade700,
+                              fontSize: 13,
+                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  if (entry != categorizedTags.entries.last)
+                    const Divider(height: 1, indent: 16, endIndent: 16),
+                ],
+              );
+            }).toList(),
+          ],
+        ),
+      );
+    }
+
+    // Fallback
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.pink.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.favorite, color: Colors.pink, size: 28),
+            ),
+            const SizedBox(width: 16),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Lo que me gusta',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'No especificado',
+                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   String _translateStayDuration(String? value) {

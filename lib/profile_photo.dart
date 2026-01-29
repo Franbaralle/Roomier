@@ -166,7 +166,40 @@ class _ProfilePhotoPageState extends State<ProfilePhotoPage> {
     }
   }
 
-  Future<void> _getImage() async {
+  // Mostrar diálogo para elegir entre cámara o galería
+  Future<void> _showImageSourceDialog() async {
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Seleccionar foto'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt, color: Colors.blue),
+                title: const Text('Tomar foto'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _getImage(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library, color: Colors.blue),
+                title: const Text('Elegir de galería'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _getImage(ImageSource.gallery);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _getImage([ImageSource source = ImageSource.gallery]) async {
     // Validar que no se exceda el límite
     if (_imageDataList.length >= maxPhotos) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -179,7 +212,7 @@ class _ProfilePhotoPageState extends State<ProfilePhotoPage> {
     }
 
     try {
-      final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
+      final pickedFile = await ImagePicker().pickImage(source: source);
 
       if (pickedFile != null) {
         print('[PROFILE_PHOTO] Imagen seleccionada: ${pickedFile.path}');
@@ -433,7 +466,7 @@ class _ProfilePhotoPageState extends State<ProfilePhotoPage> {
             
             // Botón agregar foto
             ElevatedButton.icon(
-              onPressed: canAddMore ? _getImage : null,
+              onPressed: canAddMore ? _showImageSourceDialog : null,
               icon: const Icon(Icons.add_a_photo),
               label: Text(canAddMore ? 'Agregar Foto' : 'Máximo $maxPhotos fotos'),
               style: ElevatedButton.styleFrom(

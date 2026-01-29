@@ -25,6 +25,8 @@ class _HousingInfoPageState extends State<HousingInfoPage> {
   final TextEditingController originCityController = TextEditingController();
   final TextEditingController destinationCityController = TextEditingController();
   final TextEditingController neighborhoodSearchController = TextEditingController();
+  final TextEditingController freeNeighborhoodOriginController = TextEditingController();
+  final TextEditingController freeNeighborhoodDestinationController = TextEditingController();
   
   bool hasPlace = false;
   String stayDuration = '6months';
@@ -771,34 +773,110 @@ class _HousingInfoPageState extends State<HousingInfoPage> {
             ),
           ] else ...[
             // Campo de texto libre para ciudades sin barrios cargados
-            TextField(
-              maxLines: 3,
-              style: TextStyle(fontSize: isSmallScreen ? 14 : 16),
-              decoration: InputDecoration(
-                hintText: 'Ej: Centro, Barrio Norte, Cerro de las Rosas\n(Presiona Enter para agregar)',
-                hintStyle: TextStyle(fontSize: isSmallScreen ? 12 : 14),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                helperText: 'Máximo 5 barrios',
-                helperStyle: TextStyle(fontSize: isSmallScreen ? 11 : 12),
-                contentPadding: EdgeInsets.all(padding),
+            Container(
+              padding: EdgeInsets.all(padding * 0.75),
+              decoration: BoxDecoration(
+                color: Colors.orange[50],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange.shade300),
               ),
-              onSubmitted: (value) {
-                if (value.isNotEmpty && selectedNeighborhoods.length < 5) {
-                  setState(() {
-                    final trimmed = value.trim();
-                    if (!selectedNeighborhoods.contains(trimmed)) {
-                      if (isOrigin) {
-                        selectedNeighborhoodsOrigin.add(trimmed);
-                      } else {
-                        selectedNeighborhoodsDestination.add(trimmed);
-                      }
-                    }
-                  });
-                }
-              },
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, color: Colors.orange[700], size: 18),
+                  SizedBox(width: padding * 0.5),
+                  Expanded(
+                    child: Text(
+                      'No tenemos barrios cargados para esta ciudad. Ayúdanos escribiendo los que conozcas (máx. 5)',
+                      style: TextStyle(
+                        fontSize: isSmallScreen ? 11 : 12,
+                        color: Colors.orange[900],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
+            SizedBox(height: padding),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: isOrigin ? freeNeighborhoodOriginController : freeNeighborhoodDestinationController,
+                    enabled: selectedNeighborhoods.length < 5,
+                    style: TextStyle(fontSize: isSmallScreen ? 14 : 16),
+                    decoration: InputDecoration(
+                      hintText: selectedNeighborhoods.length >= 5 
+                          ? 'Límite alcanzado (5 barrios)'
+                          : 'Ej: Centro, Barrio Norte...',
+                      hintStyle: TextStyle(fontSize: isSmallScreen ? 12 : 14),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: padding,
+                        vertical: padding * 0.67,
+                      ),
+                      suffixIcon: selectedNeighborhoods.length >= 5
+                          ? Icon(Icons.block, color: Colors.grey)
+                          : null,
+                    ),
+                    onSubmitted: selectedNeighborhoods.length < 5 ? (value) {
+                      if (value.isNotEmpty) {
+                        final trimmed = value.trim();
+                        if (!selectedNeighborhoods.contains(trimmed)) {
+                          setState(() {
+                            if (isOrigin) {
+                              selectedNeighborhoodsOrigin.add(trimmed);
+                              freeNeighborhoodOriginController.clear();
+                            } else {
+                              selectedNeighborhoodsDestination.add(trimmed);
+                              freeNeighborhoodDestinationController.clear();
+                            }
+                          });
+                        }
+                      }
+                    } : null,
+                  ),
+                ),
+                SizedBox(width: padding * 0.5),
+                ElevatedButton(
+                  onPressed: selectedNeighborhoods.length < 5 ? () {
+                    final controller = isOrigin ? freeNeighborhoodOriginController : freeNeighborhoodDestinationController;
+                    final value = controller.text.trim();
+                    if (value.isNotEmpty && !selectedNeighborhoods.contains(value)) {
+                      setState(() {
+                        if (isOrigin) {
+                          selectedNeighborhoodsOrigin.add(value);
+                          freeNeighborhoodOriginController.clear();
+                        } else {
+                          selectedNeighborhoodsDestination.add(value);
+                          freeNeighborhoodDestinationController.clear();
+                        }
+                      });
+                    }
+                  } : null,
+                  style: ElevatedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: padding,
+                      vertical: padding * 0.75,
+                    ),
+                  ),
+                  child: Icon(Icons.add, size: isSmallScreen ? 20 : 24),
+                ),
+              ],
+            ),
+            if (selectedNeighborhoods.length >= 5)
+              Padding(
+                padding: EdgeInsets.only(top: padding * 0.5),
+                child: Text(
+                  '✓ Has alcanzado el límite de 5 barrios',
+                  style: TextStyle(
+                    fontSize: isSmallScreen ? 11 : 12,
+                    color: Colors.green[700],
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
           ],
           
           if (selectedNeighborhoods.isNotEmpty) ...[
@@ -923,6 +1001,9 @@ class _HousingInfoPageState extends State<HousingInfoPage> {
     }
 
     try {
+      // Enviar barrios sugeridos al backend si los hay
+      await _sendSuggestedNeighborhoods();
+
       final housingInfoData = {
         'budgetMin': budgetMin,
         'budgetMax': budgetMax,
@@ -954,6 +1035,75 @@ class _HousingInfoPageState extends State<HousingInfoPage> {
       );
     } catch (error) {
       _showError('Error: $error');
+    }
+  }
+
+  /// Envía los barrios sugeridos al backend para análisis
+  Future<void> _sendSuggestedNeighborhoods() async {
+    try {
+      // Verificar si hay barrios sugeridos de origen (sin data en BD)
+      if (hasPlace && 
+          selectedNeighborhoodsOrigin.isNotEmpty && 
+          selectedOriginCityId != null &&
+          neighborhoodsOrigin.isEmpty) { // Solo si no había barrios en BD
+        
+        await _submitSuggestions(
+          selectedNeighborhoodsOrigin,
+          selectedOriginCityId!,
+          selectedOriginCity ?? '',
+          selectedOriginProvince ?? ''
+        );
+      }
+
+      // Verificar si hay barrios sugeridos de destino (sin data en BD)
+      if (!hasPlace && 
+          selectedNeighborhoodsDestination.isNotEmpty && 
+          selectedDestinationCityId != null &&
+          neighborhoodsDestination.isEmpty) { // Solo si no había barrios en BD
+        
+        await _submitSuggestions(
+          selectedNeighborhoodsDestination,
+          selectedDestinationCityId!,
+          selectedDestinationCity ?? '',
+          selectedDestinationProvince ?? ''
+        );
+      }
+    } catch (e) {
+      // No fallar el registro si falla el envío de sugerencias
+      print('⚠️ Error al enviar sugerencias de barrios: $e');
+    }
+  }
+
+  /// Envía las sugerencias al endpoint del backend
+  Future<void> _submitSuggestions(
+    List<String> neighborhoods,
+    String cityId,
+    String cityName,
+    String provinceName
+  ) async {
+    try {
+      final baseUrl = AuthService.apiUrl.replaceAll('/auth', '');
+      final url = '$baseUrl/neighborhoods/suggest';
+
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'neighborhoods': neighborhoods,
+          'cityId': cityId,
+          'cityName': cityName,
+          'provinceName': provinceName,
+          'userEmail': widget.email,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        print('✅ Sugerencias de barrios enviadas: ${neighborhoods.length} para $cityName');
+      } else {
+        print('⚠️ Error al enviar sugerencias: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('⚠️ Error de red al enviar sugerencias: $e');
     }
   }
 

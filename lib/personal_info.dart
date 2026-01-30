@@ -129,7 +129,7 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
                           controller: firstNameController,
                           decoration: InputDecoration(
                             labelText: 'Nombre',
-                            hintText: 'Tu nombre',
+                            hintText: 'Nombre/s',
                             prefixIcon: const Icon(Icons.person),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -143,7 +143,7 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
                           controller: lastNameController,
                           decoration: InputDecoration(
                             labelText: 'Apellido',
-                            hintText: 'Tu apellido',
+                            hintText: 'Apellido/s',
                             prefixIcon: const Icon(Icons.person_outline),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),

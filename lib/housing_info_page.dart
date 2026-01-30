@@ -7,6 +7,18 @@ import 'package:http/http.dart' as http;
 import 'auth_service.dart';
 import 'routes.dart';
 
+// Función para normalizar texto (quitar acentos)
+String _normalizeText(String text) {
+  const withAccents = 'áéíóúÁÉÍÓÚñÑüÜ';
+  const withoutAccents = 'aeiouAEIOUnNuU';
+  
+  String result = text;
+  for (int i = 0; i < withAccents.length; i++) {
+    result = result.replaceAll(withAccents[i], withoutAccents[i]);
+  }
+  return result.toLowerCase();
+}
+
 class HousingInfoPage extends StatefulWidget {
   final String username;
   final String email;
@@ -88,7 +100,7 @@ class _HousingInfoPageState extends State<HousingInfoPage> {
     try {
       final response = await http.get(
         Uri.parse(
-          'https://apis.datos.gob.ar/georef/api/localidades?provincia=$provinceName&campos=id,nombre&max=200'
+          'https://apis.datos.gob.ar/georef/api/localidades?provincia=$provinceName&campos=id,nombre&max=1000'
         ),
       );
       
@@ -127,9 +139,9 @@ class _HousingInfoPageState extends State<HousingInfoPage> {
       final response = await http.get(
         Uri.parse(url),
       ).timeout(
-        Duration(seconds: 3),
+        Duration(seconds: 15),
         onTimeout: () {
-          print('⏱️  Timeout alcanzado');
+          print('⏱️  Timeout alcanzado (15s)');
           throw TimeoutException('Timeout al consultar barrios');
         },
       );
@@ -323,12 +335,11 @@ class _HousingInfoPageState extends State<HousingInfoPage> {
                     if (textEditingValue.text.isEmpty) {
                       return provinces.map((p) => p['nombre'] as String);
                     }
+                    final normalizedSearch = _normalizeText(textEditingValue.text);
                     return provinces
                         .map((p) => p['nombre'] as String)
                         .where((String option) {
-                      return option.toLowerCase().contains(
-                        textEditingValue.text.toLowerCase()
-                      );
+                      return _normalizeText(option).contains(normalizedSearch);
                     });
                   },
                   onSelected: (String selection) {
@@ -377,12 +388,11 @@ class _HousingInfoPageState extends State<HousingInfoPage> {
                     if (textEditingValue.text.isEmpty) {
                       return provinces.map((p) => p['nombre'] as String);
                     }
+                    final normalizedSearch = _normalizeText(textEditingValue.text);
                     return provinces
                         .map((p) => p['nombre'] as String)
                         .where((String option) {
-                      return option.toLowerCase().contains(
-                        textEditingValue.text.toLowerCase()
-                      );
+                      return _normalizeText(option).contains(normalizedSearch);
                     });
                   },
                   onSelected: (String selection) {
@@ -433,12 +443,11 @@ class _HousingInfoPageState extends State<HousingInfoPage> {
                       if (textEditingValue.text.isEmpty) {
                         return citiesOrigin.map((c) => c['nombre'] as String);
                       }
+                      final normalizedSearch = _normalizeText(textEditingValue.text);
                       return citiesOrigin
                           .map((c) => c['nombre'] as String)
                           .where((String option) {
-                        return option.toLowerCase().contains(
-                          textEditingValue.text.toLowerCase()
-                        );
+                        return _normalizeText(option).contains(normalizedSearch);
                       });
                     },
                     onSelected: (String selection) {
@@ -501,12 +510,11 @@ class _HousingInfoPageState extends State<HousingInfoPage> {
                       if (textEditingValue.text.isEmpty) {
                         return citiesDestination.map((c) => c['nombre'] as String);
                       }
+                      final normalizedSearch = _normalizeText(textEditingValue.text);
                       return citiesDestination
                           .map((c) => c['nombre'] as String)
                           .where((String option) {
-                        return option.toLowerCase().contains(
-                          textEditingValue.text.toLowerCase()
-                        );
+                        return _normalizeText(option).contains(normalizedSearch);
                       });
                     },
                     onSelected: (String selection) {

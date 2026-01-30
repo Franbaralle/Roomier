@@ -60,7 +60,9 @@ const userSchema = new mongoose.Schema({
     job: {type: String, required: false},
     religion: {type: String, required: false}, // PRIVADO
     politicPreference: {type: String, required: false}, // PRIVADO
-    aboutMe: {type: String, required: false}
+    aboutMe: {type: String, required: false},
+    firstName: {type: String, required: false}, // PRIVADO - se revela con consentimiento mutuo
+    lastName: {type: String, required: false}  // PRIVADO - se revela con consentimiento mutuo
   },
   
   // Hábitos de convivencia (PÚBLICO)
@@ -117,7 +119,8 @@ const userSchema = new mongoose.Schema({
     matchedUser: { type: String }, // username del match
     revealedZones: { type: Boolean, default: false },
     revealedBudget: { type: Boolean, default: false },
-    revealedContact: { type: Boolean, default: false }
+    revealedContact: { type: Boolean, default: false },
+    revealedName: { type: Boolean, default: false } // Nombre y apellido
   }],
   
   // Fotos de perfil (URLs de Cloudinary) - 1 a 9 fotos obligatorias

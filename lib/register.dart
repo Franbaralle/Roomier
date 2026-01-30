@@ -154,8 +154,11 @@ class _RegisterFormState extends State<RegisterForm> {
                 obscureText: obscurePassword,
                 decoration: InputDecoration(
                   labelText: 'Contraseña',
-                  hintText: 'Mínimo 6 caracteres',
+                  hintText: 'Ej: MiClave123!',
+                  helperText: 'Mayúscula, número y símbolo',
+                  helperMaxLines: 2,
                   errorText: passwordError,
+                  errorMaxLines: 2,
                   prefixIcon: const Icon(Icons.lock_outlined),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -312,6 +315,16 @@ class _RegisterFormState extends State<RegisterForm> {
         passwordError = 'Campo obligatorio';
       });
       isValid = false;
+    } else if (password.length < 6) {
+      setState(() {
+        passwordError = 'Mínimo 6 caracteres';
+      });
+      isValid = false;
+    } else if (!_isPasswordSecure(password)) {
+      setState(() {
+        passwordError = 'Debe contener mayúscula, número y símbolo (@, !, ?, etc)';
+      });
+      isValid = false;
     }
 
     if (email.isEmpty) {
@@ -319,9 +332,35 @@ class _RegisterFormState extends State<RegisterForm> {
         emailError = 'Campo obligatorio';
       });
       isValid = false;
+    } else if (!_isValidEmail(email)) {
+      setState(() {
+        emailError = 'Formato de email inválido';
+      });
+      isValid = false;
     }
 
     return isValid;
+  }
+
+  // Validar formato de email
+  bool _isValidEmail(String email) {
+    final emailRegex = RegExp(
+      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+      caseSensitive: false,
+    );
+    return emailRegex.hasMatch(email);
+  }
+
+  // Validar que la contraseña sea segura
+  bool _isPasswordSecure(String password) {
+    // Debe contener al menos una mayúscula
+    bool hasUppercase = password.contains(RegExp(r'[A-Z]'));
+    // Debe contener al menos un número
+    bool hasNumber = password.contains(RegExp(r'[0-9]'));
+    // Debe contener al menos un símbolo especial
+    bool hasSpecialChar = password.contains(RegExp(r'[!@#\$%\^&\*\(\)_\+\-=\[\]\{\};:"\|,.<>\?\/]'));
+    
+    return hasUppercase && hasNumber && hasSpecialChar;
   }
 
   void _registerWithAuthService() async {

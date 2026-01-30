@@ -86,6 +86,8 @@ class _ProfilePhotoPageState extends State<ProfilePhotoPage> {
       final religion = prefs.getString('temp_register_religion') ?? '';
       final politicPreferences = prefs.getString('temp_register_politic_preferences') ?? '';
       final aboutMe = prefs.getString('temp_register_about_me') ?? '';
+      final firstName = prefs.getString('temp_register_firstName') ?? '';
+      final lastName = prefs.getString('temp_register_lastName') ?? '';
       
       // Preparar fotos de perfil (base64)
       List<String> profilePhotosBase64 = [];
@@ -113,6 +115,8 @@ class _ProfilePhotoPageState extends State<ProfilePhotoPage> {
           'religion': religion,
           'politicPreferences': politicPreferences,
           'aboutMe': aboutMe,
+          'firstName': firstName,
+          'lastName': lastName,
         },
         if (profilePhotosBase64.isNotEmpty) 'profilePhotos': profilePhotosBase64,
       };

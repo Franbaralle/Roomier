@@ -270,7 +270,8 @@ router.post('/reveal_info', async (req, res) => {
                 matchedUser: matchedUsername,
                 revealedZones: false,
                 revealedBudget: false,
-                revealedContact: false
+                revealedContact: false,
+                revealedName: false
             };
             currentUser.revealedInfo.push(revealedInfoEntry);
         }
@@ -285,6 +286,9 @@ router.post('/reveal_info', async (req, res) => {
                 break;
             case 'contact':
                 revealedInfoEntry.revealedContact = true;
+                break;
+            case 'name':
+                revealedInfoEntry.revealedName = true;
                 break;
             default:
                 return res.status(400).json({ message: 'Tipo de información no válido' });

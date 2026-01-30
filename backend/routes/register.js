@@ -483,7 +483,9 @@ router.post('/complete', async (req, res) => {
                 job: personalInfo?.job?.trim() || '',
                 religion: personalInfo?.religion?.trim() || '',
                 politicPreference: personalInfo?.politicPreferences?.trim() || '',
-                aboutMe: personalInfo?.aboutMe?.trim() || ''
+                aboutMe: personalInfo?.aboutMe?.trim() || '',
+                firstName: personalInfo?.firstName?.trim() || '',
+                lastName: personalInfo?.lastName?.trim() || ''
             }
         });
 

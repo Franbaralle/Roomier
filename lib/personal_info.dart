@@ -20,6 +20,8 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
   final TextEditingController politicPreferencesController =
       TextEditingController();
   final TextEditingController aboutMeController = TextEditingController();
+  final TextEditingController firstNameController = TextEditingController();
+  final TextEditingController lastNameController = TextEditingController();
   
   // Consentimiento para datos sensibles (Ley 25.326)
   bool _consentSensitiveData = false;
@@ -91,6 +93,69 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
                       ],
                     ),
                     SizedBox(height: isSmallScreen ? 20 : 32),
+                  // Campos de Nombre y Apellido (Opcionales - revelación mutua)
+                  Container(
+                    padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.blue.shade200),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.badge_outlined, color: Colors.blue.shade700, size: isSmallScreen ? 18 : 20),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                'Nombre y Apellido (Opcional)',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: isSmallScreen ? 13 : 14,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Tu nombre y apellido se revelarán en el chat solo cuando ambos lo acepten.',
+                          style: TextStyle(fontSize: isSmallScreen ? 11 : 12, color: Colors.black87),
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: firstNameController,
+                          decoration: InputDecoration(
+                            labelText: 'Nombre',
+                            hintText: 'Tu nombre',
+                            prefixIcon: const Icon(Icons.person),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            filled: true,
+                            fillColor: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: lastNameController,
+                          decoration: InputDecoration(
+                            labelText: 'Apellido',
+                            hintText: 'Tu apellido',
+                            prefixIcon: const Icon(Icons.person_outline),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            filled: true,
+                            fillColor: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: isSmallScreen ? 16 : 24),
                   TextField(
                     controller: jobController,
                     decoration: InputDecoration(
@@ -231,6 +296,10 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
                         await prefs.setString('temp_register_religion', religionController.text);
                         await prefs.setString('temp_register_politic_preferences', politicPreferencesController.text);
                         await prefs.setString('temp_register_about_me', aboutMeController.text);
+                        
+                        // Guardar firstName y lastName (opcionales)
+                        await prefs.setString('temp_register_firstName', firstNameController.text.trim());
+                        await prefs.setString('temp_register_lastName', lastNameController.text.trim());
                         
                         Navigator.pushNamed(context, registerProfilePhotoRoute,
                             arguments: {

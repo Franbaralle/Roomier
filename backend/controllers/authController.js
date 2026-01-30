@@ -56,8 +56,10 @@ router.post('/login', loginLimiter, async (req, res) => {
       return res.status(400).json({ error: 'Usuario y contraseña son requeridos' });
     }
 
-    // Buscar al usuario por nombre de usuario
-    const user = await User.findOne({ username });
+    // Buscar al usuario por nombre de usuario (case-insensitive)
+    const user = await User.findOne({ 
+      username: { $regex: new RegExp(`^${username}$`, 'i') } 
+    });
 
     if (!user) {
       console.log(`Intento de login fallido: usuario "${username}" no encontrado`);

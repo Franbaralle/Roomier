@@ -93,6 +93,7 @@ class _RevealInfoWidgetState extends State<RevealInfoWidget> {
           'revealedZones': currentUserRevealed?['revealedZones'] ?? false,
           'revealedBudget': currentUserRevealed?['revealedBudget'] ?? false,
           'revealedContact': currentUserRevealed?['revealedContact'] ?? false,
+          'revealedName': currentUserRevealed?['revealedName'] ?? false,
           // Solo mostrar si AMBOS revelaron
           'showZones': (currentUserRevealed?['revealedZones'] ?? false) && 
                       (matchedUserRevealed?['revealedZones'] ?? false),
@@ -100,6 +101,8 @@ class _RevealInfoWidgetState extends State<RevealInfoWidget> {
                        (matchedUserRevealed?['revealedBudget'] ?? false),
           'showContact': (currentUserRevealed?['revealedContact'] ?? false) && 
                         (matchedUserRevealed?['revealedContact'] ?? false),
+          'showName': (currentUserRevealed?['revealedName'] ?? false) && 
+                     (matchedUserRevealed?['revealedName'] ?? false),
         };
         _matchedUserInfo = matchedUser;
         _isLoading = false;
@@ -185,6 +188,8 @@ class _RevealInfoWidgetState extends State<RevealInfoWidget> {
         return _revealedInfo?['showBudget'] ?? false;
       case 'contact':
         return _revealedInfo?['showContact'] ?? false;
+      case 'name':
+        return _revealedInfo?['showName'] ?? false;
       default:
         return false;
     }
@@ -247,6 +252,24 @@ class _RevealInfoWidgetState extends State<RevealInfoWidget> {
                   onReveal: () => _revealInformation('budget'),
                   revealedData: _matchedUserInfo?['housingInfo'] != null
                       ? '\$${_matchedUserInfo!['housingInfo']['budgetMin']} - \$${_matchedUserInfo!['housingInfo']['budgetMax']}'
+                      : null,
+                ),
+
+                const SizedBox(height: 12),
+
+                // Nombre y Apellido
+                _buildRevealOption(
+                  icon: Icons.badge,
+                  title: 'Nombre y Apellido',
+                  description: 'Revelar nombre completo',
+                  isRevealed: _revealedInfo?['revealedName'] ?? false,
+                  canShow: _revealedInfo?['showName'] ?? false,
+                  onReveal: () => _revealInformation('name'),
+                  revealedData: (_matchedUserInfo?['personalInfo']?['firstName'] != null && 
+                                 _matchedUserInfo?['personalInfo']?['firstName'] != '' &&
+                                 _matchedUserInfo?['personalInfo']?['lastName'] != null &&
+                                 _matchedUserInfo?['personalInfo']?['lastName'] != '')
+                      ? '${_matchedUserInfo!['personalInfo']['firstName']} ${_matchedUserInfo!['personalInfo']['lastName']}'
                       : null,
                 ),
 

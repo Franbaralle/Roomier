@@ -405,8 +405,8 @@ router.get('/received-likes', async (req, res) => {
                 profilePhotos: user.profilePhotos,
                 profilePhoto: primaryPhotoUrl, // Foto principal unificada
                 personalInfo: {
-                    job: userObj.personalInfo?.job,
-                    aboutMe: userObj.personalInfo?.aboutMe
+                    job: user.personalInfo?.job,
+                    aboutMe: user.personalInfo?.aboutMe
                 }
             };
         });

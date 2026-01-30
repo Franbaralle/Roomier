@@ -265,48 +265,119 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _forgotPassword() {
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        title: const Text('Restablecer Contraseña'),
-        content: Column(
-          children: [
-            TextField(
-              onChanged: (value) {
-                // Guarda el nombre de usuario en el controlador
-                usernameController.text = value;
-              },
-              decoration: const InputDecoration(labelText: 'Nombre de Usuario'),
+    final TextEditingController emailController = TextEditingController();
+    final TextEditingController newPasswordController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Restablecer Contraseña'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Ingresá tu email y tu nueva contraseña',
+                  style: TextStyle(fontSize: 14, color: Colors.grey),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    prefixIcon: Icon(Icons.email),
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: newPasswordController,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Nueva Contraseña (mín. 6 caracteres)',
+                    prefixIcon: Icon(Icons.lock),
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ],
             ),
-            TextField(
-              // Asegúrate de que newPasswordController esté definido previamente
-              controller: newPasswordController,
-              obscureText: true,
-              decoration: const InputDecoration(labelText: 'Nueva Contraseña'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final email = emailController.text.trim();
+                final newPassword = newPasswordController.text;
+
+                // Validaciones
+                if (email.isEmpty || newPassword.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Por favor, completá todos los campos'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+
+                // Validar formato de email
+                if (!email.contains('@') || !email.contains('.')) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Ingresá un email válido'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+
+                // Validar longitud de contraseña
+                if (newPassword.length < 6) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('La contraseña debe tener al menos 6 caracteres'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+
+                Navigator.of(context).pop(); // Cerrar diálogo
+
+                // Mostrar loading
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Actualizando contraseña...'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+
+                // Llamar al servicio
+                final result = await authService.resetPassword(email, newPassword);
+
+                // Mostrar resultado
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(result['message']),
+                      backgroundColor: result['success'] ? Colors.green : Colors.red,
+                    ),
+                  );
+                }
+              },
+              child: const Text('Restablecer'),
             ),
           ],
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () {
-              // Verifica si el nombre de usuario y la nueva contraseña no están vacíos
-              if (usernameController.text.isNotEmpty && newPasswordController.text.isNotEmpty) {
-                // Llama a la función resetPassword con los datos ingresados
-                authService.resetPassword(
-                    usernameController.text,
-                    newPasswordController.text);
-              } else {
-                // Muestra un mensaje si falta información
-                print("Por favor, ingrese el nombre de usuario y la nueva contraseña");
-              }
-              Navigator.of(context).pop(); // Cierra el diálogo
-            },
-            child: const Text('Restablecer'),
-          ),
-        ],
-      );
-    },
-  );
-}
+        );
+      },
+    );
+  }
 }

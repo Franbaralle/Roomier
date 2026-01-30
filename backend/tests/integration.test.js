@@ -144,11 +144,12 @@ describe('Integration Tests - Rate Limiting (Real)', () => {
       // Esperar a que se complete el registro y bcrypt
       await new Promise(resolve => setTimeout(resolve, 800));
       
-      // Intentar actualizar contraseña 4 veces
+      // Intentar actualizar contraseña 4 veces (ahora usando email)
       for (let i = 0; i < 4; i++) {
         const res = await request(app)
-          .put('/api/auth/update-password/resetuser')
+          .put('/api/auth/update-password')
           .send({
+            email: 'reset@test.com',
             newPassword: `NewPassword${i}123!`
           });
         

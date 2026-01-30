@@ -6,6 +6,7 @@ import 'package:http_parser/http_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'routes.dart';
 import 'analytics_service.dart';
+import 'welcome_onboarding_dialog.dart';
 
 class AuthService {
   static final AuthService _instance = AuthService._internal();
@@ -133,6 +134,16 @@ class AuthService {
             homeRoute,
             arguments: {'username': profileData['username']},
           );
+          
+          // Mostrar onboarding si es primera vez (después de navegar)
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
+            await WelcomeOnboardingDialog.show(context);
+          });
+          
+          // Mostrar onboarding si es primera vez (después de navegar)
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
+            await WelcomeOnboardingDialog.show(context);
+          });
         } else {
           print(
               'Error al obtener la información del perfil. Código de estado: ${profileDataResponse.statusCode}');
@@ -417,28 +428,36 @@ class AuthService {
     }
   }
 
-  Future<void> resetPassword(String username, String newPassword) async {
+  Future<Map<String, dynamic>> resetPassword(String email, String newPassword) async {
     try {
-      final String resetPasswordUrl = '$apiUrl/update-password/$username';
+      final String resetPasswordUrl = '$apiUrl/update-password';
       final response = await http.put(
         Uri.parse(resetPasswordUrl),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
+          'email': email,
           'newPassword': newPassword,
         }),
       );
 
       if (response.statusCode == 200) {
         print('Contraseña actualizada exitosamente');
+        return {'success': true, 'message': 'Contraseña actualizada exitosamente'};
       } else if (response.statusCode == 404) {
-        print('Usuario no encontrado');
+        print('Email no encontrado');
+        return {'success': false, 'message': 'No se encontró una cuenta con ese email'};
+      } else if (response.statusCode == 400) {
+        final body = json.decode(response.body);
+        return {'success': false, 'message': body['message'] ?? 'Datos inválidos'};
       } else {
         print(
             'Error al actualizar la contraseña. Status code: ${response.statusCode}');
         print('Response Body: ${response.body}');
+        return {'success': false, 'message': 'Error al actualizar la contraseña'};
       }
     } catch (error) {
       print('Error al actualizar la contraseña: $error');
+      return {'success': false, 'message': 'Error de conexión'};
     }
   }
 

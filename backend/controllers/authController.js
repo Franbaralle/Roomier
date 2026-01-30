@@ -120,17 +120,26 @@ router.post('/login', loginLimiter, async (req, res) => {
   }
 });
 
-// Ruta para actualizar la contraseña
-router.put('/update-password/:username', passwordResetLimiter, async (req, res) => {
-  const { username } = req.params;
-  const { newPassword } = req.body;
+// Ruta para actualizar la contraseña (usa email para mayor seguridad)
+router.put('/update-password', passwordResetLimiter, async (req, res) => {
+  const { email, newPassword } = req.body;
 
   try {
-    // Lógica para validar al usuario
-    const user = await User.findOne({ username });
+    // Validar que se proporcionen los datos necesarios
+    if (!email || !newPassword) {
+      return res.status(400).json({ message: 'Email y nueva contraseña son requeridos' });
+    }
+
+    // Buscar usuario por email (más seguro que username)
+    const user = await User.findOne({ email: email.toLowerCase() });
 
     if (!user) {
-      return res.status(404).json({ message: 'Usuario no encontrado' });
+      return res.status(404).json({ message: 'No se encontró una cuenta con ese email' });
+    }
+
+    // Validar que la contraseña tenga al menos 6 caracteres
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: 'La contraseña debe tener al menos 6 caracteres' });
     }
 
     // Hashear la nueva contraseña antes de guardarla
@@ -139,9 +148,11 @@ router.put('/update-password/:username', passwordResetLimiter, async (req, res) 
 
     await user.save();
 
+    logger.info(`Contraseña actualizada para usuario: ${user.username} (email: ${email})`);
+
     return res.status(200).json({ message: 'Contraseña actualizada exitosamente' });
   } catch (error) {
-    console.error('Error al restablecer la contraseña:', error);
+    logger.error('Error al restablecer la contraseña:', error);
     return res.status(500).json({ message: 'Error interno del servidor' });
   }
 });

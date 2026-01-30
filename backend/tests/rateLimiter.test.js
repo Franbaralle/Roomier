@@ -209,8 +209,9 @@ describe('Rate Limiting Tests (Unit - Mocked)', () => {
     it('should allow 3 password reset attempts', async () => {
       for (let i = 0; i < 3; i++) {
         const res = await request(app)
-          .put('/api/auth/update-password/resetuser')
+          .put('/api/auth/update-password')
           .send({
+            email: 'reset@example.com',
             newPassword: `NewPass${i}23`
           });
         
@@ -221,8 +222,9 @@ describe('Rate Limiting Tests (Unit - Mocked)', () => {
     it('should block after 3 password reset attempts', async () => {
       for (let i = 0; i < 4; i++) {
         const res = await request(app)
-          .put('/api/auth/update-password/resetuser')
+          .put('/api/auth/update-password')
           .send({
+            email: 'reset@example.com',
             newPassword: `NewPass${i}23`
           });
         

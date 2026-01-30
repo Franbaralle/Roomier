@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'auth_service.dart';
 import 'routes.dart';
+import 'welcome_onboarding_dialog.dart';
 
 class SplashScreen extends StatefulWidget {
   @override
@@ -45,6 +46,13 @@ class _SplashScreenState extends State<SplashScreen> {
         homeRoute,
         arguments: {'username': username},
       );
+      
+      // Mostrar onboarding si es primera vez (después de navegar)
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (mounted) {
+          await WelcomeOnboardingDialog.show(context);
+        }
+      });
     } else {
       // Si no hay sesión, ir a Login
       Navigator.pushReplacementNamed(context, loginRoute);

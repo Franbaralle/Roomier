@@ -4,7 +4,7 @@
 ═══════════════════════════════════════════════════════════════════
 
 📅 Fecha de Análisis: 31 de Diciembre de 2025
-🔄 Última Actualización: 15 de Enero de 2026 (Sistema de Barrios con Geolocalización)
+🔄 Última Actualización: 30 de Enero de 2026 (Onboarding + Reset Password Mejorado)
 🎉 ESTADO: DESPLEGADO EN PRODUCCIÓN ✅
 
 ═══════════════════════════════════════════════════════════════════
@@ -20,7 +20,14 @@
    ✓ Badges de verificación visibles en perfiles
    ✓ Hashing de contraseñas con bcrypt (rounds: 10)
    ✓ Autenticación con JWT tokens (expiración: 24h)
-   ✓ Sistema de blacklist de tokens JWT ⭐ NUEVO (8 ene 2026)
+   ✓ Recuperación de contraseña segura usando EMAIL (30 ene 2026):
+     - Usa email en lugar de username para mayor seguridad
+     - Validación de formato de email
+     - Validación de longitud mínima (6 caracteres)
+     - Rate limiting activo (3 intentos/hora)
+     - Feedback visual claro con mensajes de éxito/error
+     - Logs de seguridad para auditoría
+   ✓ Sistema de blacklist de tokens JWT ⭐ (8 ene 2026)
      - Tokens revocados al cerrar sesión
      - Blacklist almacenada en MongoDB con índices optimizados
      - TTL index para auto-limpieza después de 24h
@@ -66,7 +73,20 @@
      - Género preferido de roommate
    ✓ Deal-breakers configurables
    ✓ Preferencias de vivienda (8 campos)
-   ✓ Intereses personales (hasta 5 tags)
+   ✓ Sistema de intereses v3.0 (26-29 ene 2026):
+     - Arquitectura basada en master_tags.json centralizado
+     - 14 categorías de intereses organizadas jerárquicamente
+     - Cada categoría con emoji identificador
+     - Subcategorías con emoji propio + descripción
+     - Internacionalización preparada (es, en)
+     - Validación centralizada y consistente
+     - Fácil expansión y mantenimiento
+     - Categorías: Deportes, Arte y Cultura, Música, Entretenimiento,
+       Estilo de Vida, Aire Libre, Gastronomía, Tecnología, Viajes,
+       Educación, Juegos, Bienestar, Animales, Causas Sociales
+     - Total: 300+ tags organizados en 14 categorías
+     - Retrocompatibilidad con versión anterior (my_tags)
+     - Migración automática de tags legacy a nueva estructura
    ✓ Sistema de múltiples fotos de perfil (hasta 10)
    ✓ Fotos del hogar ilimitadas (solo si tiene lugar)
    ✓ Foto principal seleccionable
@@ -77,6 +97,14 @@
    ✓ Cards elevadas con bordes redondeados
    ✓ Iconos intuitivos en todos los campos
    ✓ Feedback visual claro (colores, estados)
+   ✓ Onboarding emocional al primer inicio de sesión (30 ene 2026):
+     - Popup de bienvenida solo en primera sesión
+     - Mensaje diferenciador: "Más que un match, un compañero"
+     - Diseño atractivo con gradientes y sombras
+     - Clarifica que NO es una app de citas
+     - Énfasis en convivencia y decisiones importantes
+     - Se muestra automáticamente después del login
+     - Flag persistente en SharedPreferences
    ✓ Sistema de 3 estados para revelación:
      - Gris: No revelado
      - Azul: Esperando al otro usuario
@@ -120,19 +148,21 @@
    ✓ Listeners de ciclo de vida de la app
    ✓ Interfaz limpia y fácil de usar
 
-6. FLUJO DE REGISTRO COMPLETO
+6. FLUJO DE REGISTRO COMPLETO ⭐ MEJORADO
    ✓ Proceso paso a paso bien estructurado:
-     1. Fecha de nacimiento (validación +18)
-     2. Datos básicos (usuario, email, contraseña)
-     3. Intereses personales
-     4. Información personal
-     5. Foto de perfil
-     6. Preferencias generales
-     7. Hábitos de convivencia
-     8. Información de vivienda
+     1. Género propio (Masculino/Femenino/Otro)
+     2. Fecha de nacimiento (validación +18)
+     3. Datos básicos (usuario, email, contraseña)
+     4. Intereses personales (arquitectura v3.0 con 14 categorías)
+     5. Información personal
+     6. Foto de perfil (galería o cámara)
+     7. Preferencias generales
+     8. Hábitos de convivencia
+     9. Información de vivienda con sistema híbrido de barrios
    ✓ Navegación clara entre páginas
    ✓ Validaciones en cada paso
    ✓ Progreso guardado en backend
+   ✓ UX mejorada con sistema de sugerencias de barrios (29 ene 2026)
 
 7. ARQUITECTURA TÉCNICA ⭐ MEJORADO
    ✓ Backend Node.js + Express + MongoDB
@@ -287,7 +317,13 @@
     ✓ Logs centralizados con Winston
     ✓ Healthcheck endpoint funcionando
     ✓ Backups automáticos activos (MongoDB Atlas M0 incluye backups por defecto)
-    ✓ CDN configurado (Cloudinary para imágenes) ⭐ NUEVO
+    ✓ CDN configurado (Cloudinary para imágenes)
+    ✓ Documentación de migración a Render.com (26 ene 2026):
+      - Guía paso a paso sin tiempo de inactividad
+      - Checklist de preparación completo
+      - Configuración de variables de entorno
+      - Plan de rollback preparado
+      - MIGRATION_RAILWAY_TO_RENDER.md + RENDER_DEPLOY.md
     ⚠ Auto-scaling no configurado (Railway lo maneja automáticamente)
 
 16. SISTEMA DE EMAILS ⭐ MIGRADO A RESEND API
@@ -319,13 +355,7 @@
     ✅ Conexión a base de datos correcta (flutter_auth @ roomier.8oraaik.mongodb.net)
     ✅ Deploy en producción completado
     
-    Plan gratuito Cloudinary:
-    - 25 GB de almacenamiento
-    - 25 GB de ancho de banda/mes
-    - 25,000 transformaciones/mes
-    - CDN global incluido
-
-18. SISTEMA DE MÚLTIPLES FOTOS ⭐ NUEVO
+    Plan gratuito Cloudinary:COMPLETADO
     ✅ Backend completo con rutas /api/photos
     ✅ Fotos de perfil: Hasta 10 por usuario
     ✅ Fotos del hogar: Ilimitadas (solo si hasPlace=true)
@@ -333,13 +363,25 @@
     ✅ Sistema de foto principal seleccionable
     ✅ Descripciones opcionales en fotos del hogar
     ✅ Upload múltiple (varias fotos simultáneas)
+    ✅ Captura directa con cámara (26 ene 2026):
+      - Botón "Tomar foto" en diálogos de selección
+      - ImageSource.camera disponible en todas las páginas de fotos
+      - Opción de cámara o galería en profile_photo.dart
+      - Opción de cámara o galería en manage_profile_photos_page.dart
+      - Opción de cámara o galería en manage_home_photos_page.dart
     ✅ Endpoints completos:
       - POST/GET/DELETE /api/photos/profile
       - PUT /api/photos/profile/:id/primary
       - POST/GET/DELETE /api/photos/home
       - PUT /api/photos/home/:id/description
     ✅ Validaciones de límites y permisos
-    ✅ Integración con Cloudinary para todas las fotos
+    ✅ Integración con Cloudinary para todas las fotas
+    ✅ PhotoService en Flutter con métodos completos
+    ✅ ManageProfilePhotosPage: UI para gestionar fotos de perfil
+    ✅ ManageHomePhotosPage: UI para gestionar fotos del hogar
+    ✅ Grid de 2 columnas con preview desde CDN
+    ✅ Botones "Mis Fotos" y "Mi Hogar" en perfil
+    ✅ Retrocompatibilidad con profilePhoto legacy usando .lean()otos
     ✅ PhotoService en Flutter con métodos completos
     ✅ ManageProfilePhotosPage: UI para gestionar fotos de perfil
     ✅ ManageHomePhotosPage: UI para gestionar fotos del hogar
@@ -362,7 +404,7 @@
     ⚠ Queries a DB sin optimización de índices completos
     ⚠ APK de 21.2MB (puede optimizarse)
 
-20. SISTEMA DE LIKES RECIBIDOS ⭐ NUEVO
+20. SISTEMA DE LIKES RECIBIDOS ⭐ COMPLETADO
     ✅ Endpoint backend para obtener likes recibidos (GET /api/home/received-likes)
     ✅ Página dedicada (ReceivedLikesPage) con grilla de perfiles
     ✅ Imágenes blureadas (blur sigma: 10) con overlay oscuro
@@ -375,6 +417,7 @@
     ✅ Información básica visible: edad, trabajo
     ✅ Diseño atractivo con gradientes púrpura
     ✅ Estrategia de monetización preparada
+    ✅ Bug corregido (30 ene 2026): variable userObj → user en backend
 
 22. SISTEMA DE "FIRST STEP" (PRIMER PASO) ⭐ COMPLETADO (8-10 ene 2026)
     ✅ Sistema freemium diferenciado:
@@ -524,7 +567,7 @@
       - 7/7 puntos legales resueltos
       - Cumplimiento: 98%
 
-25. SISTEMA DE BARRIOS Y GEOLOCALIZACIÓN ⭐ NUEVO (15 ene 2026)
+25. SISTEMA DE BARRIOS Y GEOLOCALIZACIÓN ⭐ COMPLETADO (15-29 ene 2026)
     ✅ Backend completo con modelo Neighborhood:
       - Campos: name, cityId, cityName, provinceName, geometry, osmId, source
       - Soporte para GeoJSON (Point, Polygon, MultiPolygon)
@@ -540,30 +583,83 @@
       - Autocomplete de ciudades filtradas por provincia
       - IDs oficiales de Georef para consistencia
       - Cobertura completa de todo el país
-    ✅ Importación de barrios de Córdoba:
-      - Script manual: importCordobaManual.js
-      - 52 barrios importados exitosamente
+    ✅ Importación de barrios de múltiples ciudades:
+      - Script manual: importCordobaManual.js, importVillaCarlosPazManual.js
+      - Córdoba Capital: 52 barrios importados
+      - Villa Carlos Paz: Barrios principales importados ⭐ NUEVO (26 ene 2026)
       - Incluye: Nueva Córdoba, Centro, Güemes, Cerro de las Rosas, etc
       - Coordenadas de puntos centrales para cada barrio
-    ✅ Sistema híbrido de selección:
+    ✅ Sistema híbrido de selección (29 ene 2026):
       - Preferido: Selección de barrio desde lista (OSM data)
-      - Fallback: Campo de texto libre si no hay barrios
-      - Mensaje educativo sobre fallback
-      - Búsqueda futura por proximidad preparada
+      - Fallback: Sistema de sugerencias para ciudades sin barrios cargados
+      - Los usuarios pueden sugerir hasta 5 barrios que conocen
+      - Banner informativo naranja cuando no hay barrios en BD
+      - Campo de texto + botón para agregar barrios sugeridos
+      - Chips visuales para ver barrios seleccionados/sugeridos
+      - Sistema de recopilación de datos para expansión futura
+      - Mensaje de confirmación al alcanzar límite de 5 barrios
     ✅ UX de 3 pasos en registro:
       - Paso 1: Selección de provincia (autocomplete)
       - Paso 2: Selección de ciudad (autocomplete filtrado)
-      - Paso 3: Selección de barrio (lista o texto libre)
+      - Paso 3: Selección de barrio (lista, sugerencias o texto libre)
       - Timeout de 3 segundos con manejo de errores
     ✅ Configuración para Android emulator:
       - URL localhost → 10.0.2.2 para desarrollo
       - Logs detallados de conectividad
       - Manejo de timeouts y errores de red
     ✅ Preparado para escalabilidad:
-      - Modelo extensible a otras ciudades argentinas
+      - Modelo extensible a todas las ciudades argentinas
+      - Sistema de sugerencias identifica ciudades prioritarias
       - Posibilidad de importar desde Overpass API (OSM)
       - Base para matching por proximidad geográfica
       - Estructura para agregar más metadatos (población, densidad)
+      - Documentación completa: NEIGHBORHOOD_SUGGESTIONS_SYSTEM.md
+
+26. ARQUITECTURA DE TAGS Y PREFERENCIAS v3.0 ⭐ NUEVO (26-29 ene 2026)
+    ✅ Sistema centralizado con master_tags.json:
+      - Archivo JSON único como fuente de verdad
+      - Versión 3.0 de la arquitectura
+      - 14 categorías de intereses organizadas
+      - Más de 300 tags disponibles
+      - Emoji identificador por categoría y tag
+    ✅ Estructura jerárquica:
+      - Secciones (living_habits, interests)
+      - Categorías dentro de cada sección
+      - Tags individuales con metadata
+      - Configuración global (límites, validaciones)
+    ✅ Categorías de intereses implementadas:
+      1. 🏋️ Deportes (Fútbol, Basketball, Running, Yoga, etc)
+      2. 🎨 Arte y Cultura (Pintura, Teatro, Museos, Fotografía, etc)
+      3. 🎵 Música (Rock, Pop, Jazz, Clásica, Electrónica, etc)
+      4. 📺 Entretenimiento (Series, Cine, Documentales, Anime, etc)
+      5. 🌿 Estilo de Vida (Minimalismo, Sostenibilidad, Fitness, etc)
+      6. ⛰️ Aire Libre (Camping, Hiking, Playa, Montaña, etc)
+      7. 🍕 Gastronomía (Cocinar, Comida Italiana, Vegana, Postres, etc)
+      8. 💻 Tecnología (Gaming, Programación, Gadgets, IA, etc)
+      9. ✈️ Viajes (Mochilero, Playas, Montañas, Roadtrips, etc)
+      10. 📚 Educación (Idiomas, Cursos, Lectura, Podcasts, etc)
+      11. 🎮 Juegos (Videojuegos, Juegos de Mesa, Poker, etc)
+      12. 🧘 Bienestar (Meditación, Mindfulness, Terapia, etc)
+      13. 🐕 Animales (Perros, Gatos, Aves, Acuarios, etc)
+      14. 🌍 Causas Sociales (Medio Ambiente, Derechos Humanos, etc)
+    ✅ Características técnicas:
+      - Límite global: 25 intereses máximo
+      - Modo de selección configurable (single/multiple)
+      - Campos requeridos vs opcionales
+      - Elegibilidad para deal-breakers
+      - Internacionalización (es, en)
+      - Validación centralizada
+    ✅ Migración y retrocompatibilidad:
+      - Fallback automático a my_tags si preferences vacío
+      - Traducción de tags legacy a nueva estructura
+      - Sin pérdida de datos de usuarios existentes
+      - Fix de validación null para campos string en editProfile
+    ✅ Beneficios:
+      - Mantenimiento simplificado (un solo archivo)
+      - Expansión fácil (agregar nuevas categorías/tags)
+      - Consistencia en toda la app
+      - Base para matching mejorado por intereses
+      - Preparado para IA/recomendaciones futuras
 
 ═══════════════════════════════════════════════════════════════════
                         ⚠️ FALENCIAS Y ÁREAS DE MEJORA
@@ -572,13 +668,20 @@
 1. SEGURIDAD Y AUTENTICACIÓN
    ✅ Tokens JWT implementados y funcionando en producción
    ✅ Sesiones persistentes con SharedPreferences
-   ✅ Auto-login al abrir la app si hay token válido ⭐ NUEVO (13 ene 2026)
+   ✅ Auto-login al abrir la app si hay token válido ⭐ (13 ene 2026)
    ✅ Verificación de token en cada inicio de app
    ✅ SplashScreen que gestiona autenticación automática
    ✅ HTTPS configurado automáticamente (Railway)
    ✅ Rate limiting activo y funcionando
-   ✅ Sistema de blacklist de tokens JWT ⭐ NUEVO (8 ene 2026)
-   ✅ Banner de consentimiento de cookies ⭐ NUEVO (14 ene 2026)
+   ✅ Sistema de blacklist de tokens JWT ⭐ (8 ene 2026)
+   ✅ Banner de consentimiento de cookies ⭐ (14 ene 2026)
+   ✅ Recuperación de contraseña con email ⭐ NUEVO (30 ene 2026):
+     - Usa email en lugar de username para mayor seguridad
+     - Validación completa de formato y longitud
+     - Rate limiting de 3 intentos/hora
+     - Feedback claro con SnackBars de colores
+     - Backend actualizado con validaciones robustas
+     - Tests actualizados para reflejar el cambio
    ⚠ No hay renovación automática de tokens
    ⚠ No hay protección contra ataques CSRF
    ⚠ Email de verificación funciona pero no es obligatorio
@@ -617,20 +720,28 @@
 5. PERFIL Y MATCHING
    ✅ Se pueden editar intereses, hábitos y vivienda después del registro
    ✅ Múltiples fotos de perfil implementado (hasta 10 fotos)
+   ✅ Captura directa con cámara disponible (26 ene 2026)
    ✅ Género del usuario capturado y mostrado
    ✅ Edad calculada y visible en perfil
    ✅ Sistema de likes recibidos con preview blureado
-   ✅ Selección de barrios con sistema híbrido (lista + texto libre) ⭐ NUEVO
-   ✅ Integración con API Georef (provincias y ciudades de Argentina) ⭐ NUEVO
-   ✅ 52 barrios de Córdoba Capital importados ⭐ NUEVO
+   ✅ Selección de barrios con sistema híbrido (lista + sugerencias) ⭐ NUEVO (29 ene 2026)
+   ✅ Integración con API Georef (provincias y ciudades de Argentina)
+   ✅ 52 barrios de Córdoba Capital importados
+   ✅ Villa Carlos Paz con barrios principales (26 ene 2026)
+   ✅ Sistema de sugerencias para ciudades sin barrios (29 ene 2026)
+   ✅ Arquitectura v3.0 de tags con 14 categorías y 300+ opciones (26-29 ene 2026)
    ⚠ No hay video de presentación
    ⚠ Falta información sobre disponibilidad de mudanza
-   ⚠ No hay información sobre mascotas específicas
+   ✅ Onboarding emocional implementado (30 ene 2026)
+   ✅ Popup de bienvenida solo en primera sesión
+   ✅ Mensaje diferenciador: clarifica que NO es app de citas
+   ✅ Diseño atractivo y llamativo con gradientes
+   ⚠ No hay tutorial paso a paso de funcionalidadespecíficas
    ⚠ No se puede filtrar por género del roommate desde UI
    ⚠ No hay búsqueda avanzada con filtros
    ⚠ No se pueden guardar favoritos
-   ⚠ Falta importar barrios de otras ciudades argentinas
-   ⚠ No hay matching por proximidad geográfica (preparado pero no implementado)
+   ⚠ Falta importar barrios de Buenos Aires, Rosario, Mendoza (preparado con sistema de sugerencias)
+   ⚠ No hay matching por proximidad geográfica (infraestructura lista)
 
 6. EXPERIENCIA DE USUARIO
    ⚠ No hay tutorial inicial (onboarding)
@@ -736,15 +847,17 @@ MEJORADO
                     🎯 PRIORIDADES RECOMENDADAS
 ═══════════════════════════════════════════════════════════════════
 
-CRÍTICO (Antes de lanzar):
-✅ 1. Implementar hashing de contraseñas (bcrypt) - COMPLETADO
-✅ 2. Implementar JWT tokens reales - COMPLETADO
-✅ 3. Agregar sistema de reportes/bloqueo - COMPLETADO
-✅ 4. Implementar términos y condiciones + política de privacidad - COMPLETADO
-✅ 5. Consentimiento explícito de términos en registro - COMPLETADO
-✅ 6. Agregar rate limiting - COMPLETADO
+CR7. Panel de administración para revisar reportes - COMPLETADO
+✅ 8. Logging centralizado (Winston) - COMPLETADO
+✅ 9. Mover a servidor de producción - COMPLETADO (Railway)
+✅ 10. Configurar HTTPS - COMPLETADO (Railway automático)
+✅ 11. Sistema de emails funcionando - COMPLETADO (Resend API)
+✅ 12. Backups automáticos - COMPLETADO (MongoDB Atlas M0)
+✅ 13. Optimizar almacenamiento de imágenes - COMPLETADO (Cloudinary)
+✅ 14. Notificaciones push - COMPLETADO (Firebase Cloud Messaging)
 ✅ 15. Sistema de First Step freemium - COMPLETADO (8 ene 2026)
-✅ 7. Panel de administración para revisar reportes - COMPLETADO
+✅ 16. Recuperación de contraseña con email - COMPLETADO (30 ene 2026)
+✅ 17. Onboarding inicial - COMPLETADO (30 ene 2026
 ✅ 8. Logging centralizado (Winston) - COMPLETADO
 ✅ 9. Mover a servidor de producción - COMPLETADO (Railway)
 ✅ 10. Configurar HTTPS - COMPLETADO (Railway automático)
@@ -759,17 +872,20 @@ ALTA PRIORIDAD (Primeras semanas):
 ✅ 3. Migración de imágenes a Cloudinary - COMPLETADO (2 usuarios migrados)
 ✅ 4. Analytics básicos - COMPLETADO
 ✅ 5. Múltiples fotos de perfil - COMPLETADO (hasta 10 fotos + fotos del hogar)
-✅ 11. Sistema de barrios con geolocalización - COMPLETADO (15 ene 2026)
-⚠ 12 Selección de género propio - COMPLETADO (7 ene 2026)
-✅ 7. Visualización de edad en perfil - COMPLETADO (7 ene 2026)
-✅ 8. Confirmación de lectura en chat - COMPLETADO (8 ene 2026)
-✅ 9. Sistema de First Step con límites - COMPLETADO (8 ene 2026)
-✅ 10. Envío de imágenes en chat - COMPLETADO (8 ene 2026)
-⚠ 11. Sistema de verificación real (al menos teléfono) - PENDIENTE
-
-⚠ 6. Importar barrios de Buenos Aires, Rosario, Mendoza - PENDIENTE
-⚠ 7. Matching por proximidad geográfica - PENDIENTE (infraestructura lista)
-MEDIA PRIORIDAD (Primer mes):
+✅ 6. Sistema de barrios con geolocalización - COMPLETADO (15-29 ene 2026)
+✅ 7. Selección de género propio - COMPLETADO (7 ene 2026)
+✅ 8. Visualización de edad en perfil - COMPLETADO (7 ene 2026)
+✅ 9. Confirmación de lectura en chat - COMPLETADO (8 ene 2026)
+✅ 10. Sistema de First Step con límites - COMPLETADO (8 ene 2026)
+✅ 11. Envío de imágenes en chat - COMPLETADO (8 ene 2026)
+✅ 12. Captura directa con cámara - COMPLETADO (26 ene 2026)
+✅ 13. Sistema de sugerencias de barrios - COMPLETADO (29 ene 2026)
+✅ 14. Arquitectura v3.0 de tags - COMPLETADO (26-29 ene 2026)
+✅ 15. Bug de likes recibidos corregido - COMPLETADO (30 ene 2026)
+⚠ 16. Sistema de verificación real (al menos teléfono) - PENDIENTE
+⚠ 17. Importar barrios de Buenos Aires, Rosario, Mendoza - PENDIENTE (sistema de sugerencias activo)
+⚠ 18. Matching por proximidad geográfica - PENDIENTE (infraestructura lista)
+MEDIA PRIORIDApaso a paso de funcionalidades):
 ⚠ 1. Sistema de suscripciones premium (Stripe/MercadoPago) - PENDIENTE
 ⚠ 2. Tutorial de onboarding - PENDIENTE
 ⚠ 3. Búsqueda con filtros avanzados - PENDIENTE
@@ -788,22 +904,23 @@ BAJA PRIORIDAD (Largo plazo):
                         📊 ESTADO DE COMPLETITUD
 ═══════════════════════════════════════════════════════════════════
 
-PROGRESO GENERAL POR ÁREA:
-- Seguridad y Autenticación: 92% completo ⬆️ (blacklist + cookies + moderación)
-- Infraestructura: 98% completo (✅ Producción en Railway)
+- Seguridad y Autenticación: 90% completo ⬆️ (reset password + onboarding)
+- Infraestructura: 95% completo ⬆️ (Railway + MongoDB + Cloudinary + docs de migración)
 - Chat y Comunicación: 95% completo ⬆️ (visto e imágenes funcionando)
 - Moderación: 95% completo ⬆️⬆️ (automática implementada + protocolo violencia)
 - Legal: 98% completo ⬆️⬆️⬆️ (TODOS los puntos resueltos)
 - Testing: 85% completo
 - Notificaciones: 75% completo
-- Sistema de Fotos: 90% completo
+- Sistema de Fotos: 95% completo ⬆️ (cámara integrada)
 - Perfil de Usuario: 95% completo ⬆️ (con reviews integradas)
-- Geolocalización y Barrios: 90% completo ⭐ NUEVO (Córdoba completo, otras ciudades pendientes)
+- Geolocalización y Barrios: 95% completo ⬆️⬆️ (sistema de sugerencias + Villa Carlos Paz)
+- Sistema de Tags/Intereses: 98% completo ⭐ (arquitectura v3.0 completada)
 - Analytics: 70% completo
-- Engagement/Monetización: 80% completo ⬆️ (First Step + Reviews premium)
+- Engagement/Monetización: 85% completo ⬆️ (First Step + Reviews + Likes recibidos)
 - Características Sociales: 80% completo ⬆️ (reviews implementadas)
 - Panel Administración: 80% completo (falta tab de reviews)
 - Rendimiento: 80% completo
+- Experiencia de Usuario: 75% completo ⬆️ (onboarding implementado)
 
 
 ═══════════════════════════════════════════════════════════════════
@@ -841,6 +958,7 @@ CARACTERÍSTICAS DIFERENCIADORES:
 ✅ Algoritmo de matching sofisticado multi-factor
 ✅ Perfil detallado que captura información relevante
 ✅ UX moderna y consistente
+✅ Onboarding emocional diferenciador (30 ene 2026)
 ✅ Infraestructura cloud escalable (Railway + MongoDB Atlas + Cloudinary CDN)
 ✅ Sistema de emails funcionando (Resend API)
 ✅ HTTPS configurado y seguro
@@ -852,10 +970,14 @@ CARACTERÍSTICAS DIFERENCIADORES:
 ✅ Múltiples fotos de perfil y del hogar
 ✅ Panel de administración completo
 ✅ Sistema de testing automatizado
-✅ Cumplimiento legal 98% (7/7 puntos resueltos) ⭐ NUEVO
-✅ Moderación automática de contenido ⭐ NUEVO
-✅ Protocolo de violencia de género ⭐ NUEVO
-✅ Sistema de barrios con geolocalización (preparado para matching por proximidad) ⭐ NUEVO
+✅ Cumplimiento legal 98% (7/7 puntos resueltos) ⭐
+✅ Moderación automática de contenido ⭐
+✅ Protocolo de violencia de género ⭐
+✅ Arquitectura v3.0 de tags con 14 categorías y 300+ intereses ⭐
+✅ Sistema de sugerencias de barrios para ciudades sin cobertura ⭐
+✅ Bug crítico de likes recibidos corregido ⭐
+✅ Sistema de barrios con geolocalización (preparado para matching por proximidad) ⭐
+✅ Recuperación de contraseña segura con email ⭐ NUEVO (30 ene 2026)
 
 FORTALEZAS PRINCIPALES:
 - Enfoque en privacidad y seguridad

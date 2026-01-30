@@ -8,6 +8,7 @@ const jwt = require('jsonwebtoken');
 const { jwtSecret, jwtExpiration, bcryptSaltRounds } = require('../config/security');
 const { loginLimiter, registerLimiter, passwordResetLimiter } = require('../middleware/rateLimiter');
 const { verifyToken } = require('../middleware/auth');
+const logger = require('../utils/logger');
 
 // Ruta para el registro de usuarios
 router.post('/register', registerLimiter, async (req, res) => {

@@ -14,8 +14,9 @@ const bodyParser = require('body-parser');
 // Inicializar Firebase Admin SDK
 initializeFirebase();
 
-// Confiar en proxy (necesario para Railway, Heroku, etc.)
-app.set('trust proxy', true);
+// Confiar en proxy (necesario para Render, Railway, Heroku, etc.)
+// Render usa 1 proxy, Railway también. Ajustar según tu hosting.
+app.set('trust proxy', 1);
 
 // Middleware de logging HTTP
 app.use(logger.httpMiddleware);

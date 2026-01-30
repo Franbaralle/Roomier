@@ -270,7 +270,6 @@ router.post('/reveal_info', async (req, res) => {
                 matchedUser: matchedUsername,
                 revealedZones: false,
                 revealedBudget: false,
-                revealedContact: false,
                 revealedName: false
             };
             currentUser.revealedInfo.push(revealedInfoEntry);
@@ -283,9 +282,6 @@ router.post('/reveal_info', async (req, res) => {
                 break;
             case 'budget':
                 revealedInfoEntry.revealedBudget = true;
-                break;
-            case 'contact':
-                revealedInfoEntry.revealedContact = true;
                 break;
             case 'name':
                 revealedInfoEntry.revealedName = true;

@@ -119,8 +119,8 @@ const userSchema = new mongoose.Schema({
     matchedUser: { type: String }, // username del match
     revealedZones: { type: Boolean, default: false },
     revealedBudget: { type: Boolean, default: false },
-    revealedContact: { type: Boolean, default: false },
     revealedName: { type: Boolean, default: false } // Nombre y apellido
+    // NOTA: Email y teléfono NO son revelables (son datos de seguridad/verificación)
   }],
   
   // Fotos de perfil (URLs de Cloudinary) - 1 a 9 fotos obligatorias

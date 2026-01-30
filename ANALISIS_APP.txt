@@ -4,7 +4,7 @@
 ═══════════════════════════════════════════════════════════════════
 
 📅 Fecha de Análisis: 31 de Diciembre de 2025
-🔄 Última Actualización: 30 de Enero de 2026 (Onboarding + Reset Password Mejorado)
+🔄 Última Actualización: 30 de Enero de 2026 (Seguridad: Email/Teléfono NO revelables)
 🎉 ESTADO: DESPLEGADO EN PRODUCCIÓN ✅
 
 ═══════════════════════════════════════════════════════════════════
@@ -12,7 +12,10 @@
 ═══════════════════════════════════════════════════════════════════
 
 1. SISTEMA DE PRIVACIDAD Y SEGURIDAD ⭐ MEJORADO
-   ✓ Revelación progresiva de información sensible
+   ✓ Revelación progresiva de información sensible (30 ene 2026):
+     - Solo 3 tipos de información revelable: barrios, presupuesto, nombre completo
+     - Email y teléfono NUNCA se revelan (son datos de seguridad)
+     - Sistema de verificación mantiene su propósito
    ✓ Presupuesto y zonas específicas ocultos hasta match mutuo
    ✓ Sistema bilateral de revelación (ambos deben aceptar)
    ✓ Control total del usuario sobre su información privada

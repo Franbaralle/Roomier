@@ -92,15 +92,12 @@ class _RevealInfoWidgetState extends State<RevealInfoWidget> {
         _revealedInfo = {
           'revealedZones': currentUserRevealed?['revealedZones'] ?? false,
           'revealedBudget': currentUserRevealed?['revealedBudget'] ?? false,
-          'revealedContact': currentUserRevealed?['revealedContact'] ?? false,
           'revealedName': currentUserRevealed?['revealedName'] ?? false,
           // Solo mostrar si AMBOS revelaron
           'showZones': (currentUserRevealed?['revealedZones'] ?? false) && 
                       (matchedUserRevealed?['revealedZones'] ?? false),
           'showBudget': (currentUserRevealed?['revealedBudget'] ?? false) && 
                        (matchedUserRevealed?['revealedBudget'] ?? false),
-          'showContact': (currentUserRevealed?['revealedContact'] ?? false) && 
-                        (matchedUserRevealed?['revealedContact'] ?? false),
           'showName': (currentUserRevealed?['revealedName'] ?? false) && 
                      (matchedUserRevealed?['revealedName'] ?? false),
         };
@@ -186,8 +183,6 @@ class _RevealInfoWidgetState extends State<RevealInfoWidget> {
         return _revealedInfo?['showZones'] ?? false;
       case 'budget':
         return _revealedInfo?['showBudget'] ?? false;
-      case 'contact':
-        return _revealedInfo?['showContact'] ?? false;
       case 'name':
         return _revealedInfo?['showName'] ?? false;
       default:
@@ -275,15 +270,30 @@ class _RevealInfoWidgetState extends State<RevealInfoWidget> {
 
                 const SizedBox(height: 12),
 
-                // Información de contacto
-                _buildRevealOption(
-                  icon: Icons.phone,
-                  title: 'Información de contacto',
-                  description: 'Revelar teléfono/email',
-                  isRevealed: _revealedInfo?['revealedContact'] ?? false,
-                  canShow: _revealedInfo?['showContact'] ?? false,
-                  onReveal: () => _revealInformation('contact'),
-                  revealedData: _matchedUserInfo?['email'],
+                // NOTA: Email y teléfono NO son revelables por razones de seguridad
+                // Son datos de verificación y recuperación de cuenta
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.amber.shade300),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline, color: Colors.amber.shade700, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Email y teléfono son datos de seguridad y no se comparten',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.amber.shade900,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),

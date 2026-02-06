@@ -22,6 +22,11 @@ class _LivingHabitsPageState extends State<LivingHabitsPage> {
   
   // Mapa para almacenar las selecciones: categoryId -> selectedTagId
   Map<String, String?> _selections = {};
+  
+  // Deal Breakers - Lo que NO acepta el usuario
+  bool noSmokers = false;
+  bool noPets = false;
+  bool noParties = false;
 
   @override
   void initState() {
@@ -107,6 +112,11 @@ class _LivingHabitsPageState extends State<LivingHabitsPage> {
 
                 SizedBox(height: verticalSpacing * 0.8),
 
+                // Sección de Deal Breakers
+                _buildDealBreakersSection(categoryFontSize, verticalSpacing),
+
+                SizedBox(height: verticalSpacing * 0.8),
+
                 // Botón Continuar
                 Center(
                   child: SizedBox(
@@ -168,6 +178,108 @@ class _LivingHabitsPageState extends State<LivingHabitsPage> {
     );
   }
 
+  Widget _buildDealBreakersSection(double categoryFontSize, double verticalSpacing) {
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      color: Colors.red.shade50,
+      child: Padding(
+        padding: EdgeInsets.all(verticalSpacing),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.block, color: Colors.red.shade700, size: categoryFontSize + 2),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Deal Breakers (Opcional)',
+                    style: TextStyle(
+                      fontSize: categoryFontSize,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.red.shade700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: verticalSpacing * 0.4),
+            Text(
+              'Marca lo que NO aceptarías en un roommate. Estos usuarios no aparecerán en tus resultados.',
+              style: TextStyle(
+                fontSize: categoryFontSize - 4,
+                color: Colors.grey[700],
+              ),
+            ),
+            SizedBox(height: verticalSpacing * 0.8),
+            
+            CheckboxListTile(
+              title: Text(
+                '🚭 No quiero roommates fumadores',
+                style: TextStyle(fontSize: categoryFontSize - 2),
+              ),
+              value: noSmokers,
+              onChanged: (value) {
+                setState(() {
+                  noSmokers = value ?? false;
+                });
+              },
+              controlAffinity: ListTileControlAffinity.leading,
+              contentPadding: EdgeInsets.zero,
+              visualDensity: VisualDensity.compact,
+              activeColor: Colors.red.shade700,
+            ),
+            
+            CheckboxListTile(
+              title: Text(
+                '🐾 No quiero roommates con mascotas',
+                style: TextStyle(fontSize: categoryFontSize - 2),
+              ),
+              subtitle: Text(
+                'Por alergias o preferencia personal',
+                style: TextStyle(fontSize: categoryFontSize - 6, color: Colors.grey[600]),
+              ),
+              value: noPets,
+              onChanged: (value) {
+                setState(() {
+                  noPets = value ?? false;
+                });
+              },
+              controlAffinity: ListTileControlAffinity.leading,
+              contentPadding: EdgeInsets.zero,
+              visualDensity: VisualDensity.compact,
+              activeColor: Colors.red.shade700,
+            ),
+            
+            CheckboxListTile(
+              title: Text(
+                '🎉 No quiero roommates muy sociales/fiesteros',
+                style: TextStyle(fontSize: categoryFontSize - 2),
+              ),
+              subtitle: Text(
+                'Prefiero un ambiente tranquilo',
+                style: TextStyle(fontSize: categoryFontSize - 6, color: Colors.grey[600]),
+              ),
+              value: noParties,
+              onChanged: (value) {
+                setState(() {
+                  noParties = value ?? false;
+                });
+              },
+              controlAffinity: ListTileControlAffinity.leading,
+              contentPadding: EdgeInsets.zero,
+              visualDensity: VisualDensity.compact,
+              activeColor: Colors.red.shade700,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _handleContinue() async {
     try {
       // Validar que todas las categorías requeridas estén respondidas
@@ -191,11 +303,20 @@ class _LivingHabitsPageState extends State<LivingHabitsPage> {
           .cast<String>()
           .toList();
 
+      // Crear objeto de deal breakers
+      final Map<String, bool> dealBreakers = {
+        'noSmokers': noSmokers,
+        'noPets': noPets,
+        'noParties': noParties,
+      };
+
       // Guardar temporalmente en SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('temp_register_living_habits_tags', json.encode(selectedTagIds));
+      await prefs.setString('temp_register_deal_breakers', json.encode(dealBreakers));
 
       print('🏠 Hábitos guardados: $selectedTagIds');
+      print('🚫 Deal Breakers: $dealBreakers');
 
       // Navegar a la página de información de vivienda
       Navigator.pushNamed(
